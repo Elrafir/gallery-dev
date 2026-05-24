@@ -24366,6 +24366,12 @@
             "pattern": "^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$",
             "type": "string"
           },
+          "description": {
+            "description": "Extended notes about this person",
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
           "featureFaceAssetId": {
             "description": "Asset ID used for feature face thumbnail",
             "format": "uuid",
@@ -24585,6 +24591,12 @@
             "pattern": "^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$",
             "type": "string"
           },
+          "description": {
+            "description": "Extended notes about this person",
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
           "isFavorite": {
             "description": "Mark as favorite",
             "type": "boolean"
@@ -24595,6 +24607,20 @@
           },
           "name": {
             "description": "Person name",
+            "type": "string"
+          },
+          "species": {
+            "description": "Pet species (e.g. dog, cat); only used when type is pet",
+            "maxLength": 100,
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "Entity type (person or pet)",
+            "enum": [
+              "person",
+              "pet"
+            ],
             "type": "string"
           }
         },
@@ -24717,6 +24743,11 @@
             ],
             "x-immich-state": "Stable"
           },
+          "description": {
+            "description": "Extended notes about this person",
+            "nullable": true,
+            "type": "string"
+          },
           "filterId": {
             "description": "Scoped identity filter token",
             "type": "string"
@@ -24833,6 +24864,12 @@
             "pattern": "^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$",
             "type": "string"
           },
+          "description": {
+            "description": "Extended notes about this person",
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
           "featureFaceAssetId": {
             "description": "Asset ID used for feature face thumbnail",
             "format": "uuid",
@@ -24849,6 +24886,20 @@
           },
           "name": {
             "description": "Person name",
+            "type": "string"
+          },
+          "species": {
+            "description": "Pet species (e.g. dog, cat); only used when type is pet",
+            "maxLength": 100,
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "Entity type (person or pet)",
+            "enum": [
+              "person",
+              "pet"
+            ],
             "type": "string"
           }
         },
@@ -27560,6 +27611,11 @@
             "description": "Creation date",
             "type": "string"
           },
+          "description": {
+            "description": "Extended notes about this person",
+            "nullable": true,
+            "type": "string"
+          },
           "faceCount": {
             "description": "Number of faces assigned to this person",
             "type": "number"
@@ -27625,6 +27681,12 @@
           "birthDate": {
             "description": "Person date of birth",
             "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Extended notes about this person",
+            "maxLength": 2000,
             "nullable": true,
             "type": "string"
           },

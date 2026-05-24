@@ -4,6 +4,7 @@
   import { Icon } from '@immich/ui';
   import { mdiMagnify } from '@mdi/js';
   import { untrack } from 'svelte';
+  import { t } from 'svelte-i18n';
 
   interface Props {
     countries: string[];
@@ -22,7 +23,7 @@
     context,
     onCityFetch,
     onSelectionChange,
-    emptyText = 'No locations found',
+    emptyText,
   }: Props = $props();
 
   let searchQuery = $state('');
@@ -287,7 +288,9 @@
 
 <div data-testid="location-filter">
   {#if countries.length === 0 && !orphanedCountry}
-    <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-empty">{emptyText}</p>
+    <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-empty">
+      {emptyText ?? $t('filter_no_locations_found')}
+    </p>
   {:else}
     <!-- Search input -->
     <div class="relative mb-2">
@@ -297,7 +300,7 @@
       <input
         type="text"
         class="immich-form-input h-8 w-full rounded-lg pl-7 pr-2 text-sm"
-        placeholder="Search locations..."
+        placeholder={$t('filter_search_locations_placeholder')}
         bind:value={searchQuery}
         oninput={() => {
           showAll = false;
@@ -349,7 +352,9 @@
 
     <!-- Empty search results -->
     {#if filteredCountries.length === 0 && searchQuery.trim() && !hasPendingCitySearchFetches}
-      <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-no-results">No matching locations</p>
+      <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-no-results">
+        {$t('filter_no_matching_locations')}
+      </p>
     {/if}
 
     {#each visibleCountries as country (country)}
@@ -414,7 +419,7 @@
             onclick={() => showAllCities(country)}
             data-testid="location-city-show-more-{country}"
           >
-            Show {getRemainingCityCount(country)} more
+            {$t('filter_show_more_count', { values: { count: getRemainingCityCount(country) } })}
           </button>
         {/if}
       {/if}
@@ -428,7 +433,7 @@
         onclick={() => (showAll = true)}
         data-testid="location-show-more"
       >
-        Show {remainingCount} more
+        {$t('filter_show_more_count', { values: { count: remainingCount } })}
       </button>
     {/if}
   {/if}

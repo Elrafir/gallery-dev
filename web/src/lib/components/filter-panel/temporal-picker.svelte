@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { locale } from '$lib/stores/preferences.store';
+  import { get } from 'svelte/store';
+  import { t } from 'svelte-i18n';
   import { aggregateYears, getMonthsForYear } from './temporal-utils';
-
-  const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const tLocal = get(t);
   const CUSTOM_RANGE_ERROR_ID = 'custom-date-range-error';
 
   interface Props {
@@ -27,7 +29,10 @@
   }: Props = $props();
 
   let years = $derived(aggregateYears(timeBuckets));
-  let months = $derived(selectedYear === undefined ? [] : getMonthsForYear(timeBuckets, selectedYear));
+  let monthListLocale = $derived(!$locale || $locale === 'default' ? 'en' : $locale);
+  let months = $derived(
+    selectedYear === undefined ? [] : getMonthsForYear(timeBuckets, selectedYear, monthListLocale),
+  );
   let fromValue = $state('');
   let toValue = $state('');
   let customRangeError = $state<string | undefined>();
@@ -71,22 +76,23 @@
   }
 
   function validateAndEmitCustomRange() {
+    //const tLocal = get(t);
     const parsedFrom = parseDateOnly(fromValue);
     if (!parsedFrom.valid) {
-      customRangeError = 'Enter a valid From date';
+      customRangeError = tLocal('filter_custom_date_invalid_from');
       customRangeErrorTarget = 'from';
       return;
     }
 
     const parsedTo = parseDateOnly(toValue);
     if (!parsedTo.valid) {
-      customRangeError = 'Enter a valid To date';
+      customRangeError = tLocal('filter_custom_date_invalid_to');
       customRangeErrorTarget = 'to';
       return;
     }
 
     if (parsedFrom.value && parsedTo.value && parsedFrom.value > parsedTo.value) {
-      customRangeError = 'From date must be on or before To date';
+      customRangeError = tLocal('filter_custom_date_order_error');
       customRangeErrorTarget = 'range';
       return;
     }
@@ -109,7 +115,6 @@
     }
     clearCustomRangeState();
     if (selectedMonth === month) {
-      // Toggle off: deselect month
       onMonthSelect?.(year, undefined);
     } else {
       onMonthSelect?.(year, month);
@@ -120,20 +125,24 @@
     clearCustomRangeState();
     onYearSelect?.(undefined);
   }
+
+  let breadcrumbMonthLabel = $derived(
+    selectedMonth === undefined ? '' : (months.find((m) => m.month === selectedMonth)?.label ?? ''),
+  );
 </script>
 
 <div data-testid="temporal-picker">
   <div class="mb-4 space-y-2" data-testid="custom-date-range">
     <div class="grid grid-cols-2 gap-2.5">
       <label class="flex flex-col gap-1.5 text-[11px] font-medium leading-none text-gray-600 dark:text-gray-300">
-        <span class="px-0.5">From</span>
+        <span class="px-0.5">{tLocal('filter_custom_date_from')}</span>
         <input
           bind:value={fromValue}
           oninput={validateAndEmitCustomRange}
           type="text"
           inputmode="numeric"
           autocomplete="off"
-          placeholder="YYYY-MM-DD"
+          placeholder={tLocal('filter_date_placeholder_iso')}
           pattern={String.raw`\d{4}-\d{2}-\d{2}`}
           aria-invalid={customRangeErrorTarget === 'from' || customRangeErrorTarget === 'range' ? 'true' : undefined}
           aria-describedby={customRangeErrorTarget === 'from' || customRangeErrorTarget === 'range'
@@ -144,14 +153,14 @@
         />
       </label>
       <label class="flex flex-col gap-1.5 text-[11px] font-medium leading-none text-gray-600 dark:text-gray-300">
-        <span class="px-0.5">To</span>
+        <span class="px-0.5">{tLocal('filter_custom_date_to')}</span>
         <input
           bind:value={toValue}
           oninput={validateAndEmitCustomRange}
           type="text"
           inputmode="numeric"
           autocomplete="off"
-          placeholder="YYYY-MM-DD"
+          placeholder={tLocal('filter_date_placeholder_iso')}
           pattern={String.raw`\d{4}-\d{2}-\d{2}`}
           aria-invalid={customRangeErrorTarget === 'to' || customRangeErrorTarget === 'range' ? 'true' : undefined}
           aria-describedby={customRangeErrorTarget === 'to' || customRangeErrorTarget === 'range'
@@ -168,7 +177,6 @@
   </div>
 
   {#if selectedYear !== undefined}
-    <!-- Breadcrumb -->
     <div class="mb-2 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-300">
       <button
         type="button"
@@ -176,17 +184,16 @@
         onclick={handleBackToAll}
         data-testid="temporal-breadcrumb-all"
       >
-        All
+        {tLocal('filter_temporal_breadcrumb_all')}
       </button>
       <span class="opacity-50">/</span>
       <span class="font-semibold">{selectedYear}</span>
       {#if selectedMonth !== undefined}
         <span class="opacity-50">/</span>
-        <span data-testid="temporal-breadcrumb-month" class="font-semibold">{MONTH_LABELS[selectedMonth - 1]}</span>
+        <span data-testid="temporal-breadcrumb-month" class="font-semibold">{breadcrumbMonthLabel}</span>
       {/if}
     </div>
 
-    <!-- Month grid: 4-column CSS grid -->
     <div class="grid grid-cols-4 gap-1.5" data-testid="month-grid">
       {#each months as m (m.month)}
         {@const maxMonthCount = Math.max(...months.map((mo) => mo.count), 1)}
@@ -221,7 +228,6 @@
       {/each}
     </div>
   {:else}
-    <!-- Year grid: 4-column flex wrap -->
     <div class="flex flex-wrap gap-1.5" data-testid="year-grid">
       {#each years as y (y.year)}
         <button

@@ -63,6 +63,9 @@ export class PersonTable {
   @Column({ type: 'date', nullable: true })
   birthDate!: Timestamp | null;
 
+  @Column({ type: 'text', nullable: true })
+  description!: string | null;
+
   @ForeignKeyColumn(() => AssetFaceTable, { onDelete: 'SET NULL', nullable: true })
   faceAssetId!: string | null;
 

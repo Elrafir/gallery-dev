@@ -34,9 +34,9 @@
   import MediaTypeFilter from './media-type-filter.svelte';
   import FavoritesFilter from './favorites-filter.svelte';
   import AlbumsFilter from './albums-filter.svelte';
+  import { t } from 'svelte-i18n';
 
   interface Props {
-    config: FilterPanelConfig;
     timeBuckets: Array<{ timeBucket: string; count: number }>;
     filters?: FilterState;
     personNames?: Map<string, string>;
@@ -335,24 +335,6 @@
     media: mdiImage,
     favorites: mdiHeart,
     albums: mdiImageAlbum,
-  };
-
-  const sectionTitles: Record<string, string> = {
-    timeline: 'Timeline',
-    people: 'People',
-    location: 'Location',
-    camera: 'Camera',
-    tags: 'Tags',
-    rating: 'Rating',
-    media: 'Media Type',
-    favorites: 'Favorites',
-    albums: 'Albums',
-  };
-
-  const sectionToggleLabels: Record<string, string> = {
-    ...sectionTitles,
-    // Avoid colliding with asset action buttons labeled "Favorite" in browser automation.
-    favorites: 'Starred filter section',
   };
 
   type StoredSectionSet = string[] | { selected?: string[]; known?: string[] };
@@ -674,6 +656,7 @@
         type="button"
         class="relative flex h-6 w-6 items-center justify-center rounded-md text-gray-500 hover:bg-subtle dark:text-gray-400"
         onclick={() => (collapsed = false)}
+        title={$t(`filter_section_${section}`)}
       >
         <Icon icon={sectionIcons[section]} size="16" />
         {#if hasActiveFilter(section)}
@@ -692,7 +675,7 @@
     <div
       class="sticky top-0 z-5 flex items-center justify-between border-b border-gray-200 bg-light px-4 py-2.5 dark:border-gray-700"
     >
-      <span class="text-sm font-medium">Filters</span>
+      <span class="text-sm font-medium">{$t('filter_discovery_panel_title')}</span>
       <button
         type="button"
         class="flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-subtle dark:text-gray-400"
@@ -716,9 +699,9 @@
               ? 'bg-primary/10 text-primary'
               : 'text-gray-400 hover:bg-subtle hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400'}"
             onclick={() => toggleSection(section)}
-            aria-label={sectionToggleLabels[section]}
+            aria-label={section === 'favorites' ? $t('filter_favorites_section_aria') : $t(`filter_section_${section}`)}
             aria-pressed={visibleSections.has(section)}
-            title={sectionTitles[section]}
+            title={$t(`filter_section_${section}`)}
             data-testid="section-toggle-{section}"
           >
             <Icon icon={sectionIcons[section]} size="16" />
@@ -737,7 +720,7 @@
       {#each config.sections as section (section)}
         {#if visibleSections.has(section)}
           <FilterSection
-            title={sectionTitles[section]}
+            title={$t(`filter_section_${section}`)}
             testId={section}
             refetching={isRefetching && section !== 'timeline'}
             expanded={expandedSections.has(section)}
@@ -771,7 +754,7 @@
                 selectedIds={filters.personIds}
                 selectedNames={personNames}
                 onSelectionChange={handlePeopleChange}
-                emptyText={hasUnnamedPeople ? 'Name people to use this filter' : undefined}
+                emptyText={hasUnnamedPeople ? $t('filter_name_people_hint') : undefined}
               />
             {:else if section === 'location'}
               <LocationFilter

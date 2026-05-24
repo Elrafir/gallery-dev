@@ -14,7 +14,6 @@
   import { locale } from '$lib/stores/preferences.store';
   import { createUrl, getAssetMediaUrl, getPeopleThumbnailUrl } from '$lib/utils';
   import { delay, getDimensions } from '$lib/utils/asset-utils';
-  import { zoomImageToBase64 } from '$lib/utils/people-utils';
   import { getParentPath } from '$lib/utils/tree-utils';
   import { getByteUnitString } from '$lib/utils/byte-units';
   import { getMapProviderLinks } from '$lib/utils/exif-utils';
@@ -60,6 +59,8 @@
   let isSpaceMember = $derived(!!effectiveSpaceId);
 
   let isOwner = $derived(authManager.authenticated && authManager.user.id === asset.ownerId);
+  let isAlbumViewer = $derived(!!currentAlbum && !isOwner && !isSpaceMember);
+  let canViewPeople = $derived(isOwner || isSpaceMember || isAlbumViewer);
   let people = $derived(asset.people || []);
   let unassignedFaces = $derived(asset.unassignedFaces || []);
   let showingHiddenPeople = $state(false);
@@ -119,7 +120,7 @@
 
   type AssetPerson = NonNullable<AssetResponseDto['people']>[number];
 
-  const getPersonFallbackThumbnailUrl = (person: AssetPerson) =>
+  const getPersonThumbnailUrl = (person: AssetPerson) =>
     effectiveSpaceId && person.spacePersonId
       ? createUrl(`/shared-spaces/${effectiveSpaceId}/people/${person.spacePersonId}/thumbnail`, {
           updatedAt: person.updatedAt,
@@ -172,7 +173,7 @@
     <DetailPanelDescription {asset} {isOwner} />
     <DetailPanelRating {asset} {isOwner} />
 
-    {#if !authManager.isSharedLink && (isOwner || isSpaceMember)}
+    {#if !authManager.isSharedLink && canViewPeople}
       <section class="px-4 pt-4 text-sm">
         <div class="flex h-10 w-full items-center justify-between">
           <Text size="small" color="muted">{$t('people')}</Text>
@@ -218,7 +219,7 @@
           {#each people as person, index (person.id)}
             {#if showingHiddenPeople || !person.isHidden}
               {@const isHighlighted = people[index].faces.some((f) => $boundingBoxesArray.some((b) => b.id === f.id))}
-              {@const fallbackThumbnailUrl = getPersonFallbackThumbnailUrl(person)}
+              {@const personThumbnailUrl = getPersonThumbnailUrl(person)}
               <a
                 class="group w-22 outline-none"
                 href={effectiveSpaceId && person.spacePersonId
@@ -230,48 +231,18 @@
                 onmouseleave={() => ($boundingBoxesArray = [])}
               >
                 <div class="relative">
-                  {#if person.faces[0]}
-                    {#await zoomImageToBase64(person.faces[0], asset.id, asset.type, assetViewerManager.imgRef)}
-                      <ImageThumbnail
-                        curve
-                        shadow
-                        url={fallbackThumbnailUrl}
-                        altText={person.name}
-                        title={person.name}
-                        widthStyle="90px"
-                        heightStyle="90px"
-                        hidden={person.isHidden}
-                        highlighted={isHighlighted}
-                        class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
-                      />
-                    {:then faceThumbnailUrl}
-                      <ImageThumbnail
-                        curve
-                        shadow
-                        url={faceThumbnailUrl ?? fallbackThumbnailUrl}
-                        altText={person.name}
-                        title={person.name}
-                        widthStyle="90px"
-                        heightStyle="90px"
-                        hidden={person.isHidden}
-                        highlighted={isHighlighted}
-                        class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
-                      />
-                    {/await}
-                  {:else}
-                    <ImageThumbnail
-                      curve
-                      shadow
-                      url={fallbackThumbnailUrl}
-                      altText={person.name}
-                      title={person.name}
-                      widthStyle="90px"
-                      heightStyle="90px"
-                      hidden={person.isHidden}
-                      highlighted={isHighlighted}
-                      class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
-                    />
-                  {/if}
+                  <ImageThumbnail
+                    curve
+                    shadow
+                    url={personThumbnailUrl}
+                    altText={person.name}
+                    title={person.name}
+                    widthStyle="90px"
+                    heightStyle="90px"
+                    hidden={person.isHidden}
+                    highlighted={isHighlighted}
+                    class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
+                  />
                 </div>
                 <p class="mt-1 truncate font-medium" title={person.name}>{person.name}</p>
                 {#if person.birthDate}

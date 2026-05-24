@@ -1604,11 +1604,9 @@ export class FaceIdentityRepository {
         OR identity_counts."visibleAssetCount" >= ${input.minimumFaceCount}
       ORDER BY
         COALESCE(identity_favorites."isFavorite", false) DESC,
+        identity_counts."visibleAssetCount" DESC,
         NULLIF(BTRIM(best_profiles.name), '') IS NULL,
         lower(NULLIF(BTRIM(best_profiles.name), '')) ASC NULLS LAST,
-        CASE
-          WHEN NULLIF(BTRIM(best_profiles.name), '') IS NULL THEN identity_counts."visibleAssetCount"
-        END DESC NULLS LAST,
         identity_counts."identityId"
       LIMIT ${input.limit}
       OFFSET ${input.offset}

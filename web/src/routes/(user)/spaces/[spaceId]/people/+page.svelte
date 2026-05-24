@@ -14,6 +14,7 @@
   import { authManager } from '$lib/managers/auth-manager.svelte';
   import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte';
   import PersonEditBirthDateModal from '$lib/modals/PersonEditBirthDateModal.svelte';
+  import PersonEditDescriptionModal from '$lib/modals/PersonEditDescriptionModal.svelte';
   import { locale } from '$lib/stores/preferences.store';
   import { createUrl, handlePromiseError } from '$lib/utils';
   import { handleError } from '$lib/utils/handle-error';
@@ -37,6 +38,7 @@
     mdiAccountGroupOutline,
     mdiAccountMultipleCheckOutline,
     mdiCalendarEditOutline,
+    mdiTextBoxOutline,
     mdiArrowLeft,
     mdiDotsVertical,
     mdiEyeOffOutline,
@@ -399,6 +401,29 @@
     });
   }
 
+  async function openDescriptionModal(selectedPerson: SharedSpacePersonResponseDto) {
+    const person = people.find(({ id }) => id === selectedPerson.id) ?? selectedPerson;
+    await modalManager.show(PersonEditDescriptionModal, {
+      description: person.description,
+      onSave: async (description) => {
+        try {
+          const updatedPerson = await updateSpacePerson({
+            id: space.id,
+            personId: person.id,
+            sharedSpacePersonUpdateDto: { description },
+          });
+          const savedPerson = { ...person, ...updatedPerson, description: updatedPerson.description ?? description };
+          people = people.map((currentPerson) => (currentPerson.id === person.id ? savedPerson : currentPerson));
+          toastManager.success($t('person_description_saved'));
+          return true;
+        } catch (error) {
+          handleError(error, $t('errors.unable_to_save_person_description'));
+          return false;
+        }
+      },
+    });
+  }
+
   async function handleHide(person: SharedSpacePersonResponseDto) {
     try {
       await updateSpacePerson({
@@ -506,6 +531,11 @@
               onClick={() => void openBirthDateModal(person)}
               icon={mdiCalendarEditOutline}
               text={$t('set_date_of_birth')}
+            />
+            <MenuOption
+              onClick={() => void openDescriptionModal(person)}
+              icon={mdiTextBoxOutline}
+              text={$t('edit_person_description')}
             />
             <MenuOption onClick={() => handleHide(person)} icon={mdiEyeOffOutline} text={$t('hide_person')} />
             <MenuOption

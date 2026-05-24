@@ -255,6 +255,7 @@ export type Person = {
   name: string;
   type: string;
   birthDate: Date | null;
+  description: string | null;
   color: string | null;
   faceAssetId: string | null;
   isHidden: boolean;
@@ -378,6 +379,7 @@ export type SharedSpacePerson = {
   isHidden: boolean;
   type: string;
   birthDate: string | null;
+  description: string | null;
   faceCount: number;
   assetCount: number;
   createdAt: Date;

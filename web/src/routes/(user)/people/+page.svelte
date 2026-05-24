@@ -24,7 +24,7 @@
   import { getGlobalPersonHref, getGlobalPersonThumbnailUrl } from '$lib/utils/global-person-route';
   import { handleError } from '$lib/utils/handle-error';
   import { clearQueryParam } from '$lib/utils/navigation';
-  import { sortPeopleForManagement } from '$lib/utils/people-utils';
+  import { dedupePeopleById, sortPeopleForManagement } from '$lib/utils/people-utils';
   import { formatPeopleHeaderDescription } from '$lib/utils/people-statistics';
   import {
     getAllPeople,
@@ -35,7 +35,7 @@
     updateSpacePerson,
     type PersonResponseDto,
   } from '@immich/sdk';
-  import { Button, Icon, modalManager, toastManager } from '@immich/ui';
+  import { Button, Checkbox, Icon, Label, modalManager, toastManager } from '@immich/ui';
   import {
     mdiAccountMultipleCheckOutline,
     mdiAccountOff,
@@ -58,6 +58,8 @@
   let { data }: Props = $props();
 
   let selectHidden = $state(false);
+  let showHumansOnList = $state(true);
+  let showPetsOnList = $state(true);
   let searchName = $state('');
   let newName = $state('');
   let currentPage = $state(1);
@@ -69,6 +71,7 @@
   let searchedPeopleLocal: PersonResponseDto[] = $state([]);
   let innerHeight = $state(0);
   let searchPeopleElement = $state<ReturnType<typeof SearchPeople>>();
+  let people = $state<PersonResponseDto[]>(data.people.people);
 
   onMount(() => {
     const getSearchedPeople = $page.url.searchParams.get(QueryParameter.SEARCHED_PEOPLE);
@@ -104,7 +107,7 @@
               }),
             ).then((pages) => {
               for (const page of pages) {
-                people = people.concat(page.people);
+                people = dedupePeopleById(people.concat(page.people));
               }
               currentPage = startingPage + pagesToLoad - 1;
               nextPage = pages.at(-1)?.hasNextPage ? startingPage + pagesToLoad : null;
@@ -129,7 +132,7 @@
         withSharedSpaces: true,
         page: nextPage,
       });
-      people = people.concat(newPeople);
+      people = dedupePeopleById(people.concat(newPeople));
       if (nextPage !== null) {
         currentPage = nextPage;
       }
@@ -241,8 +244,6 @@
     await clearQueryParam(QueryParameter.SEARCHED_PEOPLE, $page.url);
   };
 
-  let people = $derived(data.people.people);
-
   let visiblePeople = $derived(people.filter((people) => !people.isHidden));
   let overviewStatistics = $derived(data.peopleStatistics);
   let peopleCountStatistics = $derived(overviewStatistics ?? data.people);
@@ -270,7 +271,12 @@
   );
   let globalFaceStatisticsCacheKey = $derived(`user:${authManager.user.id}:global:people:withSharedSpaces=true`);
   const loadGlobalFaceStatistics = () => getPeopleFaceStatistics({ withSharedSpaces: true });
-  let showPeople = $derived(sortPeopleForManagement(searchName ? searchedPeopleLocal : visiblePeople));
+  let sortedPeopleForGrid = $derived(sortPeopleForManagement(searchName ? searchedPeopleLocal : visiblePeople));
+  let showPeople = $derived(
+    dedupePeopleById(sortedPeopleForGrid).filter((person) =>
+      person.type === 'pet' ? showPetsOnList : showHumansOnList,
+    ),
+  );
 
   const getPersonHref = (person: PersonResponseDto) => getGlobalPersonHref(person, Route.people());
 
@@ -424,67 +430,104 @@
 
   {#snippet buttons()}
     {#if people.length > 0}
-      <div class="flex gap-2 items-center justify-center">
-        <div class="hidden sm:block">
-          <div class="w-40 lg:w-80 h-10">
-            <SearchPeople
-              bind:this={searchPeopleElement}
-              type="searchBar"
-              placeholder={$t('search_people')}
-              onReset={onResetSearchBar}
-              onSearch={handleSearch}
-              withSharedSpaces={true}
-              bind:searchName
-              bind:searchedPeopleLocal
-            />
-          </div>
+      <div class="flex max-w-full flex-wrap items-center justify-end gap-2">
+        <div class="hidden h-10 w-40 shrink-0 sm:block lg:w-80">
+          <SearchPeople
+            bind:this={searchPeopleElement}
+            type="searchBar"
+            placeholder={$t('search_people')}
+            onReset={onResetSearchBar}
+            onSearch={handleSearch}
+            withSharedSpaces={true}
+            bind:searchName
+            bind:searchedPeopleLocal
+          />
         </div>
         <Button
           leadingIcon={mdiEyeOutline}
           onclick={() => (selectHidden = !selectHidden)}
           size="small"
           variant="ghost"
-          color="secondary">{$t('show_and_hide_people')}</Button
+          color="secondary"
+          class="shrink-0">{$t('show_and_hide_people')}</Button
         >
+        <div
+          class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-gray-200 px-2 py-1 dark:border-gray-700"
+          role="group"
+          aria-label={$t('people_list_type_filter_hint')}
+        >
+          <div class="flex items-center gap-1.5">
+            <Checkbox id="people-list-filter-humans" size="tiny" bind:checked={showHumansOnList} />
+            <Label
+              for="people-list-filter-humans"
+              label={$t('people_list_show_humans')}
+              class="cursor-pointer text-sm whitespace-nowrap"
+            />
+          </div>
+          <div class="flex items-center gap-1.5">
+            <Checkbox id="people-list-filter-pets" size="tiny" bind:checked={showPetsOnList} />
+            <Label
+              for="people-list-filter-pets"
+              label={$t('people_list_show_pets')}
+              class="cursor-pointer text-sm whitespace-nowrap"
+            />
+          </div>
+        </div>
       </div>
     {/if}
   {/snippet}
 
   {#if countVisiblePeople > 0 && (!searchName || searchedPeopleLocal.length > 0)}
-    <PeopleManagementGrid
-      people={showPeople}
-      {toManagedPerson}
-      hasNextPage={!!nextPage && !searchName}
-      {loadNextPage}
-      canEditNames={canEditName}
-      canShowActions={isPersonalPrimary}
-      onNameSubmit={onNameChangeSubmit}
-    >
-      {#snippet actions(person)}
-        {@const Actions = getPersonActions($t, person)}
-        <ButtonContextMenu
-          buttonClass="icon-white-drop-shadow"
-          color="secondary"
-          size="medium"
-          variant="filled"
-          icon={mdiDotsVertical}
-          title={$t('show_person_options')}
-        >
-          <MenuOption onClick={() => handleHidePerson(person)} icon={mdiEyeOffOutline} text={$t('hide_person')} />
-          <ActionMenuItem action={Actions.SetDateOfBirth} />
-          <MenuOption
-            onClick={() => handleMergePeople(person)}
-            icon={mdiAccountMultipleCheckOutline}
-            text={$t('merge_people')}
-          />
-          <MenuOption
-            onClick={() => handleToggleFavorite(person)}
-            icon={person.isFavorite ? mdiHeartMinusOutline : mdiHeartOutline}
-            text={person.isFavorite ? $t('unfavorite') : $t('to_favorite')}
-          />
-        </ButtonContextMenu>
-      {/snippet}
-    </PeopleManagementGrid>
+    {#if !showHumansOnList && !showPetsOnList}
+      <div
+        class="flex min-h-[calc(66vh-11rem)] w-full place-content-center items-center px-4 text-center dark:text-white"
+      >
+        <p class="max-w-lg text-lg text-gray-600 dark:text-gray-300">{$t('people_list_no_match_type_filter')}</p>
+      </div>
+    {:else if showPeople.length > 0}
+      <PeopleManagementGrid
+        people={showPeople}
+        {toManagedPerson}
+        hasNextPage={!!nextPage && !searchName}
+        {loadNextPage}
+        canEditNames={canEditName}
+        canShowActions={isPersonalPrimary}
+        onNameSubmit={onNameChangeSubmit}
+      >
+        {#snippet actions(person)}
+          {@const Actions = getPersonActions($t, person)}
+          <ButtonContextMenu
+            buttonClass="icon-white-drop-shadow"
+            color="secondary"
+            size="medium"
+            variant="filled"
+            icon={mdiDotsVertical}
+            title={$t('show_person_options')}
+          >
+            <MenuOption onClick={() => handleHidePerson(person)} icon={mdiEyeOffOutline} text={$t('hide_person')} />
+            <ActionMenuItem action={Actions.SetDateOfBirth} />
+            <ActionMenuItem action={Actions.EditDescription} />
+            <ActionMenuItem action={Actions.EditType} />
+            <MenuOption
+              onClick={() => handleMergePeople(person)}
+              icon={mdiAccountMultipleCheckOutline}
+              text={$t('merge_people')}
+            />
+            <MenuOption
+              onClick={() => handleToggleFavorite(person)}
+              icon={person.isFavorite ? mdiHeartMinusOutline : mdiHeartOutline}
+              text={person.isFavorite ? $t('unfavorite') : $t('to_favorite')}
+            />
+          </ButtonContextMenu>
+        {/snippet}
+      </PeopleManagementGrid>
+    {:else}
+      <div
+        class="flex min-h-[calc(66vh-11rem)] w-full place-content-center items-center px-4 text-center dark:text-white"
+      >
+        <p class="max-w-lg text-lg text-gray-600 dark:text-gray-300">{$t('people_list_no_match_type_filter')}</p>
+      </div>
+    {/if}
   {:else}
     <div class="flex min-h-[calc(66vh-11rem)] w-full place-content-center items-center dark:text-white">
       <div class="flex flex-col content-center items-center text-center">

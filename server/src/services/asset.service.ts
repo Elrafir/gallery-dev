@@ -140,7 +140,12 @@ export class AssetService extends BaseService {
         data.people = (data.people || []).filter((p) => p.spacePersonId && !spacePersonMap.get(p.id)?.isHidden);
         data.resolvedSpaceId = spaceForAsset.spaceId;
       } else {
-        data.people = [];
+        const albumAccess = await this.accessRepository.asset.checkAlbumAccess(auth.user.id, new Set([id]));
+        if (albumAccess.has(id)) {
+          data.people = (data.people || []).filter((person) => !person.isHidden);
+        } else {
+          data.people = [];
+        }
       }
     }
 

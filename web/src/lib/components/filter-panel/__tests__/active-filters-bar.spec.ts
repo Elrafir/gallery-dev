@@ -173,7 +173,7 @@ describe('ActiveFiltersBar', () => {
 
     const chips = getAllByTestId('active-chip');
     expect(chips).toHaveLength(1);
-    expect(chips[0].textContent).toContain('Has no album');
+    expect(chips[0].textContent).toContain('Not in any album');
   });
 
   it('should remove has-no-album filter on chip close', async () => {

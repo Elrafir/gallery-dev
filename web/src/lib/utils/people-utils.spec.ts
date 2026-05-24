@@ -1,6 +1,11 @@
 import type { Faces } from '$lib/stores/people.store';
 import type { Size } from '$lib/utils/container-utils';
-import { getBoundingBox, sortPeopleForManagement, zoomImageToBase64 } from '$lib/utils/people-utils';
+import {
+  dedupePeopleById,
+  getBoundingBox,
+  sortPeopleForManagement,
+  zoomImageToBase64,
+} from '$lib/utils/people-utils';
 import { AssetTypeEnum } from '@immich/sdk';
 
 const makeFace = (overrides: Partial<Faces> = {}): Faces => ({
@@ -24,7 +29,7 @@ describe('sortPeopleForManagement', () => {
     isHidden?: boolean;
   }) => overrides;
 
-  it('sorts favorites first, named people alphabetically, then unnamed by count descending', () => {
+  it('sorts favorites first, then by asset count descending, then by name', () => {
     const people = [
       p({ id: 'unnamed-low', name: '', numberOfAssets: 1 }),
       p({ id: 'named-z', name: 'Zoe', numberOfAssets: 99 }),
@@ -37,14 +42,14 @@ describe('sortPeopleForManagement', () => {
     expect(sortPeopleForManagement(people).map((person) => person.id)).toEqual([
       'favorite-named',
       'favorite-unnamed-high',
-      'named-a',
       'named-z',
       'unnamed-high',
       'unnamed-low',
+      'named-a',
     ]);
   });
 
-  it('treats whitespace-only names as unnamed and uses assetCount for space people', () => {
+  it('treats whitespace-only names as unnamed and sorts by assetCount before name', () => {
     const people = [
       p({ id: 'space-unnamed-low', name: '   ', assetCount: 2 }),
       p({ id: 'space-named', name: 'anna', assetCount: 1 }),
@@ -52,18 +57,18 @@ describe('sortPeopleForManagement', () => {
     ];
 
     expect(sortPeopleForManagement(people).map((person) => person.id)).toEqual([
-      'space-named',
       'space-unnamed-high',
       'space-unnamed-low',
+      'space-named',
     ]);
   });
 
-  it('uses case-insensitive names, missing counts as zero, and id as final tiebreak', () => {
+  it('uses case-insensitive names as tiebreak and id as final tiebreak', () => {
     const people = [
       p({ id: 'unnamed-b', name: '', numberOfAssets: undefined }),
-      p({ id: 'named-b', name: 'bob' }),
+      p({ id: 'named-b', name: 'bob', numberOfAssets: 5 }),
       p({ id: 'unnamed-a', name: '', numberOfAssets: 0 }),
-      p({ id: 'named-a', name: 'Alice' }),
+      p({ id: 'named-a', name: 'Alice', numberOfAssets: 5 }),
     ];
 
     expect(sortPeopleForManagement(people).map((person) => person.id)).toEqual([

@@ -348,6 +348,12 @@ describe(PersonController.name, () => {
       expect(service.update).toHaveBeenCalledWith(undefined, id, { birthDate: null });
     });
 
+    it('should map an empty description to null', async () => {
+      const id = factory.uuid();
+      await request(ctx.getHttpServer()).put(`/people/${id}`).send({ description: '' });
+      expect(service.update).toHaveBeenCalledWith(undefined, id, { description: null });
+    });
+
     it('should not accept an invalid birth date (false)', async () => {
       const { status, body } = await request(ctx.getHttpServer())
         .put(`/people/${factory.uuid()}`)

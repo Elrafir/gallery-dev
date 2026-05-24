@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from 'svelte-i18n';
   import type { FilterContext } from './filter-panel';
 
   interface Props {

@@ -1,15 +1,19 @@
 import { eventManager } from '$lib/managers/event-manager.svelte';
 import PersonEditBirthDateModal from '$lib/modals/PersonEditBirthDateModal.svelte';
+import PersonEditDescriptionModal from '$lib/modals/PersonEditDescriptionModal.svelte';
+import PersonEditTypeModal from '$lib/modals/PersonEditTypeModal.svelte';
 import { handleError } from '$lib/utils/handle-error';
 import { getFormatter } from '$lib/utils/i18n';
 import { updatePerson, type PersonResponseDto } from '@immich/sdk';
 import { modalManager, toastManager, type ActionItem } from '@immich/ui';
 import {
   mdiCalendarEditOutline,
+  mdiTextBoxOutline,
   mdiEyeOffOutline,
   mdiEyeOutline,
   mdiHeartMinusOutline,
   mdiHeartOutline,
+  mdiPaw,
 } from '@mdi/js';
 import type { MessageFormatter } from 'svelte-i18n';
 
@@ -18,6 +22,19 @@ export const getPersonActions = ($t: MessageFormatter, person: PersonResponseDto
     title: $t('set_date_of_birth'),
     icon: mdiCalendarEditOutline,
     onAction: () => modalManager.show(PersonEditBirthDateModal, { person }),
+  };
+
+  const EditDescription: ActionItem = {
+    title: $t('edit_person_description'),
+    icon: mdiTextBoxOutline,
+    onAction: () => modalManager.show(PersonEditDescriptionModal, { person }),
+  };
+
+  const EditType: ActionItem = {
+    title: $t('edit_person_type'),
+    icon: mdiPaw,
+    $if: () => !person.primaryProfile || person.primaryProfile.type === 'user-person',
+    onAction: () => modalManager.show(PersonEditTypeModal, { person }),
   };
 
   const Favorite: ActionItem = {
@@ -48,7 +65,7 @@ export const getPersonActions = ($t: MessageFormatter, person: PersonResponseDto
     onAction: () => handleShowPerson(person),
   };
 
-  return { SetDateOfBirth, Favorite, Unfavorite, HidePerson, ShowPerson };
+  return { SetDateOfBirth, EditDescription, EditType, Favorite, Unfavorite, HidePerson, ShowPerson };
 };
 
 const handleFavoritePerson = async (person: { id: string }) => {
@@ -109,5 +126,38 @@ export const handleUpdatePersonBirthDate = async (person: PersonResponseDto, bir
     return true;
   } catch (error) {
     handleError(error, $t('errors.unable_to_save_date_of_birth'));
+  }
+};
+
+export const handleUpdatePersonType = async (
+  person: PersonResponseDto,
+  type: 'person' | 'pet',
+  species: string | null,
+) => {
+  const $t = await getFormatter();
+
+  try {
+    const response = await updatePerson({
+      id: person.id,
+      personUpdateDto: { type, species },
+    });
+    toastManager.primary($t('person_type_saved'));
+    eventManager.emit('PersonUpdate', response);
+    return true;
+  } catch (error) {
+    handleError(error, $t('errors.unable_to_save_person_type'));
+  }
+};
+
+export const handleUpdatePersonDescription = async (person: PersonResponseDto, description: string) => {
+  const $t = await getFormatter();
+
+  try {
+    const response = await updatePerson({ id: person.id, personUpdateDto: { description } });
+    toastManager.primary($t('person_description_saved'));
+    eventManager.emit('PersonUpdate', response);
+    return true;
+  } catch (error) {
+    handleError(error, $t('errors.unable_to_save_person_description'));
   }
 };

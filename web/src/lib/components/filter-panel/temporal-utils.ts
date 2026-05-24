@@ -28,7 +28,11 @@ export function aggregateYears(buckets: Array<{ timeBucket: string; count: numbe
     }));
 }
 
-export function getMonthsForYear(buckets: Array<{ timeBucket: string; count: number }>, year: number): MonthData[] {
+export function getMonthsForYear(
+  buckets: Array<{ timeBucket: string; count: number }>,
+  year: number,
+  locale?: string,
+): MonthData[] {
   const monthMap = new Map<number, number>();
   for (const b of buckets) {
     const d = new Date(b.timeBucket);
@@ -36,9 +40,19 @@ export function getMonthsForYear(buckets: Array<{ timeBucket: string; count: num
       monthMap.set(d.getUTCMonth() + 1, b.count);
     }
   }
-  return MONTH_LABELS.map((label, i) => ({
-    month: i + 1,
-    label,
-    count: monthMap.get(i + 1) ?? 0,
-  }));
+  const formatter =
+    locale && locale !== 'en'
+      ? new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' })
+      : null;
+  return MONTH_LABELS.map((label, i) => {
+    const month = i + 1;
+    const shortLabel = formatter
+      ? formatter.format(new Date(Date.UTC(2000, month - 1, 1)))
+      : label;
+    return {
+      month,
+      label: shortLabel,
+      count: monthMap.get(month) ?? 0,
+    };
+  });
 }

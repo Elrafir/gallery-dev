@@ -20,9 +20,16 @@ const PersonCreateSchema = z
       .optional()
       .refine((val) => (val ? new Date(val) <= new Date() : true), { error: 'Birth date cannot be in the future' })
       .describe('Person date of birth'),
+    description: emptyStringToNull(z.string().max(2000).nullable())
+      .optional()
+      .describe('Extended notes about this person'),
     isHidden: z.boolean().optional().describe('Person visibility (hidden)'),
     isFavorite: z.boolean().optional().describe('Mark as favorite'),
     color: emptyStringToNull(hexColor.nullable()).optional().describe('Person color (hex)'),
+    type: z.enum(['person', 'pet']).optional().describe('Entity type (person or pet)'),
+    species: emptyStringToNull(z.string().max(100).nullable())
+      .optional()
+      .describe('Pet species (e.g. dog, cat); only used when type is pet'),
   })
   .meta({ id: 'PersonCreateDto' });
 
@@ -103,6 +110,7 @@ const PersonResponseSchema = z
     name: z.string().describe('Person name'),
     // TODO: use `isoDateToDate` when using `ZodSerializerDto` on the controllers.
     birthDate: z.string().meta({ format: 'date' }).describe('Person date of birth').nullable(),
+    description: z.string().nullable().optional().describe('Extended notes about this person'),
     thumbnailPath: z.string().describe('Thumbnail path'),
     isHidden: z.boolean().describe('Is hidden'),
     // TODO: use `isoDatetimeToDate` when using `ZodSerializerDto` on the controllers.
@@ -289,6 +297,7 @@ export function mapPerson(person: MaybeDehydrated<Person>): PersonResponseDto {
     id: person.id,
     name: person.name,
     birthDate: asBirthDateString(person.birthDate),
+    description: person.description ?? null,
     thumbnailPath: person.thumbnailPath,
     isHidden: person.isHidden,
     isFavorite: person.isFavorite,

@@ -1179,6 +1179,8 @@ export type PersonResponseDto = {
     birthDate: string | null;
     /** Person color (hex) */
     color?: string;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Scoped identity filter token */
     filterId?: string;
     /** Person ID */
@@ -1514,18 +1516,26 @@ export type PersonCreateDto = {
     birthDate?: string | null;
     /** Person color (hex) */
     color?: string | null;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Mark as favorite */
     isFavorite?: boolean;
     /** Person visibility (hidden) */
     isHidden?: boolean;
     /** Person name */
     name?: string;
+    /** Pet species (e.g. dog, cat); only used when type is pet */
+    species?: string | null;
+    /** Entity type (person or pet) */
+    type?: "person" | "pet";
 };
 export type PeopleUpdateItem = {
     /** Person date of birth */
     birthDate?: string | null;
     /** Person color (hex) */
     color?: string | null;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Asset ID used for feature face thumbnail */
     featureFaceAssetId?: string;
     /** Person ID */
@@ -1584,6 +1594,8 @@ export type PersonUpdateDto = {
     birthDate?: string | null;
     /** Person color (hex) */
     color?: string | null;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Asset ID used for feature face thumbnail */
     featureFaceAssetId?: string;
     /** Mark as favorite */
@@ -1592,6 +1604,10 @@ export type PersonUpdateDto = {
     isHidden?: boolean;
     /** Person name */
     name?: string;
+    /** Pet species (e.g. dog, cat); only used when type is pet */
+    species?: string | null;
+    /** Entity type (person or pet) */
+    type?: "person" | "pet";
 };
 export type PersonFaceResponseDto = {
     /** Asset ID containing the face */
@@ -2711,6 +2727,8 @@ export type SharedSpacePersonResponseDto = {
     assetCount: number;
     /** Person date of birth */
     birthDate?: string | null;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Creation date */
     createdAt: string;
     /** Number of faces assigned to this person */
@@ -2745,6 +2763,8 @@ export type SharedSpacePeopleStatisticsResponseDto = {
 export type SharedSpacePersonUpdateDto = {
     /** Person date of birth */
     birthDate?: string | null;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Person visibility (hidden) */
     isHidden?: boolean;
     /** Person name */

@@ -398,19 +398,28 @@ export class PersonService extends BaseService {
     }
 
     const isShared = await this.accessRepository.person.checkSharedSpaceAccess(auth.user.id, ids);
-    if (!isShared.has(id)) {
+    if (isShared.has(id)) {
+      return;
+    }
+
+    const isAlbum = await this.accessRepository.person.checkAlbumAccess(auth.user.id, ids);
+    if (!isAlbum.has(id)) {
       throw new BadRequestException('Not found or no person.read access');
     }
   }
 
   async create(auth: AuthDto, dto: PersonCreateDto): Promise<PersonResponseDto> {
+    const type = dto.type ?? 'person';
     const person = await this.personRepository.create({
       ownerId: auth.user.id,
       name: dto.name,
       birthDate: dto.birthDate,
+      description: dto.description,
       isHidden: dto.isHidden,
       isFavorite: dto.isFavorite,
       color: dto.color,
+      type,
+      species: type === 'pet' ? (dto.species ?? null) : null,
     });
 
     return mapPerson(person);
@@ -419,7 +428,8 @@ export class PersonService extends BaseService {
   async update(auth: AuthDto, id: string, dto: PersonUpdateDto): Promise<PersonResponseDto> {
     await this.requireAccess({ auth, permission: Permission.PersonUpdate, ids: [id] });
 
-    const { name, birthDate, isHidden, featureFaceAssetId: assetId, isFavorite, color } = dto;
+    const { name, birthDate, description, isHidden, featureFaceAssetId: assetId, isFavorite, color, type, species } =
+      dto;
     // TODO: set by faceId directly
     let faceId: string | undefined = undefined;
     if (assetId) {
@@ -437,9 +447,11 @@ export class PersonService extends BaseService {
       faceAssetId: faceId,
       name,
       birthDate,
+      description,
       isHidden,
       isFavorite,
       color,
+      ...(type !== undefined ? { type, species: type === 'pet' ? (species ?? null) : null } : {}),
     });
 
     if (assetId) {
@@ -468,8 +480,10 @@ export class PersonService extends BaseService {
           isHidden: person.isHidden,
           name: person.name,
           birthDate: person.birthDate,
+          description: person.description,
           featureFaceAssetId: person.featureFaceAssetId,
           isFavorite: person.isFavorite,
+          color: person.color,
         });
         results.push({ id: person.id, success: true });
       } catch (error: Error | any) {

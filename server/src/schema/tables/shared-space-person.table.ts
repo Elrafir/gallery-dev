@@ -62,6 +62,9 @@ export class SharedSpacePersonTable {
   @Column({ type: 'date', nullable: true })
   birthDate!: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  description!: string | null;
+
   @Column({ type: 'integer', default: 0 })
   faceCount!: Generated<number>;
 

@@ -371,7 +371,9 @@
     await updateAssetCount();
   };
 
-  const { SetDateOfBirth, Favorite, Unfavorite, HidePerson, ShowPerson } = $derived(getPersonActions($t, person));
+  const { SetDateOfBirth, EditDescription, EditType, Favorite, Unfavorite, HidePerson, ShowPerson } = $derived(
+    getPersonActions($t, person),
+  );
   const SelectRepresentativeFace: ActionItem = {
     title: $t('select_representative_face'),
     icon: mdiAccountBoxOutline,
@@ -513,6 +515,11 @@
                         })}
                       </p>
                     {/if}
+                    {#if person.description}
+                      <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 whitespace-pre-wrap">
+                        {person.description}
+                      </p>
+                    {/if}
                   </div>
                 </button>
               </div>
@@ -607,6 +614,8 @@
             HidePerson,
             ShowPerson,
             SetDateOfBirth,
+            EditDescription,
+            EditType,
             Merge,
             SeparateFromGroupedPerson,
             Favorite,

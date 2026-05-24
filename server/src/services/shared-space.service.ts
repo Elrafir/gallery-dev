@@ -1118,6 +1118,7 @@ export class SharedSpaceService extends BaseService {
     const sharedPersonUpdates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {
       isHidden: dto.isHidden,
       representativeFaceId: dto.representativeFaceId,
+      description: dto.description,
     };
     if (dto.name !== undefined) {
       sharedPersonUpdates.name = dto.name;
@@ -2525,6 +2526,7 @@ export class SharedSpaceService extends BaseService {
       thumbnailPath: '',
       isHidden: person.isHidden,
       birthDate: asBirthDateString(person.birthDate),
+      description: person.description ?? null,
       representativeFaceId: person.representativeFaceId,
       representativeFaceSource: person.representativeFaceSource ?? 'auto',
       faceCount: person.faceCount,

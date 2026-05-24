@@ -21,33 +21,45 @@ export function comparePeopleForManagement(a: SortablePerson, b: SortablePerson)
     return a.isHidden ? 1 : -1;
   }
 
-  if (!!a.isFavorite !== !!b.isFavorite) {
-    return a.isFavorite ? -1 : 1;
-  }
-
-  const aName = getSortablePersonName(a);
-  const bName = getSortablePersonName(b);
-  const aHasName = aName.length > 0;
-  const bHasName = bName.length > 0;
+  const aHasName = getSortablePersonName(a).length > 0;
+  const bHasName = getSortablePersonName(b).length > 0;
   if (aHasName !== bHasName) {
     return aHasName ? -1 : 1;
   }
 
+  if (!!a.isFavorite !== !!b.isFavorite) {
+    return a.isFavorite ? -1 : 1;
+  }
+
+  const countCompare = getSortablePersonCount(b) - getSortablePersonCount(a);
+  if (countCompare !== 0) {
+    return countCompare;
+  }
+
   if (aHasName && bHasName) {
-    const nameCompare = aName.localeCompare(bName, undefined, { sensitivity: 'base' });
+    const nameCompare = getSortablePersonName(a).localeCompare(getSortablePersonName(b), undefined, {
+      sensitivity: 'base',
+    });
     if (nameCompare !== 0) {
       return nameCompare;
     }
   }
 
-  if (!aHasName && !bHasName) {
-    const countCompare = getSortablePersonCount(b) - getSortablePersonCount(a);
-    if (countCompare !== 0) {
-      return countCompare;
-    }
-  }
-
   return a.id.localeCompare(b.id);
+}
+
+/** Keeps first occurrence when the API or pagination returns the same person id twice. */
+export function dedupePeopleById<T extends { id: string }>(people: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const person of people) {
+    if (seen.has(person.id)) {
+      continue;
+    }
+    seen.add(person.id);
+    result.push(person);
+  }
+  return result;
 }
 
 export function sortPeopleForManagement<T extends SortablePerson>(people: T[]): T[] {

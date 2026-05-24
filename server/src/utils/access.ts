@@ -302,7 +302,16 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
       return access.person.checkFaceOwnerAccess(auth.user.id, ids);
     }
 
-    case Permission.PersonRead:
+    case Permission.PersonRead: {
+      const isOwner = await access.person.checkOwnerAccess(auth.user.id, ids);
+      const isShared = await access.person.checkSharedSpaceAccess(auth.user.id, setDifference(ids, isOwner));
+      const isAlbum = await access.person.checkAlbumAccess(
+        auth.user.id,
+        setDifference(ids, isOwner, isShared),
+      );
+      return setUnion(isOwner, isShared, isAlbum);
+    }
+
     case Permission.PersonUpdate:
     case Permission.PersonDelete:
     case Permission.PersonMerge: {

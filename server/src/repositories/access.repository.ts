@@ -642,6 +642,38 @@ class PersonAccess {
 
   @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
   @ChunkedSet({ paramIndex: 1 })
+  async checkAlbumAccess(userId: string, personIds: Set<string>) {
+    if (personIds.size === 0) {
+      return new Set<string>();
+    }
+
+    return this.db
+      .selectFrom('person')
+      .select('person.id')
+      .where('person.id', 'in', [...personIds])
+      .where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('asset_face')
+            .innerJoin('asset', (join) =>
+              join.onRef('asset.id', '=', 'asset_face.assetId').on('asset.deletedAt', 'is', null),
+            )
+            .innerJoin('album_asset', 'album_asset.assetId', 'asset.id')
+            .innerJoin('album', (join) => join.onRef('album.id', '=', 'album_asset.albumId').on('album.deletedAt', 'is', null))
+            .leftJoin('album_user', 'album_user.albumId', 'album.id')
+            .leftJoin('user', (join) => join.onRef('user.id', '=', 'album_user.userId').on('user.deletedAt', 'is', null))
+            .whereRef('asset_face.personId', '=', 'person.id')
+            .where('asset_face.deletedAt', 'is', null)
+            .where('asset_face.isVisible', 'is', true)
+            .where((eb) => eb.or([eb('album.ownerId', '=', userId), eb('user.id', '=', userId)])),
+        ),
+      )
+      .execute()
+      .then((persons) => new Set(persons.map((person) => person.id)));
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
   async checkFaceOwnerAccess(userId: string, assetFaceIds: Set<string>) {
     if (assetFaceIds.size === 0) {
       return new Set<string>();

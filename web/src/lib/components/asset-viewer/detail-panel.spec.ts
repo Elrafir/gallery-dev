@@ -6,10 +6,9 @@ import '@testing-library/jest-dom';
 import { screen, waitFor } from '@testing-library/svelte';
 import DetailPanel from './detail-panel.svelte';
 
-const { getAllAlbumsMock, getAssetInfoMock, zoomImageToBase64Mock } = vi.hoisted(() => ({
+const { getAllAlbumsMock, getAssetInfoMock } = vi.hoisted(() => ({
   getAllAlbumsMock: vi.fn(),
   getAssetInfoMock: vi.fn(),
-  zoomImageToBase64Mock: vi.fn(),
 }));
 
 vi.mock('@immich/sdk', async (importOriginal) => {
@@ -22,10 +21,6 @@ vi.mock('@immich/sdk', async (importOriginal) => {
 });
 
 vi.mock('$app/navigation', () => ({ goto: vi.fn().mockResolvedValue(undefined) }));
-
-vi.mock('$lib/utils/people-utils', () => ({
-  zoomImageToBase64: zoomImageToBase64Mock,
-}));
 
 vi.mock('$lib/managers/auth-manager.svelte', () => ({
   authManager: {
@@ -121,62 +116,61 @@ describe('DetailPanel', () => {
     vi.clearAllMocks();
     getAllAlbumsMock.mockResolvedValue([]);
     getAssetInfoMock.mockResolvedValue(undefined);
-    zoomImageToBase64Mock.mockResolvedValue(null);
   });
 
-  it('uses the detected face crop instead of the shared-space person thumbnail when spacePersonId is present', async () => {
-    zoomImageToBase64Mock.mockResolvedValue('data:image/jpeg;base64,current-face');
+  const makeAssetWithSpacePeople = (people: NonNullable<AssetResponseDto['people']>): AssetResponseDto => ({
+    id: 'asset-1',
+    ownerId: 'owner-1',
+    libraryId: 'library-1',
+    type: AssetTypeEnum.Image,
+    originalPath: '/library/asset-1.jpg',
+    originalFileName: 'asset-1.jpg',
+    originalMimeType: 'image/jpeg',
+    thumbhash: 'thumbhash',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    fileCreatedAt: '2026-01-01T00:00:00.000Z',
+    fileModifiedAt: '2026-01-01T00:00:00.000Z',
+    localDateTime: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    isFavorite: false,
+    isArchived: false,
+    isTrashed: false,
+    duration: null,
+    checksum: 'checksum',
+    isOffline: false,
+    hasMetadata: false,
+    visibility: AssetVisibility.Timeline,
+    width: 1000,
+    height: 800,
+    isEdited: false,
+    people,
+    unassignedFaces: [],
+  });
 
-    const asset: AssetResponseDto = {
-      id: 'asset-1',
-      ownerId: 'owner-1',
-      libraryId: 'library-1',
-      type: AssetTypeEnum.Image,
-      originalPath: '/library/asset-1.jpg',
-      originalFileName: 'asset-1.jpg',
-      originalMimeType: 'image/jpeg',
-      thumbhash: 'thumbhash',
-      createdAt: '2026-01-01T00:00:00.000Z',
-      fileCreatedAt: '2026-01-01T00:00:00.000Z',
-      fileModifiedAt: '2026-01-01T00:00:00.000Z',
-      localDateTime: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-      isFavorite: false,
-      isArchived: false,
-      isTrashed: false,
-      duration: null,
-      checksum: 'checksum',
-      isOffline: false,
-      hasMetadata: false,
-      visibility: AssetVisibility.Timeline,
-      width: 1000,
-      height: 800,
-      isEdited: false,
-      people: [
-        {
-          id: 'global-person-1',
-          name: 'Alice',
-          thumbnailPath: '/ignored.jpg',
-          updatedAt: '2026-01-02T00:00:00.000Z',
-          isHidden: false,
-          birthDate: null,
-          type: 'person',
-          faces: [
-            {
-              id: 'face-1',
-              imageWidth: 1000,
-              imageHeight: 800,
-              boundingBoxX1: 100,
-              boundingBoxY1: 200,
-              boundingBoxX2: 300,
-              boundingBoxY2: 400,
-            },
-          ],
-          spacePersonId: 'space-person-1',
-        },
-      ],
-      unassignedFaces: [],
-    };
+  it('uses the shared-space person thumbnail when spacePersonId is present', async () => {
+    const asset = makeAssetWithSpacePeople([
+      {
+        id: 'global-person-1',
+        name: 'Alice',
+        thumbnailPath: '/ignored.jpg',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        isHidden: false,
+        birthDate: null,
+        type: 'person',
+        faces: [
+          {
+            id: 'face-1',
+            imageWidth: 1000,
+            imageHeight: 800,
+            boundingBoxX1: 100,
+            boundingBoxY1: 200,
+            boundingBoxX2: 300,
+            boundingBoxY2: 400,
+          },
+        ],
+        spacePersonId: 'space-person-1',
+      },
+    ]);
 
     const { container } = renderWithTooltips(DetailPanel, {
       asset,
@@ -185,90 +179,58 @@ describe('DetailPanel', () => {
     });
 
     await waitFor(() =>
-      expect(zoomImageToBase64Mock).toHaveBeenCalledWith(asset.people![0].faces[0], asset.id, asset.type, undefined),
+      expect(
+        container.querySelector('img[src*="/shared-spaces/space-1/people/space-person-1/thumbnail"]'),
+      ).toBeTruthy(),
     );
-
-    const croppedFace = container.querySelector('img[src="data:image/jpeg;base64,current-face"]');
-    expect(croppedFace).toBeTruthy();
-    expect(container.querySelector('img[src*="/shared-spaces/space-1/people/space-person-1/thumbnail"]')).toBeNull();
+    expect(container.querySelector('img[src^="data:image"]')).toBeNull();
   });
 
-  it('renders distinct detected face crops when multiple people resolve to the same space person', async () => {
-    zoomImageToBase64Mock
-      .mockResolvedValueOnce('data:image/jpeg;base64,first-face')
-      .mockResolvedValueOnce('data:image/jpeg;base64,second-face');
-
-    const asset: AssetResponseDto = {
-      id: 'asset-1',
-      ownerId: 'owner-1',
-      libraryId: 'library-1',
-      type: AssetTypeEnum.Image,
-      originalPath: '/library/asset-1.jpg',
-      originalFileName: 'asset-1.jpg',
-      originalMimeType: 'image/jpeg',
-      thumbhash: 'thumbhash',
-      createdAt: '2026-01-01T00:00:00.000Z',
-      fileCreatedAt: '2026-01-01T00:00:00.000Z',
-      fileModifiedAt: '2026-01-01T00:00:00.000Z',
-      localDateTime: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-      isFavorite: false,
-      isArchived: false,
-      isTrashed: false,
-      duration: null,
-      checksum: 'checksum',
-      isOffline: false,
-      hasMetadata: false,
-      visibility: AssetVisibility.Timeline,
-      width: 1000,
-      height: 800,
-      isEdited: false,
-      people: [
-        {
-          id: 'global-person-1',
-          name: 'Alice',
-          thumbnailPath: '/ignored-1.jpg',
-          updatedAt: '2026-01-02T00:00:00.000Z',
-          isHidden: false,
-          birthDate: null,
-          type: 'person',
-          faces: [
-            {
-              id: 'face-1',
-              imageWidth: 1000,
-              imageHeight: 800,
-              boundingBoxX1: 100,
-              boundingBoxY1: 200,
-              boundingBoxX2: 300,
-              boundingBoxY2: 400,
-            },
-          ],
-          spacePersonId: 'space-person-1',
-        },
-        {
-          id: 'global-person-2',
-          name: 'Bob',
-          thumbnailPath: '/ignored-2.jpg',
-          updatedAt: '2026-01-03T00:00:00.000Z',
-          isHidden: false,
-          birthDate: null,
-          type: 'person',
-          faces: [
-            {
-              id: 'face-2',
-              imageWidth: 1000,
-              imageHeight: 800,
-              boundingBoxX1: 500,
-              boundingBoxY1: 200,
-              boundingBoxX2: 700,
-              boundingBoxY2: 400,
-            },
-          ],
-          spacePersonId: 'space-person-1',
-        },
-      ],
-      unassignedFaces: [],
-    };
+  it('renders shared-space person thumbnails for multiple people on the same asset', async () => {
+    const asset = makeAssetWithSpacePeople([
+      {
+        id: 'global-person-1',
+        name: 'Alice',
+        thumbnailPath: '/ignored-1.jpg',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        isHidden: false,
+        birthDate: null,
+        type: 'person',
+        faces: [
+          {
+            id: 'face-1',
+            imageWidth: 1000,
+            imageHeight: 800,
+            boundingBoxX1: 100,
+            boundingBoxY1: 200,
+            boundingBoxX2: 300,
+            boundingBoxY2: 400,
+          },
+        ],
+        spacePersonId: 'space-person-1',
+      },
+      {
+        id: 'global-person-2',
+        name: 'Bob',
+        thumbnailPath: '/ignored-2.jpg',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+        isHidden: false,
+        birthDate: null,
+        type: 'person',
+        faces: [
+          {
+            id: 'face-2',
+            imageWidth: 1000,
+            imageHeight: 800,
+            boundingBoxX1: 500,
+            boundingBoxY1: 200,
+            boundingBoxX2: 700,
+            boundingBoxY2: 400,
+          },
+        ],
+        spacePersonId: 'space-person-2',
+      },
+    ]);
 
     const { container } = renderWithTooltips(DetailPanel, {
       asset,
@@ -276,13 +238,56 @@ describe('DetailPanel', () => {
       spaceId: 'space-1',
     });
 
-    await waitFor(() => expect(zoomImageToBase64Mock).toHaveBeenCalledTimes(2));
-
-    expect(container.querySelector('img[src="data:image/jpeg;base64,first-face"]')).toBeTruthy();
-    expect(container.querySelector('img[src="data:image/jpeg;base64,second-face"]')).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        container.querySelectorAll('img[src*="/shared-spaces/space-1/people/space-person-1/thumbnail"]'),
+      ).toHaveLength(1),
+    );
     expect(
-      container.querySelectorAll('img[src*="/shared-spaces/space-1/people/space-person-1/thumbnail"]'),
-    ).toHaveLength(0);
+      container.querySelectorAll('img[src*="/shared-spaces/space-1/people/space-person-2/thumbnail"]'),
+    ).toHaveLength(1);
+    expect(container.querySelector('img[src^="data:image"]')).toBeNull();
+  });
+
+  it('shows people for a shared album viewer who is not the asset owner', async () => {
+    const asset = makeAssetWithSpacePeople([
+      {
+        id: 'person-1',
+        name: 'Grandma',
+        thumbnailPath: '/people/person-1/thumbnail.jpg',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        isHidden: false,
+        birthDate: null,
+        type: 'person',
+        faces: [
+          {
+            id: 'face-1',
+            imageWidth: 1000,
+            imageHeight: 800,
+            boundingBoxX1: 100,
+            boundingBoxY1: 200,
+            boundingBoxX2: 300,
+            boundingBoxY2: 400,
+          },
+        ],
+      },
+    ]);
+    asset.ownerId = 'album-owner';
+
+    const { container } = renderWithTooltips(DetailPanel, {
+      asset,
+      currentAlbum: {
+        id: 'album-1',
+        ownerId: 'album-owner',
+        albumName: 'Family',
+        albumUsers: [{ userId: 'viewer-1', role: 'viewer' }],
+      } as never,
+    });
+
+    await waitFor(() => expect(screen.getByText('people')).toBeInTheDocument());
+    expect(screen.getByText('Grandma')).toBeInTheDocument();
+    expect(container.querySelector('img[src*="/people/person-1/thumbnail"]')).toBeTruthy();
+    expect(screen.queryByLabelText('tag_people')).not.toBeInTheDocument();
   });
 
   it('renders Google, Apple, and OpenStreetMap links in the image info panel map popup', async () => {

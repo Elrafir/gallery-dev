@@ -442,7 +442,7 @@
       hasMoreActivities = result.length === ACTIVITY_PAGE_SIZE;
       activityOffset = result.length;
     } catch (error) {
-      handleError(error, 'Failed to load activities');
+      handleError(error, $t('errors.failed_to_load_space_activities'));
     }
   }
 
@@ -453,7 +453,7 @@
       hasMoreActivities = result.length === ACTIVITY_PAGE_SIZE;
       activityOffset += result.length;
     } catch (error) {
-      handleError(error, 'Failed to load activities');
+      handleError(error, $t('errors.failed_to_load_space_activities'));
     }
   }
 
@@ -465,7 +465,7 @@
     try {
       spacePeople = await getSpacePeople({ id: space.id, limit: 10 });
     } catch (error) {
-      handleError(error, 'Failed to load space people');
+      handleError(error, $t('errors.failed_to_load_space_people'));
     }
   }
 
@@ -671,7 +671,7 @@
       space = { ...space, faceRecognitionEnabled: updated.faceRecognitionEnabled };
       await loadSpacePeople();
     } catch (error) {
-      handleError(error, 'Failed to update face recognition');
+      handleError(error, $t('errors.failed_to_update_face_recognition'));
     }
   };
 
@@ -684,7 +684,7 @@
       space = { ...space, petsEnabled: updated.petsEnabled };
       await loadSpacePeople();
     } catch (error) {
-      handleError(error, 'Failed to update pets setting');
+      handleError(error, $t('errors.failed_to_update_pets_setting'));
     }
   };
 
@@ -899,7 +899,7 @@
           data-testid="space-members-button"
         />
 
-        <ButtonContextMenu direction="left" align="top-right" color="secondary" title="More" icon={mdiDotsVertical}>
+        <ButtonContextMenu direction="left" align="top-right" color="secondary" title={$t('more_menu')} icon={mdiDotsVertical}>
           <MenuOption
             text={showInTimeline ? $t('spaces_hide_from_timeline') : $t('spaces_show_on_timeline')}
             icon={showInTimeline ? mdiEyeOutline : mdiEyeOffOutline}
@@ -917,7 +917,7 @@
             <MenuOption text={$t('add_all_photos')} icon={mdiImageMultipleOutline} onClick={handleBulkAddAssets} />
           {/if}
           {#if authManager.user?.isAdmin}
-            <MenuOption text="Link Libraries" icon={mdiBookshelf} onClick={handleLinkLibraries} />
+            <MenuOption text={$t('spaces_link_libraries')} icon={mdiBookshelf} onClick={handleLinkLibraries} />
           {/if}
           {#if space.faceRecognitionEnabled}
             <MenuOption
@@ -929,13 +929,13 @@
           {#if isOwner}
             <hr class="my-1 border-gray-300" />
             <MenuOption
-              text={space.faceRecognitionEnabled ? 'Hide people' : 'Show people'}
+              text={space.faceRecognitionEnabled ? $t('spaces_toggle_hide_people') : $t('spaces_toggle_show_people')}
               icon={mdiFaceRecognition}
               onClick={handleToggleFaceRecognition}
             />
             {#if space.faceRecognitionEnabled && space.hasPets}
               <MenuOption
-                text={space.petsEnabled ? 'Hide pets' : 'Show pets'}
+                text={space.petsEnabled ? $t('spaces_toggle_hide_pets') : $t('spaces_toggle_show_pets')}
                 icon={mdiPaw}
                 onClick={handleTogglePets}
               />
@@ -1006,7 +1006,7 @@
       {#if !showSearchResults}
         {#if totalAssetCount === 0 && getActiveFilterCount(filters) > 0}
           <div class="flex flex-1 flex-col items-center justify-center gap-2" data-testid="empty-state-message">
-            <p class="text-sm text-[var(--fg-muted)]">No photos match your filters</p>
+            <p class="text-sm text-[var(--fg-muted)]">{$t('filter_no_filtered_photos')}</p>
             <button
               type="button"
               class="text-sm text-[var(--primary)]"
@@ -1014,7 +1014,7 @@
                 filters = clearFilters(filters);
               }}
             >
-              Clear all filters
+              {$t('filter_clear_all')}
             </button>
           </div>
         {:else}

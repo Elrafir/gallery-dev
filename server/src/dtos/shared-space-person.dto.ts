@@ -28,6 +28,9 @@ const SharedSpacePersonUpdateSchema = z
       .optional()
       .describe('Person date of birth')
       .meta({ format: 'date' }),
+    description: emptyStringToNull(z.string().max(2000).nullable())
+      .optional()
+      .describe('Extended notes about this person'),
     representativeFaceId: z.uuidv4().nullable().optional().describe('Representative face ID'),
   })
   .meta({ id: 'SharedSpacePersonUpdateDto' });
@@ -58,6 +61,7 @@ const SharedSpacePersonResponseSchema = z
     thumbnailPath: z.string().describe('Thumbnail path'),
     isHidden: z.boolean().describe('Is hidden'),
     birthDate: z.string().nullable().optional().describe('Person date of birth').meta({ format: 'date' }),
+    description: z.string().nullable().optional().describe('Extended notes about this person'),
     representativeFaceId: z.string().nullable().optional().describe('Representative face ID'),
     representativeFaceSource: z.enum(['auto', 'manual']).describe('Representative face source'),
     faceCount: z.number().describe('Number of faces assigned to this person'),

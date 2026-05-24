@@ -23,6 +23,7 @@
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
   import { timeBeforeShowLoadingSpinner } from '$lib/constants';
   import PersonEditBirthDateModal from '$lib/modals/PersonEditBirthDateModal.svelte';
+  import PersonEditDescriptionModal from '$lib/modals/PersonEditDescriptionModal.svelte';
   import RepresentativeFacePickerModal from '$lib/modals/RepresentativeFacePickerModal.svelte';
   import { Route } from '$lib/route';
   import { createUrl, getPeopleThumbnailUrl } from '$lib/utils';
@@ -56,6 +57,7 @@
     mdiArrowLeft,
     mdiCalendarEditOutline,
     mdiDotsVertical,
+    mdiTextBoxOutline,
     mdiEyeOffOutline,
   } from '@mdi/js';
   import { DateTime } from 'luxon';
@@ -383,6 +385,27 @@
     });
   }
 
+  async function openDescriptionModal() {
+    await modalManager.show(PersonEditDescriptionModal, {
+      description: person.description,
+      onSave: async (description) => {
+        try {
+          const updatedPerson = await updateSpacePerson({
+            id: space.id,
+            personId: person.id,
+            sharedSpacePersonUpdateDto: { description },
+          });
+          setPerson({ ...person, ...updatedPerson, description: updatedPerson.description ?? description });
+          toastManager.success($t('person_description_saved'));
+          return true;
+        } catch (error) {
+          handleError(error, $t('errors.unable_to_save_person_description'));
+          return false;
+        }
+      },
+    });
+  }
+
   async function openRepresentativeFacePicker() {
     const updated = await modalManager.show(RepresentativeFacePickerModal, {
       title: $t('select_representative_face'),
@@ -464,6 +487,11 @@
           title: $t('set_date_of_birth'),
           icon: mdiCalendarEditOutline,
           onAction: () => void openBirthDateModal(),
+        },
+        {
+          title: $t('edit_person_description'),
+          icon: mdiTextBoxOutline,
+          onAction: () => void openDescriptionModal(),
         },
         {
           title: $t('hide_person'),
@@ -587,6 +615,11 @@
                     ),
                   },
                 })}
+              </p>
+            {/if}
+            {#if person.description}
+              <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 whitespace-pre-wrap">
+                {person.description}
               </p>
             {/if}
           </div>
