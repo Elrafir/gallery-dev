@@ -294,6 +294,7 @@ class SearchFilter {
         location.country == null &&
         location.state == null &&
         location.city == null &&
+        location.savedLocationId == null &&
         camera.make == null &&
         camera.model == null &&
         date.takenBefore == null &&
