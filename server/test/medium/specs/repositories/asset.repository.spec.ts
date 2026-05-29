@@ -780,16 +780,11 @@ describe(AssetRepository.name, () => {
       const { space } = await ctx.newSharedSpace({ createdById: owner.id });
       await ctx.newSharedSpaceMember({ spaceId: space.id, userId: member.id, role: SharedSpaceRole.Viewer });
 
-      // Owner tags their own asset and shares it into the space the member belongs to.
       const asset = await createTimelineAssetWithPeople(ctx, owner.id, []);
       await ctx.newSharedSpaceAsset({ spaceId: space.id, assetId: asset.id, addedById: owner.id });
-      // upsertValue (not create) so tag_closure is populated — the tag-id timeline filter
-      // (withAnyTagId) joins through tag_closure, matching production's tag creation path.
       const tag = await ctx.get(TagRepository).upsertValue({ userId: owner.id, value: 'family' });
       await ctx.newTagAsset({ tagIds: [tag.id], assetIds: [asset.id] });
 
-      // Mirrors what the tags page now sends for a non-admin member (own + shared-space
-      // assets, tag-filtered): the owner's tagged asset must show up.
       const withSpace = await sut.getTimeBucket(
         '2026-03-01',
         {
@@ -802,7 +797,6 @@ describe(AssetRepository.name, () => {
       );
       expect((JSON.parse(withSpace.assets) as TimeBucketAssets).id).toEqual([asset.id]);
 
-      // Without the shared-space scope the member only sees their own assets — none here.
       const ownOnly = await sut.getTimeBucket(
         '2026-03-01',
         { userIds: [member.id], tagIds: [tag.id], visibility: AssetVisibility.Timeline },
