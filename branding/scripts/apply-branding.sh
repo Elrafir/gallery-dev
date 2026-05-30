@@ -175,9 +175,7 @@ patch_app_download_modal() {
   sed -i "s|https://play\.google\.com/store/apps/details?id=app\.alextran\.immich|${PLAY_STORE_URL}|g" "$modal"
   sed -i "s|https://apps\.apple\.com/us/app/immich/id1613945652|${APP_STORE_URL}|g" "$modal"
 
-  # Replace the F-Droid badge (no Noodle F-Droid app) with a GitHub releases
-  # link. Mirrors patch_help_modal's awk block-rewrite: swap the <a id="fdroid-link">
-  # ...</a> anchor for a text link styled like the adjacent Obtainium link.
+  # Replace the F-Droid badge with a GitHub releases link.
   local tmp
   tmp=$(mktemp)
   awk -v url="$REPO_RELEASES_URL" '
@@ -201,10 +199,7 @@ patch_app_download_modal() {
   chmod 644 "$tmp"
   mv "$tmp" "$modal"
 
-  # fdroidBadge import is now unused — drop it to keep the build lint-clean
-  # regardless of where it sits in the destructured import list.
   sed -i "s/, fdroidBadge//g; s/fdroidBadge, //g" "$modal"
-
   echo "  Patched AppDownloadModal.svelte"
 }
 
