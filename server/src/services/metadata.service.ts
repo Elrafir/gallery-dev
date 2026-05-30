@@ -60,8 +60,9 @@ const EXIF_DATE_TAGS: Array<keyof ImmichTags> = [
   // Undocumented, non-standard tag from insta360 in xmp.GPano namespace
   'SourceImageCreateTime' as keyof ImmichTags,
 ];
-
+console.log(`DEBUG: 777!`); // Добавь это
 export function firstDateTime(tags: ImmichTags) {
+  console.log(`DEBUG: 667!`); // Добавь это
   for (const tag of EXIF_DATE_TAGS) {
     const tagValue = tags?.[tag];
 
@@ -99,6 +100,7 @@ export function firstDateTime(tags: ImmichTags) {
  * the caller keeps the existing UTC behaviour.
  */
 const deriveTimeZoneFromUploadedInstant = (exifLocalAsUtc: DateTime, fileCreatedAt: Date): string | null => {
+  console.log(`DEBUG: 668!`); // Добавь это
   if (!exifLocalAsUtc.isValid || Number.isNaN(fileCreatedAt.getTime())) {
     return null;
   }
@@ -190,6 +192,7 @@ export class MetadataService extends BaseService {
   }
 
   private async init() {
+    console.log(`DEBUG: 669!`); // Добавь это
     this.logger.log('Initializing metadata service');
 
     try {
@@ -208,6 +211,7 @@ export class MetadataService extends BaseService {
     asset: { id: string; type: AssetType; ownerId: string; libraryId: string | null },
     exifInfo: Insertable<AssetExifTable>,
   ): Promise<void> {
+    console.log(`DEBUG: 670!`); // Добавь это
     if (!exifInfo.livePhotoCID) {
       return;
     }
@@ -236,6 +240,7 @@ export class MetadataService extends BaseService {
   }
 
   private isOrientationSidewards(orientation: ExifOrientation | number): boolean {
+    console.log(`DEBUG: 671!`); // Добавь это
     return [
       ExifOrientation.MirrorHorizontalRotate270CW,
       ExifOrientation.Rotate90CW,
@@ -246,6 +251,8 @@ export class MetadataService extends BaseService {
 
   @OnJob({ name: JobName.AssetExtractMetadataQueueAll, queue: QueueName.MetadataExtraction })
   async handleQueueMetadataExtraction(job: JobOf<JobName.AssetExtractMetadataQueueAll>): Promise<JobStatus> {
+    console.log(`DEBUG: 672!`); // Добавь это
+    this.logger.log(`DEBUG: 4!`); // Добавь это
     const { force } = job;
 
     let queue: { name: JobName.AssetExtractMetadata; data: { id: string } }[] = [];
@@ -275,6 +282,7 @@ export class MetadataService extends BaseService {
 
     const { localPath: localOriginal, cleanup: cleanupOriginal } = await this.ensureLocalFile(asset.originalPath);
     try {
+      this.logger.log(`DEBUG: 2!`); // Добавь это
       // Download sidecar to temp if it's an S3 path
       const { sidecarFile } = getAssetFiles(asset.files);
       let localSidecar: { localPath: string; cleanup: () => Promise<void> } | undefined;
@@ -295,16 +303,26 @@ export class MetadataService extends BaseService {
         let geo: ReverseGeocodeResult = { country: null, state: null, city: null },
           latitude: number | null = null,
           longitude: number | null = null;
-        if (this.hasGeo(exifTags)) {
-          latitude = Number(exifTags.GPSLatitude);
-          longitude = Number(exifTags.GPSLongitude);
-          if (reverseGeocoding.enabled) {
-            geo = await this.mapRepository.reverseGeocode({ latitude, longitude });
+          if (this.hasGeo(exifTags)) {
+            this.logger.log(`DEBUG: В файле ЕСТЬ GPS-тегов!`); // Добавь это
+            latitude = Number(exifTags.GPSLatitude);
+            longitude = Number(exifTags.GPSLongitude);
+            
+            this.logger.log(`DEBUG: Гео-теги найдены: ${latitude}, ${longitude}`); // Добавь это
+  
+            if (reverseGeocoding.enabled) {
+              this.logger.log(`DEBUG: Вызываю MapRepository.reverseGeocode...`); // Добавь это
+              geo = await this.mapRepository.reverseGeocode({ latitude, longitude });
+              this.logger.log(`DEBUG: Результат от MapRepository: ${JSON.stringify(geo)}`); // Добавь это
+            } else {
+              this.logger.log(`DEBUG: reverseGeocoding отключен в настройках!`); // Добавь это
+            }
+          } else {
+            this.logger.log(`DEBUG: В файле НЕТ GPS-тегов!`); // Добавь это
           }
-        }
-
+          console.log(`DEBUG:998!`); // Добавь это 
         const tags = this.getTagList(exifTags);
-
+       console.log(`DEBUG:999!`); // Добавь это  
         const exifData: Insertable<AssetExifTable> = {
           assetId: asset.id,
 
@@ -376,7 +394,8 @@ export class MetadataService extends BaseService {
               height: !asset.isEdited || asset.height == null ? assetHeight : undefined,
             }),
           async () => {
-            await this.assetRepository.upsertExif(exifData, { lockedPropertiesBehavior: 'skip' });
+            //await this.assetRepository.upsertExif(exifData, { lockedPropertiesBehavior: 'skip' });
+            await this.assetRepository.upsertExif(exifData, { lockedPropertiesBehavior: 'override' });    // Или просто убрать опцию
             await this.applyTagList(asset);
           },
         );
@@ -405,9 +424,12 @@ export class MetadataService extends BaseService {
       } finally {
         await localSidecar?.cleanup();
       }
+      
     } finally {
+      this.logger.log(`DEBUG:3!`); // Добавь это
       await cleanupOriginal();
     }
+    this.logger.log(`DEBUG: 1!`); // Добавь это
   }
 
   @OnJob({ name: JobName.SidecarQueueAll, queue: QueueName.Sidecar })

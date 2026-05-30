@@ -1,40 +1,34 @@
 <script lang="ts">
-  import { Icon } from '@immich/ui';
   import { browser } from '$app/environment';
-  import { SvelteSet } from 'svelte/reactivity';
+  import { Icon } from '@immich/ui';
   import {
+    mdiAccount,
+    mdiCalendar,
+    mdiCamera,
     mdiChevronLeft,
     mdiChevronRight,
-    mdiCalendar,
-    mdiAccount,
-    mdiMapMarker,
-    mdiCamera,
-    mdiTag,
-    mdiStar,
-    mdiImage,
     mdiHeart,
+    mdiImage,
     mdiImageAlbum,
+    mdiMapMarker,
+    mdiStar,
+    mdiTag,
   } from '@mdi/js';
   import { untrack } from 'svelte';
-  import type {
-    FilterPanelConfig,
-    FilterSection as FilterSectionType,
-    FilterState,
-    PersonOption,
-    TagOption,
-  } from './filter-panel';
+  import { t } from 'svelte-i18n';
+  import { SvelteSet } from 'svelte/reactivity';
+  import AlbumsFilter from './albums-filter.svelte';
+  import CameraFilter from './camera-filter.svelte';
+  import FavoritesFilter from './favorites-filter.svelte';
+  import type { FilterSection as FilterSectionType, FilterState, PersonOption, TagOption } from './filter-panel';
   import { buildFilterContext, createFilterState } from './filter-panel';
   import FilterSection from './filter-section.svelte';
-  import TemporalPicker from './temporal-picker.svelte';
-  import PeopleFilter from './people-filter.svelte';
   import LocationFilter from './location-filter.svelte';
-  import CameraFilter from './camera-filter.svelte';
-  import TagsFilter from './tags-filter.svelte';
-  import RatingFilter from './rating-filter.svelte';
   import MediaTypeFilter from './media-type-filter.svelte';
-  import FavoritesFilter from './favorites-filter.svelte';
-  import AlbumsFilter from './albums-filter.svelte';
-  import { t } from 'svelte-i18n';
+  import PeopleFilter from './people-filter.svelte';
+  import RatingFilter from './rating-filter.svelte';
+  import TagsFilter from './tags-filter.svelte';
+  import TemporalPicker from './temporal-picker.svelte';
 
   interface Props {
     timeBuckets: Array<{ timeBucket: string; count: number }>;

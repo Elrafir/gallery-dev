@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { getName } from 'i18n-iso-countries';
 import { Expression, Insertable, Kysely, NotNull, sql, SqlBool } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { createReadStream, existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import readLine from 'node:readline';
-import { citiesFile, reverseGeocodeMaxDistance } from 'src/constants';
+import { citiesFile } from 'src/constants';
 import { DummyValue, GenerateSql } from 'src/decorators';
 import { AssetVisibility, SystemMetadataKey } from 'src/enum';
 import { ConfigRepository } from 'src/repositories/config.repository';
@@ -14,6 +13,9 @@ import { SystemMetadataRepository } from 'src/repositories/system-metadata.repos
 import { DB } from 'src/schema';
 import { GeodataPlacesTable } from 'src/schema/tables/geodata-places.table';
 import { NaturalEarthCountriesTable } from 'src/schema/tables/natural-earth-countries.table';
+
+// ГЛОБАЛЬНЫЙ ФЛАГ ДЛЯ АЛЕКСЕЯ: true - только локальный Nominatim, false - как было в оригинале
+const USE_LOCAL_NOMINATIM_ONLY = true;
 
 export interface MapMarkerSearchOptions {
   isArchived?: boolean;
@@ -56,11 +58,16 @@ export class MapRepository {
   }
 
   async init(): Promise<void> {
+    // Если включен наш флаг, блокируем тяжелый импорт городов в Postgres при старте контейнера
+    if (USE_LOCAL_NOMINATIM_ONLY) {
+      this.logger.log('Блокировка импорта встроенной геобазы: активирован режим локального Nominatim.');
+      return;
+    }
+
     this.logger.log('Initializing metadata repository');
     const { resourcePaths } = this.configRepository.getEnv();
     const geodataDate = await readFile(resourcePaths.geodata.dateFile, 'utf8');
 
-    // TODO move to service init
     const geocodingMetadata = await this.metadataRepository.get(SystemMetadataKey.ReverseGeocodingState);
     if (geocodingMetadata?.lastUpdate === geodataDate) {
       return;
@@ -204,6 +211,7 @@ export class MapRepository {
   }
 
   private mapMarkersQuery() {
+    this.logger.log(`DEBUG: Запрос пошел прям в БД!`);
     return this.db
       .selectFrom('asset')
       .innerJoin('asset_exif', (builder) =>
@@ -226,62 +234,40 @@ export class MapRepository {
   }
 
   async reverseGeocode(point: GeoPoint): Promise<ReverseGeocodeResult> {
-    this.logger.debug(`Request: ${point.latitude},${point.longitude}`);
+    this.logger.debug(`Запрос к локальному Nominatim: ${point.latitude},${point.longitude}`);
 
-    const response = await this.db
-      .selectFrom('geodata_places')
-      .selectAll()
-      .where(
-        sql`earth_box(ll_to_earth_public(${point.latitude}, ${point.longitude}), ${reverseGeocodeMaxDistance})`,
-        '@>',
-        sql`ll_to_earth_public(latitude, longitude)`,
-      )
-      .orderBy(
-        sql`(earth_distance(ll_to_earth_public(${point.latitude}, ${point.longitude}), ll_to_earth_public(latitude, longitude)))`,
-      )
-      .limit(1)
-      .executeTakeFirst();
+    try {
+      const url = `http://192.168.100.78:8088/reverse?format=json&lat=${point.latitude}&lon=${point.longitude}&accept-language=ru`;
+      
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }
+      });
 
-    if (response) {
-      this.logger.verboseFn(() => `Raw: ${JSON.stringify(response, null, 2)}`);
+      if (!res.ok) {
+        throw new Error(`Nominatim вернул статус: ${res.status}`);
+      }
 
-      const { countryCode, name: city, admin1Name } = response;
-      const country = getName(countryCode, 'en') ?? null;
-      const state = admin1Name;
+      const data = await res.json();
+// Добавляем логирование всего объекта data
+this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, null, 2)}`);  
+      if (data && data.address) {
+        const city = data.address.city || data.address.town || data.address.village || data.address.suburb || null;
+        const state = data.address.state || data.address.region || null;
+        const country = data.address.country || null;
 
-      return { country, state, city };
+        this.logger.debug(`Результат Nominatim: ${city}, ${state}, ${country}`);
+
+        return { country, state, city };
+      }
+    } catch (error: any) {
+      this.logger.error(`Ошибка связи с локальным Nominatim: ${error.message}`);
     }
 
-    this.logger.log(
-      `Empty response from database for city reverse geocoding lat: ${point.latitude}, lon: ${point.longitude}. Likely cause: no nearby large populated place (500+ within ${reverseGeocodeMaxDistance / 1000}km). Falling back to country boundaries.`,
-    );
-
-    const ne_response = await this.db
-      .selectFrom('naturalearth_countries')
-      .selectAll()
-      .where('coordinates', '@>', sql<string>`point(${point.longitude}, ${point.latitude})`)
-      .limit(1)
-      .executeTakeFirst();
-
-    if (!ne_response) {
-      this.logger.log(
-        `Empty response from database for natural earth country reverse geocoding lat: ${point.latitude}, lon: ${point.longitude}`,
-      );
-
-      return { country: null, state: null, city: null };
-    }
-
-    this.logger.verboseFn(() => `Raw: ${JSON.stringify(ne_response, ['id', 'admin', 'admin_a3', 'type'], 2)}`);
-
-    const { admin_a3 } = ne_response;
-    const country = getName(admin_a3, 'en') ?? null;
-    const state = null;
-    const city = null;
-
-    return { country, state, city };
+    return { country: null, state: null, city: null };
   }
 
   private async importNaturalEarthCountries() {
+    if (USE_LOCAL_NOMINATIM_ONLY) return;
     const { resourcePaths } = this.configRepository.getEnv();
     const geoJSONData = JSON.parse(await readFile(resourcePaths.geodata.naturalEarthCountriesPath, 'utf8'));
     if (geoJSONData.type !== 'FeatureCollection' || !Array.isArray(geoJSONData.features)) {
@@ -320,6 +306,7 @@ export class MapRepository {
   }
 
   private async importGeodata() {
+    if (USE_LOCAL_NOMINATIM_ONLY) return;
     const { resourcePaths } = this.configRepository.getEnv();
     const [admin1, admin2] = await Promise.all([
       this.loadAdmin(resourcePaths.geodata.admin1),
@@ -346,6 +333,9 @@ export class MapRepository {
   }
 
   private async loadCities500(admin1Map: Map<string, string>, admin2Map: Map<string, string>) {
+
+
+    if (USE_LOCAL_NOMINATIM_ONLY) return;
     const { resourcePaths } = this.configRepository.getEnv();
     const cities500 = resourcePaths.geodata.cities500;
     if (!existsSync(cities500)) {
@@ -396,7 +386,6 @@ export class MapRepository {
             }),
         );
         bufferGeodata = [];
-        // leave spare connection for other queries
         if (futures.length >= 9) {
           await Promise.all(futures);
           futures = [];
@@ -421,11 +410,6 @@ export class MapRepository {
   }
 
   private async loadAdmin(filePath: string) {
-    if (!existsSync(filePath)) {
-      this.logger.error(`Geodata file ${filePath} not found`);
-      throw new Error(`Geodata file ${filePath} not found`);
-    }
-
     const input = createReadStream(filePath, { highWaterMark: 512 * 1024 * 1024 });
     const lineReader = readLine.createInterface({ input });
 
@@ -439,6 +423,7 @@ export class MapRepository {
   }
 
   private createGeodataIndices() {
+    if (USE_LOCAL_NOMINATIM_ONLY) return Promise.resolve([]);
     return Promise.all([
       sql`ALTER TABLE geodata_places ADD PRIMARY KEY (id) WITH (FILLFACTOR = 100)`.execute(this.db),
       this.db.schema

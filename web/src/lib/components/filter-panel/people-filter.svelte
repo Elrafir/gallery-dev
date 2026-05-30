@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Icon } from '@immich/ui';
   import { mdiMagnify } from '@mdi/js';
-  import { SvelteMap } from 'svelte/reactivity';
   import { t } from 'svelte-i18n';
+  import { SvelteMap } from 'svelte/reactivity';
   import type { PersonOption } from './filter-panel';
 
   interface Props {
@@ -96,7 +96,7 @@
       <input
         type="text"
         class="immich-form-input h-8 w-full rounded-lg pl-7 pr-2 text-sm"
-        placeholder="Search people..."
+        placeholder="Найти персонажа..."
         bind:value={searchQuery}
         oninput={() => {
           showAll = false;
@@ -157,6 +157,7 @@
     <!-- People list -->
     {#each visiblePeople as person (person.id)}
       {@const isActive = selectedIds.includes(person.id)}
+
       <button
         type="button"
         class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-subtle {isActive

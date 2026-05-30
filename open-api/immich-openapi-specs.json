@@ -333,7 +333,7 @@
         ],
         "summary": "Unlink all OAuth accounts",
         "tags": [
-          "Authentication (admin)"
+          "Authentication444 (admin)"
         ],
         "x-immich-admin-only": true,
         "x-immich-history": [
