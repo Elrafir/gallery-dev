@@ -251,8 +251,15 @@ export class MapRepository {
 // Добавляем логирование всего объекта data
 this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, null, 2)}`);  
       if (data && data.address) {
-        const city = data.address.city || data.address.town || data.address.village || data.address.suburb || null;
-        const state = data.address.state || data.address.region || null;
+        const city = data.address.city || 
+                     data.address.town || 
+                     data.address.village || 
+                     data.address.suburb || 
+                     data.address.hamlet || 
+                     data.address.municipality || 
+                     data.address.county || 
+                     null;
+        const state = data.address.state || data.address.region || data.address.state_district || null;
         const country = data.address.country || null;
 
         this.logger.debug(`Результат Nominatim: ${city}, ${state}, ${country}`);

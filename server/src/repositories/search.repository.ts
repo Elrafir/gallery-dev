@@ -936,7 +936,62 @@ export class SearchRepository {
   }
 
   @GenerateSql({ params: [DummyValue.STRING] })
-  searchPlaces(placeName: string) {
+  async searchPlaces(placeName: string) {
+    // Если включен опрос локального Nominatim, ищем места через него
+    try {
+      const url = `http://192.168.100.78:8088/search?format=json&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as any[];
+        if (Array.isArray(data) && data.length > 0) {
+          const results = [];
+          for (const item of data) {
+            if (item.address) {
+              const city = item.address.city || 
+                           item.address.town || 
+                           item.address.village || 
+                           item.address.suburb || 
+                           item.address.hamlet || 
+                           item.address.municipality || 
+                           item.address.county || 
+                           null;
+              const state = item.address.state || item.address.region || item.address.state_district || null;
+              const country = item.address.country || null;
+              
+              // Парсим широту и долготу
+              const latitude = item.lat ? Number.parseFloat(item.lat) : 0;
+              const longitude = item.lon ? Number.parseFloat(item.lon) : 0;
+              
+              if (city || state || country) {
+                results.push({ city, state, country, latitude, longitude });
+              }
+            }
+          }
+
+          // Убираем дубликаты
+          const uniqueResults = [];
+          const seen = new Set();
+          for (const r of results) {
+            const key = `${r.city ?? ''}|${r.state ?? ''}|${r.country ?? ''}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              uniqueResults.push(r);
+            }
+          }
+
+          if (uniqueResults.length > 0) {
+            return uniqueResults;
+          }
+        }
+      }
+    } catch (error: any) {
+      // Логируем ошибку, но даем коду выполниться дальше и сделать фоллбэк к БД
+      console.error(`Ошибка поиска мест через локальный Nominatim: ${error.message}`);
+    }
+
     return this.db
       .selectFrom('asset_exif')
       .select(['city', 'state', 'country'])
