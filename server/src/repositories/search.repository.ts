@@ -950,7 +950,10 @@ export class SearchRepository {
           const results = [];
           for (const item of data) {
             if (item.address) {
-              const city = item.address.city || 
+              const road = item.address.road || null;
+              const houseNumber = item.address.house_number || null;
+
+              let city = item.address.city || 
                            item.address.town || 
                            item.address.village || 
                            item.address.suburb || 
@@ -958,6 +961,12 @@ export class SearchRepository {
                            item.address.municipality || 
                            item.address.county || 
                            null;
+
+              if (road) {
+                const streetPart = houseNumber ? `${road}, ${houseNumber}` : road;
+                city = city ? `${streetPart}, ${city}` : streetPart;
+              }
+
               const state = item.address.state || item.address.region || item.address.state_district || null;
               const country = item.address.country || null;
               

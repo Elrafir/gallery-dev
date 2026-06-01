@@ -251,7 +251,10 @@ export class MapRepository {
 // Добавляем логирование всего объекта data
 this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, null, 2)}`);  
       if (data && data.address) {
-        const city = data.address.city || 
+        const road = data.address.road || null;
+        const houseNumber = data.address.house_number || null;
+        
+        let city = data.address.city || 
                      data.address.town || 
                      data.address.village || 
                      data.address.suburb || 
@@ -259,6 +262,12 @@ this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, nul
                      data.address.municipality || 
                      data.address.county || 
                      null;
+
+        if (road) {
+          const streetPart = houseNumber ? `${road}, ${houseNumber}` : road;
+          city = city ? `${streetPart}, ${city}` : streetPart;
+        }
+
         const state = data.address.state || data.address.region || data.address.state_district || null;
         const country = data.address.country || null;
 
