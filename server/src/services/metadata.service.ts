@@ -394,8 +394,7 @@ export class MetadataService extends BaseService {
               height: !asset.isEdited || asset.height == null ? assetHeight : undefined,
             }),
           async () => {
-            //await this.assetRepository.upsertExif(exifData, { lockedPropertiesBehavior: 'skip' });
-            await this.assetRepository.upsertExif(exifData, { lockedPropertiesBehavior: 'override' });    // Или просто убрать опцию
+            await this.assetRepository.upsertExif(exifData, { lockedPropertiesBehavior: 'skip' });
             await this.applyTagList(asset);
           },
         );

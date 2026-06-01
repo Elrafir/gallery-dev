@@ -613,4 +613,7 @@ export const lockableProperties = [
   'rating',
   'timeZone',
   'tags',
+  'city',
+  'state',
+  'country',
 ] as const;
