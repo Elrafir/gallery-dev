@@ -938,26 +938,20 @@ export class SearchRepository {
   @GenerateSql({ params: [DummyValue.STRING] })
   searchPlaces(placeName: string) {
     return this.db
-      .selectFrom('geodata_places')
-      .selectAll()
-      .where(
-        () =>
-          // kysely doesn't support trigram %>> or <->>> operators
-          sql`
-            f_unaccent(name) %>> f_unaccent(${placeName}) or
-            f_unaccent("admin2Name") %>> f_unaccent(${placeName}) or
-            f_unaccent("admin1Name") %>> f_unaccent(${placeName}) or
-            f_unaccent("alternateNames") %>> f_unaccent(${placeName})
-          `,
+      .selectFrom('asset_exif')
+      .select(['city', 'state', 'country'])
+      .distinct()
+      .where((eb) =>
+        eb.or([
+          eb('city', 'ilike', `%${placeName}%`),
+          eb('state', 'ilike', `%${placeName}%`),
+          eb('country', 'ilike', `%${placeName}%`),
+        ]),
       )
-      .orderBy(
-        sql`
-          coalesce(f_unaccent(name) <->>> f_unaccent(${placeName}), 0.1) +
-          coalesce(f_unaccent("admin2Name") <->>> f_unaccent(${placeName}), 0.1) +
-          coalesce(f_unaccent("admin1Name") <->>> f_unaccent(${placeName}), 0.1) +
-          coalesce(f_unaccent("alternateNames") <->>> f_unaccent(${placeName}), 0.1)
-        `,
-      )
+      .where((eb) => eb.or([eb('city', 'is not', null), eb('state', 'is not', null), eb('country', 'is not', null)]))
+      .orderBy('city')
+      .orderBy('state')
+      .orderBy('country')
       .limit(20)
       .execute();
   }
