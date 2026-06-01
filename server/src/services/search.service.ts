@@ -7,7 +7,7 @@ import {
   FilterSuggestionsRequestDto,
   FilterSuggestionsResponseDto,
   LargeAssetSearchDto,
-  mapPlaces,
+  mapAssetLocation,
   MetadataSearchDto,
   PlacesResponseDto,
   RandomSearchDto,
@@ -85,7 +85,7 @@ export class SearchService extends BaseService {
 
   async searchPlaces(dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
     const places = await this.searchRepository.searchPlaces(dto.name);
-    return places.map((place) => mapPlaces(place));
+    return places.map((place) => mapAssetLocation(place));
   }
 
   async getExploreData(auth: AuthDto) {

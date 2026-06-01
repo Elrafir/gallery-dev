@@ -10,7 +10,7 @@
     type Align,
   } from '$lib/utils/context-menu';
   import { generateId } from '$lib/utils/generate-id';
-  import { IconButton, type Color, type Size, type Variants } from '@immich/ui';
+  import { Icon } from '@immich/ui';
   import type { Snippet } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
 
@@ -158,20 +158,17 @@
   {...restProps}
 >
   <div bind:this={buttonContainer}>
-    <IconButton
-      {color}
-      {icon}
-      {size}
-      shape="round"
-      {variant}
+    <button
+      class={buttonClass}
       aria-label={title}
       aria-controls={menuId}
       aria-expanded={isOpen}
       aria-haspopup={true}
-      class={buttonClass}
       id={buttonId}
       onclick={handleClick}
-    />
+    >
+      <Icon icon={icon} size={size} color={color} />
+    </button>
   </div>
   {#if isOpen || !hideContent}
     <div

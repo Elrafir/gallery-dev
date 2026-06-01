@@ -1,6 +1,7 @@
 import { sdkMock } from '$lib/__mocks__/sdk.mock';
 import { renderWithTooltips } from '$tests/helpers';
 import { albumFactory } from '@test-data/factories/album-factory';
+import { userFactory } from '@test-data/factories/user-factory';
 import '@testing-library/jest-dom';
 import { render, waitFor, type RenderResult } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
@@ -39,13 +40,31 @@ describe('AlbumCard component', () => {
       count: 2,
       shared: true,
     },
-  ])('shows album data without thumbnail with count $count - shared: $shared', async ({ album, count, shared }) => {
+    {
+      album: albumFactory.build({
+        albumThumbnailAssetId: null,
+        shared: true,
+        assetCount: 3,
+        albumUsers: [
+          { user: userFactory.build({ name: 'Alice' }), role: 'editor' },
+          { user: userFactory.build({ name: 'Bob' }), role: 'viewer' },
+        ] as any[],
+      }),
+      count: 3,
+      shared: true,
+      usersCount: 2,
+    },
+  ])('shows album data without thumbnail with count $count - shared: $shared', async ({ album, count, shared, usersCount }) => {
     sut = render(AlbumCard, { album, showItemCount: true });
 
     const albumImgElement = sut.getByTestId('album-image');
     const albumNameElement = sut.getByTestId('album-name');
     const albumDetailsElement = sut.getByTestId('album-details');
-    const detailsText = `${count} items` + (shared ? ' . Shared' : '');
+    
+    let detailsText = `${count} items` + (shared ? ' . Shared' : '');
+    if (usersCount) {
+      detailsText += ` . ${usersCount}`;
+    }
 
     expect(albumImgElement).toHaveAttribute('src');
     expect(albumImgElement).toHaveAttribute('alt', album.albumName);

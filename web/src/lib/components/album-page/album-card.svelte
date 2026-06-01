@@ -5,6 +5,7 @@
   import { getShortDateRange } from '$lib/utils/date-time';
   import type { AlbumResponseDto } from '@immich/sdk';
   import { IconButton } from '@immich/ui';
+import AlbumShareButton from '$lib/components/album-page/AlbumShareButton.svelte';
   import { mdiDotsVertical } from '@mdi/js';
   import { t } from 'svelte-i18n';
 
@@ -16,7 +17,6 @@
     preload?: boolean;
     onShowContextMenu?: ((position: ContextMenuPosition) => unknown) | undefined;
   }
-
   let {
     album,
     showOwner = false,
@@ -31,6 +31,8 @@
     e.preventDefault();
     onShowContextMenu?.(getContextMenuPositionFromEvent(e));
   };
+
+  // Removed unused sharedUsersTooltip derived value
 </script>
 
 <div
@@ -40,7 +42,7 @@
   {#if onShowContextMenu}
     <div
       id="icon-{album.id}"
-      class="absolute end-6 top-6 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+      class="absolute end-6 top-6 opacity-0 group-hover:opacity-100 focus-within:opacity-100 z-10"
       data-testid="context-button-parent"
     >
       <IconButton
@@ -56,7 +58,10 @@
     </div>
   {/if}
 
-  <AlbumCover {album} {preload} class="transition-all duration-300 hover:shadow-lg" />
+  <div class="relative">
+    <AlbumCover {album} {preload} class="transition-all duration-300 hover:shadow-lg" />
+    <AlbumShareButton {album} />
+  </div>
 
   <div class="mt-4">
     <p

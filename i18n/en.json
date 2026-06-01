@@ -2569,6 +2569,7 @@
   "share_dialog_preparing": "Preparing...",
   "share_link": "Share Link",
   "shared": "Shared",
+  "shared_users_count": "{count, plural, one {Shared with # user} other {Shared with # users}}",
   "shared_album_activities_input_disable": "Comment is disabled",
   "shared_album_activity_remove_content": "Do you want to delete this activity?",
   "shared_album_activity_remove_title": "Delete Activity",

@@ -320,6 +320,17 @@ export function mapPlaces(place: Place): PlacesResponseDto {
   };
 }
 
+// Новый маппер для данных из asset_exif (city, state, country)
+export function mapAssetLocation(location: LocationResult): PlacesResponseDto {
+  return {
+    name: location.city || location.state || location.country || 'Unknown',
+    latitude: 0, // asset_exif не содержит координаты, используем 0 как заглушку
+    longitude: 0, // asset_exif не содержит координаты, используем 0 как заглушку
+    admin1name: location.state ?? undefined,
+    admin2name: location.city ?? undefined,
+  };
+}
+
 const SearchFacetCountResponseSchema = z
   .object({
     count: z.int().min(0).describe('Number of assets with this facet value'),

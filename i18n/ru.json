@@ -2108,6 +2108,7 @@
   "share_dialog_preparing": "Подготовка...",
   "share_link": "Создать ссылку",
   "shared": "Общиe",
+  "shared_users_count": "{count, plural, one {Доступ открыт # пользователю} few {Доступ открыт # пользователям} many {Доступ открыт # пользователям} other {Доступ открыт # пользователям}}",
   "shared_album_activities_input_disable": "Комментарии отключены",
   "shared_album_activity_remove_content": "Удалить сообщение?",
   "shared_album_activity_remove_title": "Удалить",
