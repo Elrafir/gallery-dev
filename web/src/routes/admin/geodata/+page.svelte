@@ -35,6 +35,10 @@
   let showStateDropdown = $state(false);
   let isNominatimLoading = $state(false);
 
+  // Флаги нахождения мыши над выпадающими списками (для предотвращения гонки при blur)
+  let isOverCountryDropdown = $state(false);
+  let isOverStateDropdown = $state(false);
+
   // Конфигурирование заголовков авторизации для fetch
   const getAuthFetchInit = async (): Promise<RequestInit> => {
     const headers = typeof defaults.headers === 'function' ? await defaults.headers() : defaults.headers;
@@ -50,16 +54,25 @@
   const loadDbData = async () => {
     try {
       const initOpts = await getAuthFetchInit();
-      const countriesRes = await fetch(`${getBaseUrl()}/map/countries`, initOpts);
+      const url = `${getBaseUrl()}/map/countries`;
+      console.log('[Geodata Editor] Загрузка стран из БД:', url);
+      const countriesRes = await fetch(url, initOpts);
+      console.log('[Geodata Editor] Статус ответа стран:', countriesRes.status);
       if (countriesRes.ok) {
         dbCountries = await countriesRes.json();
+        console.log('[Geodata Editor] Получено стран из БД:', dbCountries.length, dbCountries);
       }
-      const statesRes = await fetch(`${getBaseUrl()}/map/states`, initOpts);
+      
+      const statesUrl = `${getBaseUrl()}/map/states`;
+      console.log('[Geodata Editor] Загрузка регионов из БД:', statesUrl);
+      const statesRes = await fetch(statesUrl, initOpts);
+      console.log('[Geodata Editor] Статус ответа регионов:', statesRes.status);
       if (statesRes.ok) {
         dbStates = await statesRes.json();
+        console.log('[Geodata Editor] Получено регионов из БД:', dbStates.length, dbStates);
       }
     } catch (e) {
-      console.error('Ошибка загрузки данных локаций из БД', e);
+      console.error('[Geodata Editor] Ошибка загрузки данных локаций из БД', e);
     }
   };
 
@@ -80,12 +93,13 @@
       isNominatimLoading = true;
       try {
         const initOpts = await getAuthFetchInit();
-        const res = await fetch(
-          `${getBaseUrl()}/search/places?name=${encodeURIComponent(query)}&featuretype=${type}`,
-          initOpts
-        );
+        const searchUrl = `${getBaseUrl()}/search/places?name=${encodeURIComponent(query)}&featuretype=${type}`;
+        console.log('[Geodata Editor] Поиск в Nominatim:', searchUrl);
+        const res = await fetch(searchUrl, initOpts);
+        console.log('[Geodata Editor] Статус ответа Nominatim:', res.status);
         if (res.ok) {
           const data = await res.json();
+          console.log('[Geodata Editor] Ответ Nominatim:', data);
           const unique = new Set<string>();
           const tempSuggestions: Array<{ country: string; state: string }> = [];
 
@@ -107,9 +121,10 @@
             }
           }
           nominatimSuggestions = tempSuggestions;
+          console.log('[Geodata Editor] Сформированные подсказки:', nominatimSuggestions);
         }
       } catch (e) {
-        console.error('Ошибка поиска в Nominatim', e);
+        console.error('[Geodata Editor] Ошибка поиска в Nominatim', e);
       } finally {
         isNominatimLoading = false;
       }
@@ -185,6 +200,24 @@
     if (!lastValidState) {
       toastManager.warning('Пожалуйста, выберите область/регион из списка автодополнения');
     }
+  };
+
+  const handleCountryBlur = () => {
+    setTimeout(() => {
+      if (!isOverCountryDropdown) {
+        validateCountryInput();
+        showCountryDropdown = false;
+      }
+    }, 150);
+  };
+
+  const handleStateBlur = () => {
+    setTimeout(() => {
+      if (!isOverStateDropdown) {
+        validateStateInput();
+        showStateDropdown = false;
+      }
+    }, 150);
   };
 
   // Валидация диапазонов годов на пересечения
@@ -329,6 +362,7 @@
 
   // Выбор подсказки из Nominatim
   const selectNominatimSuggestion = (item: { country: string; state: string }, type: 'country' | 'state') => {
+    console.log('[Geodata Editor] Выбрана подсказка Nominatim:', item, 'Тип:', type);
     if (type === 'country') {
       countryInput = item.country;
       lastValidCountry = item.country;
@@ -372,13 +406,17 @@
             placeholder="Введите для поиска страны..."
             bind:value={countryInput}
             onfocus={() => { showCountryDropdown = true; searchNominatim(countryInput, 'country'); }}
-            onblur={() => { setTimeout(validateCountryInput, 200); setTimeout(() => showCountryDropdown = false, 250); }}
+            onblur={handleCountryBlur}
             oninput={() => { showCountryDropdown = true; searchNominatim(countryInput, 'country'); }}
             class="w-full text-sm p-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
 
           {#if showCountryDropdown}
-            <div class="absolute z-20 w-full mt-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            <div 
+              class="absolute z-20 w-full mt-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+              onmouseenter={() => isOverCountryDropdown = true}
+              onmouseleave={() => isOverCountryDropdown = false}
+            >
               <!-- Секция БД -->
               <div class="p-2 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Существующие в БД</span>
@@ -431,13 +469,17 @@
             placeholder="Введите для поиска региона..."
             bind:value={stateInput}
             onfocus={() => { showStateDropdown = true; searchNominatim(stateInput, 'state'); }}
-            onblur={() => { setTimeout(validateStateInput, 200); setTimeout(() => showStateDropdown = false, 250); }}
+            onblur={handleStateBlur}
             oninput={() => { showStateDropdown = true; searchNominatim(stateInput, 'state'); }}
             class="w-full text-sm p-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
 
           {#if showStateDropdown}
-            <div class="absolute z-20 w-full mt-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            <div 
+              class="absolute z-20 w-full mt-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+              onmouseenter={() => isOverStateDropdown = true}
+              onmouseleave={() => isOverStateDropdown = false}
+            >
               <!-- Секция БД -->
               <div class="p-2 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Существующие в БД</span>
