@@ -20,6 +20,7 @@ const makePerson = (overrides: Record<string, unknown> = {}) => ({
   isFavorite: false,
   isHidden: false,
   thumbnailPath: '',
+  description: null,
   ...overrides,
 });
 

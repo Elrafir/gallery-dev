@@ -13,6 +13,7 @@ import { SystemMetadataRepository } from 'src/repositories/system-metadata.repos
 import { DB } from 'src/schema';
 import { GeodataPlacesTable } from 'src/schema/tables/geodata-places.table';
 import { NaturalEarthCountriesTable } from 'src/schema/tables/natural-earth-countries.table';
+import { getConfig } from 'src/utils/config';
 
 // ГЛОБАЛЬНЫЙ ФЛАГ ДЛЯ АЛЕКСЕЯ: true - только локальный Nominatim, false - как было в оригинале
 const USE_LOCAL_NOMINATIM_ONLY = true;
@@ -234,10 +235,19 @@ export class MapRepository {
   }
 
   async reverseGeocode(point: GeoPoint): Promise<ReverseGeocodeResult> {
-    this.logger.debug(`Запрос к локальному Nominatim: ${point.latitude},${point.longitude}`);
+    const config = await getConfig(
+      {
+        configRepo: this.configRepository,
+        metadataRepo: this.metadataRepository,
+        logger: this.logger,
+      },
+      { withCache: true },
+    );
+    const geocoderUrl = config.reverseGeocoding.geocoderUrl;
+    this.logger.debug(`Запрос к локальному Nominatim (${geocoderUrl}): ${point.latitude},${point.longitude}`);
 
     try {
-      const url = `http://192.168.100.78:8088/reverse?format=json&lat=${point.latitude}&lon=${point.longitude}&accept-language=ru`;
+      const url = `${geocoderUrl}/reverse?format=json&lat=${point.latitude}&lon=${point.longitude}&accept-language=ru`;
       
       const res = await fetch(url, {
         headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }

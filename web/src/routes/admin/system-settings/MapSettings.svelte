@@ -7,13 +7,23 @@
   import FormatMessage from '$lib/elements/FormatMessage.svelte';
   import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte';
   import { systemConfigManager } from '$lib/managers/system-config-manager.svelte';
-  import { Link } from '@immich/ui';
+  import { Link, Button } from '@immich/ui';
   import { t } from 'svelte-i18n';
   import { fade } from 'svelte/transition';
 
   const disabled = $derived(featureFlagsManager.value.configFile);
   const config = $derived(systemConfigManager.value);
   let configToEdit = $state(systemConfigManager.cloneValue());
+
+  const handleBeforeSave = async () => {
+    if (configToEdit.reverseGeocoding.geocoderUrl !== config.reverseGeocoding.geocoderUrl) {
+      const confirm1 = confirm("Вы действительно хотите изменить URL-адрес сервера геокодирования? Изменение этого адреса может привести к нарушению работоспособности геокодирования и поиска мест.");
+      if (!confirm1) return false;
+      const confirm2 = confirm("Подтвердите еще раз: вы точно уверены? Функционал поиска по местам и определения локаций может пострадать.");
+      if (!confirm2) return false;
+    }
+    return true;
+  };
 </script>
 
 <div class="mt-2">
@@ -66,10 +76,34 @@
               {disabled}
               bind:checked={configToEdit.reverseGeocoding.enabled}
             />
+
+            {#if configToEdit.reverseGeocoding.enabled}
+              <div class="flex flex-col gap-2">
+                <SettingInputField
+                  inputType={SettingInputFieldType.TEXT}
+                  label="URL-адрес сервера геокодирования"
+                  description="Адрес локального сервера Nominatim для обратного геокодирования"
+                  bind:value={configToEdit.reverseGeocoding.geocoderUrl}
+                  disabled={disabled}
+                  isEdited={configToEdit.reverseGeocoding.geocoderUrl !== config.reverseGeocoding.geocoderUrl}
+                />
+                <div class="flex gap-2 place-items-center -mt-2">
+                  <Button
+                    size="small"
+                    shape="round"
+                    variant="secondary"
+                    disabled={disabled || configToEdit.reverseGeocoding.geocoderUrl === 'http://192.168.100.78:8088'}
+                    onclick={() => configToEdit.reverseGeocoding.geocoderUrl = 'http://192.168.100.78:8088'}
+                  >
+                    Восстановить по умолчанию
+                  </Button>
+                </div>
+              </div>
+            {/if}
           </div></SettingAccordion
         >
 
-        <SettingButtonsRow bind:configToEdit keys={['map', 'reverseGeocoding']} {disabled} />
+        <SettingButtonsRow bind:configToEdit keys={['map', 'reverseGeocoding']} {disabled} onBeforeSave={handleBeforeSave} />
       </div>
     </form>
   </div>

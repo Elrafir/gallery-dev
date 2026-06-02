@@ -145,6 +145,7 @@ const updatedConfig = Object.freeze<SystemConfig>({
   },
   reverseGeocoding: {
     enabled: true,
+    geocoderUrl: 'http://192.168.100.78:8088',
   },
   oauth: {
     autoLaunch: true,

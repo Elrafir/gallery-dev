@@ -97,6 +97,7 @@ export type SystemConfig = {
   };
   reverseGeocoding: {
     enabled: boolean;
+    geocoderUrl: string;
   };
   metadata: {
     faces: {
@@ -316,6 +317,7 @@ export const defaults = Object.freeze<SystemConfig>({
   },
   reverseGeocoding: {
     enabled: true,
+    geocoderUrl: 'http://192.168.100.78:8088',
   },
   metadata: {
     faces: {

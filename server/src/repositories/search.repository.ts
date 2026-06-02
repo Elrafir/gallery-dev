@@ -935,11 +935,11 @@ export class SearchRepository {
     });
   }
 
-  @GenerateSql({ params: [DummyValue.STRING] })
-  async searchPlaces(placeName: string) {
+  @GenerateSql({ params: [DummyValue.STRING, DummyValue.STRING] })
+  async searchPlaces(placeName: string, geocoderUrl: string) {
     // Если включен опрос локального Nominatim, ищем места через него
     try {
-      const url = `http://192.168.100.78:8088/search?format=json&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
+      const url = `${geocoderUrl}/search?format=json&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
       const res = await fetch(url, {
         headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }
       });

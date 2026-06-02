@@ -387,6 +387,7 @@ const personFactory = (person?: Partial<Person>): Person => ({
   type: 'person',
   updatedAt: newDate(),
   updateId: newUuidV7(),
+  description: null,
   ...person,
 });
 
@@ -456,6 +457,7 @@ const sharedSpacePersonFactory = (data: Partial<SharedSpacePerson> = {}): Shared
   createdAt: newDate(),
   updatedAt: newDate(),
   updateId: newUuidV7(),
+  description: null,
   ...data,
 });
 

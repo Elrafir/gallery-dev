@@ -277,7 +277,10 @@ const SystemConfigPasswordLoginSchema = z
   .meta({ id: 'SystemConfigPasswordLoginDto' });
 
 const SystemConfigReverseGeocodingSchema = z
-  .object({ enabled: configBool.describe('Enabled') })
+  .object({
+    enabled: configBool.describe('Enabled'),
+    geocoderUrl: z.string().url().default('http://192.168.100.78:8088').describe('Geocoder URL'),
+  })
   .meta({ id: 'SystemConfigReverseGeocodingDto' });
 
 const SystemConfigFacesSchema = z

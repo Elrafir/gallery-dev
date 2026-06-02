@@ -27,6 +27,7 @@ export class PersonFactory {
       type: 'person',
       updatedAt: newDate(),
       updateId: newUuidV7(),
+      description: null,
       ...dto,
     });
   }

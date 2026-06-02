@@ -83,22 +83,16 @@ describe(SearchService.name, () => {
     it('should search places', async () => {
       mocks.search.searchPlaces.mockResolvedValue([
         {
-          id: 42,
-          name: 'my place',
+          city: 'my place',
+          state: 'state',
+          country: 'country',
           latitude: 420,
           longitude: 69,
-          admin1Code: null,
-          admin1Name: null,
-          admin2Code: null,
-          admin2Name: null,
-          alternateNames: null,
-          countryCode: 'US',
-          modificationDate: new Date(),
         },
       ]);
 
       await sut.searchPlaces({ name: 'place' });
-      expect(mocks.search.searchPlaces).toHaveBeenCalledWith('place');
+      expect(mocks.search.searchPlaces).toHaveBeenCalledWith('place', 'http://192.168.100.78:8088');
     });
   });
 

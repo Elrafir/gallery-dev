@@ -84,7 +84,9 @@ export class SearchService extends BaseService {
   }
 
   async searchPlaces(dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
-    const places = await this.searchRepository.searchPlaces(dto.name);
+    const config = await this.getConfig({ withCache: true });
+    const geocoderUrl = config.reverseGeocoding.geocoderUrl;
+    const places = await this.searchRepository.searchPlaces(dto.name, geocoderUrl);
     return places.map((place) => mapAssetLocation(place));
   }
 
