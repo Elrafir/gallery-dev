@@ -567,23 +567,29 @@
               class="group flex items-center justify-center cursor-pointer transition-all duration-300 relative"
             >
               {#if isFav}
-                <!-- FAVORITE MARKER -->
+                <!-- FAVORITE MARKER (Amber drop shape, 100% size, star icon) -->
                 <div
-                  class="w-8 h-8 rounded-full bg-amber-500 group-hover:bg-white text-white group-hover:text-amber-500 flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-md group-hover:scale-110 transition-all duration-300"
-                >
-                  <Icon icon={mdiStar} size="16" />
-                </div>
-              {:else}
-                <!-- DEFAULT MARKER: Inverted drop with inner white circle containing icon -->
-                <div
-                  class="w-[25px] h-[25px] flex items-center justify-center bg-[#fef08a] dark:bg-yellow-300/80 group-hover:bg-white border-[1.5px] border-white dark:border-zinc-950 shadow-sm rounded-t-full rounded-bl-full rotate-45 group-hover:scale-110 transition-all duration-300"
+                  class="w-8 h-8 rounded-t-full rounded-bl-full rotate-45 bg-amber-500 text-white group-hover:bg-white group-hover:text-amber-500 border-2 border-white dark:border-zinc-950 shadow-md group-hover:scale-110 opacity-75 group-hover:opacity-100 transition-all duration-300"
                 >
                   <div class="-rotate-45 flex items-center justify-center w-full h-full">
-                    <div
-                      class="w-[13px] h-[13px] rounded-full bg-white group-hover:bg-[#fef08a] dark:group-hover:bg-yellow-300/80 flex items-center justify-center text-yellow-600 dark:text-yellow-700 transition-colors duration-300"
-                    >
-                      <Icon icon={getIconSvg(iconKey)} size="9" />
-                    </div>
+                    <Icon icon={mdiStar} size="18" />
+                  </div>
+                </div>
+              {:else}
+                <!-- DEFAULT MARKER (Pale yellow drop shape, 20% smaller) -->
+                <div
+                  class="w-[25px] h-[25px] rounded-t-full rounded-bl-full rotate-45 bg-[#fef08a] dark:bg-yellow-300/80 text-yellow-700 dark:text-yellow-900 group-hover:bg-white group-hover:text-yellow-600 border-[1.5px] border-white dark:border-zinc-950 shadow-sm group-hover:scale-110 opacity-75 group-hover:opacity-100 transition-all duration-300"
+                >
+                  <div class="-rotate-45 flex items-center justify-center w-full h-full">
+                    {#if iconKey}
+                      <Icon icon={getIconSvg(iconKey)} size="14" />
+                    {:else}
+                      <div
+                        class="w-[13px] h-[13px] rounded-full bg-white group-hover:bg-[#fef08a] dark:group-hover:bg-yellow-300/80 flex items-center justify-center text-yellow-600 dark:text-yellow-700 transition-colors duration-300"
+                      >
+                        <Icon icon={getIconSvg(iconKey)} size="9" />
+                      </div>
+                    {/if}
                   </div>
                 </div>
               {/if}
