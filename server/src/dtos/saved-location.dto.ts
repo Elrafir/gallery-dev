@@ -11,6 +11,7 @@ export const CreateSavedLocationSchema = z
     description: z.string().nullable().optional().describe('Optional description'),
     latitude: z.coerce.number().meta({ format: 'double' }).pipe(latitudeSchema).describe('Latitude (-90 to 90)'),
     longitude: z.coerce.number().meta({ format: 'double' }).pipe(longitudeSchema).describe('Longitude (-180 to 180)'),
+    icon: z.string().nullable().optional().describe('Icon identifier'),
   })
   .meta({ id: 'CreateSavedLocationDto' });
 
@@ -22,6 +23,7 @@ export const UpdateSavedLocationSchema = z
     latitude: z.coerce.number().meta({ format: 'double' }).pipe(latitudeSchema).optional().describe('Latitude (-90 to 90)'),
     longitude: z.coerce.number().meta({ format: 'double' }).pipe(longitudeSchema).optional().describe('Longitude (-180 to 180)'),
     isFavorite: z.boolean().optional().describe('Favorite status flag'),
+    icon: z.string().nullable().optional().describe('Icon identifier'),
   })
   .meta({ id: 'UpdateSavedLocationDto' });
 
@@ -35,6 +37,7 @@ export const SavedLocationResponseSchema = z
     latitude: z.number().describe('Latitude'),
     longitude: z.number().describe('Longitude'),
     isFavorite: z.boolean().describe('Favorite status flag'),
+    icon: z.string().nullable().describe('Icon identifier'),
     createdAt: z.string().meta({ format: 'date-time' }).describe('Creation timestamp'),
     updatedAt: z.string().meta({ format: 'date-time' }).describe('Update timestamp'),
   })
@@ -54,6 +57,7 @@ export function mapSavedLocation(entity: SavedLocation): SavedLocationResponseDt
     latitude: Number(entity.latitude),
     longitude: Number(entity.longitude),
     isFavorite: entity.isFavorite,
+    icon: entity.icon,
     createdAt: asDateString(entity.createdAt),
     updatedAt: asDateString(entity.updatedAt),
   };

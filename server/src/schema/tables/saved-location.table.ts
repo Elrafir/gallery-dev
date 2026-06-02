@@ -42,6 +42,9 @@ export class SavedLocationTable {
   @Column({ type: 'boolean', default: false })
   isFavorite!: boolean;
 
+  @Column({ type: 'text', nullable: true, default: null })
+  icon!: string | null;
+
   @CreateDateColumn()
   createdAt!: Generated<Timestamp>;
 

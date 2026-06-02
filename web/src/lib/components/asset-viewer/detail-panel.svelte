@@ -463,6 +463,7 @@
             useLocationPin
             showSimpleControls={!assetViewerManager.isEditFacesPanelOpen}
             onOpenInMapView={() => goto(Route.map({ ...latlng, zoom: 12.5 }))}
+            showSavedLocationsByDefault={false}
           >
             {#snippet popup({ marker })}
               {@const { lat, lon } = marker}

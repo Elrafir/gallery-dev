@@ -67,6 +67,7 @@
     showSimpleControls?: boolean;
     autoFitBounds?: boolean;
     spaceId?: string;
+    showSavedLocationsByDefault?: boolean;
   }
 
   let {
@@ -87,6 +88,7 @@
     showSimpleControls = true,
     autoFitBounds = true,
     spaceId,
+    showSavedLocationsByDefault = true,
   }: Props = $props();
 
   // Calculate initial bounds from markers once during initialization
@@ -105,6 +107,7 @@
   let map: Map | undefined = $state();
   let savedLocations = $state<SavedLocationResponseDto[]>([]);
   let showOnlyFavoriteLocations = $state(false);
+  let showSavedLocations = $state(showSavedLocationsByDefault);
 
   const loadSavedLocations = async () => {
     try {
@@ -125,7 +128,9 @@
   };
 
   let visibleSavedLocations = $derived(
-    savedLocations.filter((loc) => !showOnlyFavoriteLocations || loc.isFavorite)
+    showSavedLocations
+      ? savedLocations.filter((loc) => !showOnlyFavoriteLocations || loc.isFavorite)
+      : []
   );
 
   let marker: Marker | null = null;
@@ -425,17 +430,34 @@
     <Control position="top-right">
       <ControlGroup>
         <ControlButton
-          onclick={() => (showOnlyFavoriteLocations = !showOnlyFavoriteLocations)}
-          title="Только избранные сохранённые места"
+          onclick={() => (showSavedLocations = !showSavedLocations)}
+          title="Показывать сохранённые места"
         >
           <Icon
-            icon={showOnlyFavoriteLocations ? mdiStar : mdiStarOutline}
+            icon={showSavedLocations ? mdiMapMarkerMultiple : mdiMapMarkerMultipleOutline}
             size="100%"
-            class={showOnlyFavoriteLocations ? 'text-amber-500' : 'text-black/80'}
+            class={showSavedLocations ? 'text-primary' : 'text-black/80'}
           />
         </ControlButton>
       </ControlGroup>
     </Control>
+
+    {#if showSavedLocations}
+      <Control position="top-right">
+        <ControlGroup>
+          <ControlButton
+            onclick={() => (showOnlyFavoriteLocations = !showOnlyFavoriteLocations)}
+            title="Только избранные сохранённые места"
+          >
+            <Icon
+              icon={showOnlyFavoriteLocations ? mdiStar : mdiStarOutline}
+              size="100%"
+              class={showOnlyFavoriteLocations ? 'text-amber-500' : 'text-black/80'}
+            />
+          </ControlButton>
+        </ControlGroup>
+      </Control>
+    {/if}
 
     <GeoJSON
       data={{
@@ -499,7 +521,13 @@
           features: visibleSavedLocations.map((loc) => ({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [loc.longitude, loc.latitude] },
-            properties: { id: loc.id, label: loc.label, name: loc.name },
+            properties: {
+              id: loc.id,
+              label: loc.label,
+              name: loc.name,
+              isFavorite: loc.isFavorite,
+              icon: loc.icon
+            },
           })),
         }}
         id="saved-locations-geojson"
@@ -516,11 +544,34 @@
           }}
         >
           {#snippet children({ feature }: { feature: Feature })}
+            {@const isFav = feature.properties?.isFavorite}
+            {@const iconKey = feature.properties?.icon}
+
             <div
               title={`${feature.properties?.label}\n${feature.properties?.name}`}
-              class="flex items-center justify-center p-1.5 bg-amber-400 dark:bg-amber-500 hover:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-full border border-white dark:border-zinc-950 shadow-md hover:scale-125 transition-transform cursor-pointer"
+              class="group flex items-center justify-center cursor-pointer transition-all duration-300 relative"
             >
-              <Icon icon={mdiStar} size="16" class="text-white" />
+              {#if isFav}
+                <!-- FAVORITE MARKER -->
+                <div
+                  class="w-8 h-8 rounded-full bg-amber-500 group-hover:bg-white text-white group-hover:text-amber-500 flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-md group-hover:scale-110 transition-all duration-300"
+                >
+                  <Icon icon={mdiStar} size="16" />
+                </div>
+              {:else}
+                <!-- DEFAULT MARKER: Inverted drop with inner white circle containing icon -->
+                <div
+                  class="w-[25px] h-[25px] flex items-center justify-center bg-[#fef08a] dark:bg-yellow-300/80 group-hover:bg-white border-[1.5px] border-white dark:border-zinc-950 shadow-sm rounded-t-full rounded-bl-full rotate-45 group-hover:scale-110 transition-all duration-300"
+                >
+                  <div class="-rotate-45 flex items-center justify-center w-full h-full">
+                    <div
+                      class="w-[13px] h-[13px] rounded-full bg-white group-hover:bg-[#fef08a] dark:group-hover:bg-yellow-300/80 flex items-center justify-center text-yellow-600 dark:text-yellow-700 transition-colors duration-300"
+                    >
+                      <Icon icon={getIconSvg(iconKey)} size="9" />
+                    </div>
+                  </div>
+                </div>
+              {/if}
             </div>
           {/snippet}
         </MarkerLayer>

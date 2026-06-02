@@ -20,6 +20,7 @@ export class SavedLocationRepository {
         latitude: dto.latitude,
         longitude: dto.longitude,
         isFavorite: false,
+        icon: dto.icon ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -57,6 +58,7 @@ export class SavedLocationRepository {
         latitude: dto.latitude,
         longitude: dto.longitude,
         isFavorite: dto.isFavorite,
+        icon: dto.icon !== undefined ? dto.icon : undefined,
         updatedAt: sql`now()`,
       })
       .where('id', '=', id)

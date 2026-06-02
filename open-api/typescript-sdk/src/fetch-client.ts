@@ -9123,6 +9123,7 @@ export interface CreateSavedLocationDto {
     description?: string | null;
     latitude: number;
     longitude: number;
+    icon?: string | null;
 }
 
 export interface UpdateSavedLocationDto {
@@ -9132,6 +9133,7 @@ export interface UpdateSavedLocationDto {
     latitude?: number;
     longitude?: number;
     isFavorite?: boolean;
+    icon?: string | null;
 }
 
 export interface SavedLocationResponseDto {
@@ -9143,6 +9145,7 @@ export interface SavedLocationResponseDto {
     latitude: number;
     longitude: number;
     isFavorite: boolean;
+    icon: string | null;
     createdAt: string;
     updatedAt: string;
 }

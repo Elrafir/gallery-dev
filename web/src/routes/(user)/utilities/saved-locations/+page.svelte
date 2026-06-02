@@ -23,11 +23,34 @@
     mdiMapMarkerOutline,
     mdiMagnify,
     mdiRefresh,
+    mdiHome,
+    mdiBriefcase,
+    mdiSchool,
+    mdiFoodForkDrink,
+    mdiCar,
+    mdiUmbrellaBeach,
+    mdiBank,
+    mdiAccount,
   } from '@mdi/js';
   import { t } from 'svelte-i18n';
 
   let locations = $state<SavedLocationResponseDto[]>([]);
   let isLoading = $state(true);
+
+  const getIconSvg = (key: string | null | undefined): string => {
+    switch (key) {
+      case 'home': return mdiHome;
+      case 'work': return mdiBriefcase;
+      case 'school': return mdiSchool;
+      case 'food': return mdiFoodForkDrink;
+      case 'car': return mdiCar;
+      case 'beach': return mdiUmbrellaBeach;
+      case 'culture': return mdiBank;
+      case 'person':
+      default:
+        return mdiAccount;
+    }
+  };
   let showOnlyFavorites = $state(false);
   let searchQuery = $state('');
   let mapFocusPoint = $state<{ lat: number; lng: number } | null>(null);
@@ -271,9 +294,12 @@
               <div class="flex flex-col gap-0.5 w-full">
                 <!-- User Label & Coordinates Badge Row -->
                 <div class="flex items-center justify-between gap-2 w-full">
-                  <Text fontWeight="bold" size="medium" class="text-gray-800 dark:text-zinc-100 truncate">
-                    {loc.label}
-                  </Text>
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <Icon icon={getIconSvg(loc.icon)} class="text-gray-400 shrink-0" size="18" />
+                    <Text fontWeight="bold" size="medium" class="text-gray-800 dark:text-zinc-100 truncate">
+                      {loc.label}
+                    </Text>
+                  </div>
 
                   <!-- Coordinates Badge -->
                   <button
