@@ -148,6 +148,7 @@ const PlacesResponseSchema = z
     longitude: z.number().describe('Longitude coordinate'),
     admin1name: z.string().optional().describe('Administrative level 1 name (state/province)'),
     admin2name: z.string().optional().describe('Administrative level 2 name (county/district)'),
+    country: z.string().optional().describe('Country name'),
   })
   .meta({ id: 'PlacesResponseDto' });
 
@@ -329,6 +330,7 @@ export function mapAssetLocation(location: any): PlacesResponseDto {
     longitude: location.longitude ?? 0,
     admin1name: location.state ?? undefined,
     admin2name: location.city ?? undefined,
+    country: location.country ?? undefined,
   };
 }
 

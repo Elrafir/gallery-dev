@@ -105,7 +105,7 @@
 
           for (const item of data) {
             const country = item.country?.trim() || '';
-            const state = item.state?.trim() || '';
+            const state = item.admin1name?.trim() || '';
             
             if (type === 'country' && country) {
               if (!unique.has(country.toLowerCase())) {
