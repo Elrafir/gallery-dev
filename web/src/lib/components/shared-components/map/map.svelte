@@ -17,7 +17,7 @@
   import { getAssetMediaUrl, handlePromiseError } from '$lib/utils';
   import { getMapMarkers, getSpaceMapMarkers, getSavedLocations, type MapMarkerResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon, modalManager, Theme, themeManager } from '@immich/ui';
-  import { mdiCog, mdiMap, mdiMapMarker, mdiThemeLightDark, mdiStar, mdiStarOutline } from '@mdi/js';
+  import { mdiCog, mdiMap, mdiMapMarker, mdiThemeLightDark, mdiStar, mdiStarOutline, mdiMapMarkerMultiple, mdiMapMarkerMultipleOutline } from '@mdi/js';
   import type { Feature, GeoJsonProperties, Geometry, Point } from 'geojson';
   import { isEqual, omit } from 'lodash-es';
   import { DateTime, Duration } from 'luxon';
