@@ -17,10 +17,25 @@
   import { getAssetMediaUrl, handlePromiseError } from '$lib/utils';
   import { getMapMarkers, getSpaceMapMarkers, getSavedLocations, type MapMarkerResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon, modalManager, Theme, themeManager } from '@immich/ui';
-  import { mdiCog, mdiMap, mdiMapMarker, mdiThemeLightDark, mdiStar, mdiStarOutline, mdiMapMarkerMultiple, mdiMapMarkerMultipleOutline } from '@mdi/js';
+  import { mdiCog, mdiMap, mdiMapMarker, mdiThemeLightDark, mdiStar, mdiStarOutline, mdiMapMarkerMultiple, mdiMapMarkerMultipleOutline, mdiHome, mdiBriefcase, mdiSchool, mdiFoodForkDrink, mdiCar, mdiUmbrellaBeach, mdiBank, mdiAccount } from '@mdi/js';
   import type { Feature, GeoJsonProperties, Geometry, Point } from 'geojson';
   import { isEqual, omit } from 'lodash-es';
   import { DateTime, Duration } from 'luxon';
+
+  const getIconSvg = (key: string | null | undefined): string => {
+    switch (key) {
+      case 'home': return mdiHome;
+      case 'work': return mdiBriefcase;
+      case 'school': return mdiSchool;
+      case 'food': return mdiFoodForkDrink;
+      case 'car': return mdiCar;
+      case 'beach': return mdiUmbrellaBeach;
+      case 'culture': return mdiBank;
+      case 'person':
+      default:
+        return mdiAccount;
+    }
+  };
   import {
     GlobeControl,
     LngLat,
