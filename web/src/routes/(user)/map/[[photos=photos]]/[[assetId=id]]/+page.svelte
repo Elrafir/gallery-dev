@@ -454,7 +454,7 @@
                   onclick={() => (isSearchExpanded = true)}
                   title="Поиск мест"
                 >
-                  <Icon icon={mdiMagnify} size="20" class="text-zinc-800 dark:text-zinc-200" />
+                  <Icon icon={mdiMagnify} size="20" class="text-black" />
                 </button>
               </div>
             {:else}
