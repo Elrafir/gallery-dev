@@ -189,3 +189,7 @@
 .animate-cmdk-shimmer {
   animation: cmdk-shimmer 1.6s linear infinite;
 }
+
+.tooltip-content {
+  white-space: pre-line !important;
+}

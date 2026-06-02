@@ -633,8 +633,8 @@
     stateInput = rule.state;
     lastValidCountry = rule.country;
     lastValidState = rule.state;
-    replacementCountryInput = rule.replacementCountry ?? rule.replacement ?? '';
-    replacementStateInput = rule.replacementState ?? '';
+    replacementCountryInput = rule.replacementCountry ?? rule.replacement ?? rule.country ?? '';
+    replacementStateInput = rule.replacementState ?? rule.state ?? '';
     startYearInput = rule.startYear ?? null;
     endYearInput = rule.endYear ?? null;
     editingIndex = index;
@@ -723,6 +723,7 @@
 
   // Сброс к последней сохраненной конфигурации
   const handleResetConfig = () => {
+    if (!hasChanges) return;
     configToEdit = systemConfigManager.cloneValue();
     initRuleItems();
     cancelEdit();
@@ -1474,7 +1475,7 @@
 
     <!-- Кнопки сохранения всей конфигурации -->
     <div class="flex justify-end gap-3 mt-4 border-t border-gray-200 dark:border-zinc-800 pt-6">
-      <Button shape="round" color="secondary" onclick={handleResetConfig}>
+      <Button shape="round" color="secondary" onclick={handleResetConfig} disabled={!hasChanges}>
         Сбросить изменения
       </Button>
       
@@ -1482,12 +1483,14 @@
       <button
         type="button"
         class="px-5 py-2.5 text-sm font-semibold rounded-full shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center"
-        style={saveBtnStyle || 'background-color: var(--primary); color: white;'}
+        class:opacity-50={!hasChanges}
+        class:cursor-not-allowed={!hasChanges}
+        class:cursor-pointer={hasChanges}
+        style={hasChanges ? (saveBtnStyle || 'background-color: var(--primary); color: white;') : 'background-color: var(--primary); color: white;'}
+        disabled={!hasChanges}
         onclick={() => {
           if (hasChanges) {
             showConfirmSaveModal = true;
-          } else {
-            toastManager.warning('Нет изменений для сохранения');
           }
         }}
       >

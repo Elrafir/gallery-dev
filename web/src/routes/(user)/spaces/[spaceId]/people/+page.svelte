@@ -143,6 +143,7 @@
     type: person.type,
     assetCount: person.assetCount,
     faceCount: person.faceCount,
+    description: person.description,
   });
 
   const getPeopleQuery = (

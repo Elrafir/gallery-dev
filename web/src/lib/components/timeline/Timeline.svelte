@@ -61,6 +61,7 @@
         asset: TimelineAsset,
       ) => void,
     ) => void;
+    viewportTopMonth?: ViewportTopMonth;
   }
 
   let {
@@ -84,6 +85,7 @@
     empty,
     customThumbnailLayout,
     onThumbnailClick,
+    viewportTopMonth = $bindable(undefined),
   }: Props = $props();
 
   timelineManager = new TimelineManager();
@@ -96,8 +98,6 @@
   // The percentage of scroll through the month that is currently intersecting the top boundary of the viewport.
   // Note: There may be multiple months visible within the viewport at any given time.
   let viewportTopMonthScrollPercent = $state(0);
-  // The timeline month intersecting the top position of the viewport
-  let viewportTopMonth: ViewportTopMonth = $state(undefined);
   // Overall scroll percentage through the entire timeline (0-1)
   let timelineScrollPercent: number = $state(0);
   let scrubberWidth = $state(0);

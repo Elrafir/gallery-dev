@@ -30,6 +30,8 @@
   import TagsFilter from './tags-filter.svelte';
   import TemporalPicker from './temporal-picker.svelte';
 
+  import type { ViewportTopMonth } from '$lib/managers/timeline-manager/types';
+
   interface Props {
     timeBuckets: Array<{ timeBucket: string; count: number }>;
     filters?: FilterState;
@@ -39,6 +41,7 @@
     persistCollapsed?: boolean;
     storageKey?: string;
     hidden?: boolean;
+    activeTimelineMonth?: ViewportTopMonth;
   }
 
   const COLLAPSED_KEY = 'gallery-filter-collapsed';
@@ -53,6 +56,7 @@
     storageKey = 'gallery-filter-visible-sections',
     hidden = false,
     persistCollapsed = true,
+    activeTimelineMonth = undefined,
   }: Props = $props();
 
   function loadCollapsed(): boolean {
@@ -741,6 +745,7 @@
                 onCustomRangeChange={handleCustomDateRangeChange}
                 onYearSelect={handleYearSelect}
                 onMonthSelect={handleMonthSelect}
+                {activeTimelineMonth}
               />
             {:else if section === 'people'}
               <PeopleFilter

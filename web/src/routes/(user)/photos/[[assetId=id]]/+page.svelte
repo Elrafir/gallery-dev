@@ -72,6 +72,7 @@
   } from '$lib/utils/space-search';
   import { getAltText } from '$lib/utils/thumbnail-util';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
+  import type { ViewportTopMonth } from '$lib/managers/timeline-manager/types';
   import {
     AssetTypeEnum,
     getFilterSuggestions,
@@ -87,6 +88,7 @@
   import { SvelteMap } from 'svelte/reactivity';
 
   let timelineManager = $state<TimelineManager>() as TimelineManager;
+  let viewportTopMonth = $state<ViewportTopMonth>(undefined);
 
   // Filter state
   const initialSearchState = getSearchablePageState(page.url);
@@ -458,6 +460,7 @@
         {personNames}
         {tagNames}
         onFiltersChange={syncFilterUrl}
+        activeTimelineMonth={viewportTopMonth}
       />
     {/key}
     <div class="flex flex-1 flex-col overflow-hidden pl-4">
@@ -497,6 +500,7 @@
         <Timeline
           enableRouting={true}
           bind:timelineManager
+          bind:viewportTopMonth
           {options}
           assetInteraction={assetMultiSelectManager}
           removeAction={AssetAction.ARCHIVE}

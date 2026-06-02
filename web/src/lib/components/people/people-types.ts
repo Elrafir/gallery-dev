@@ -11,6 +11,7 @@ export type ManagedPerson = {
   assetCount?: number;
   faceCount?: number;
   canEditPersonalProfile?: boolean;
+  description?: string;
 };
 
 export type VisibilityPerson = Pick<ManagedPerson, 'id' | 'displayName' | 'thumbnailUrl' | 'isHidden'>;

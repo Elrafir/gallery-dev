@@ -39,6 +39,7 @@
   // Элемент контейнера карточки для замера позиции на экране
   let cardElement = $state<HTMLDivElement>();
   let hoverBelow = $state(false);
+  let hoverXOffsetClass = $state("left-1/2 -translate-x-1/2");
 
   // Состояние всплывающего окна при наведении
   let showHoverCard = $state(false);
@@ -63,6 +64,19 @@
         const rect = cardElement.getBoundingClientRect();
         // Если верхняя граница карточки ближе чем 280px к верху экрана, выводим окно снизу
         hoverBelow = rect.top < 280;
+
+        const sidebar = document.getElementById('sidebar');
+        const sidebarRight = sidebar ? sidebar.getBoundingClientRect().right : 0;
+        const cardCenter = rect.left + rect.width / 2;
+        const windowWidth = window.innerWidth;
+
+        if (cardCenter - 160 < sidebarRight + 12) {
+          hoverXOffsetClass = "left-0 translate-x-0";
+        } else if (cardCenter + 160 > windowWidth - 20) {
+          hoverXOffsetClass = "right-0 left-auto translate-x-0";
+        } else {
+          hoverXOffsetClass = "left-1/2 -translate-x-1/2";
+        }
       }
       
       isLoadingPeople = true;
@@ -109,7 +123,7 @@
 
 <div
   bind:this={cardElement}
-  class="group relative rounded-2xl border border-transparent p-5 hover:bg-gray-100 hover:border-gray-200 dark:hover:border-gray-800 dark:hover:bg-gray-900"
+  class="group relative rounded-2xl border border-transparent p-5 hover:bg-gray-100 hover:border-gray-200 dark:hover:border-gray-800 dark:hover:bg-gray-900 hover:z-30"
   data-testid="album-card"
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
@@ -183,8 +197,9 @@
   {#if showHoverCard}
     <div
       class={[
-        "absolute left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 z-40 text-left cursor-default transition-all",
-        hoverBelow ? "top-full mt-3" : "bottom-full mb-3"
+        "absolute bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 z-40 text-left cursor-default transition-all w-80",
+        hoverBelow ? "top-full mt-3" : "bottom-full mb-3",
+        hoverXOffsetClass
       ]}
       transition:fade={{ duration: 150 }}
       onmouseenter={handleHoverCardMouseEnter}

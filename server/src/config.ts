@@ -20,9 +20,9 @@ export type ClassificationFaceExclusion = 'off' | 'any_assigned_face' | 'named_p
 export type CountrySubstitutionRule = {
   country: string;
   state: string;
-  replacementCountry?: string;
-  replacementState?: string;
-  replacement?: string;
+  replacementCountry?: string | null;
+  replacementState?: string | null;
+  replacement?: string | null;
   startYear?: number;
   endYear?: number;
 };

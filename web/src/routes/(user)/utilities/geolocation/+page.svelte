@@ -14,7 +14,7 @@
   import type { LatLng } from '$lib/types';
   import { setQueryValue } from '$lib/utils/navigation';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
-  import { AssetVisibility, getAssetInfo, updateAssets } from '@immich/sdk';
+  import { AssetVisibility, getAssetInfo, updateAssets, reverseGeocode } from '@immich/sdk';
   import { Button, modalManager, Text } from '@immich/ui';
   import { mdiMapMarkerMultipleOutline, mdiPencilOutline, mdiSelectRemove } from '@mdi/js';
   import { t } from 'svelte-i18n';
@@ -129,6 +129,27 @@
       onClick(timelineManager, timelineDay.getAssets(), timelineDay.groupTitle, asset);
     }
   };
+
+  let geocodeAddress = $state<string>('');
+
+  $effect(() => {
+    if (point) {
+      reverseGeocode({ lat: point.lat, lon: point.lng })
+        .then((res) => {
+          if (res && res.length > 0) {
+            const parts = [res[0].city, res[0].state, res[0].country].filter(Boolean);
+            geocodeAddress = parts.join(', ');
+          } else {
+            geocodeAddress = '';
+          }
+        })
+        .catch(() => {
+          geocodeAddress = '';
+        });
+    } else {
+      geocodeAddress = '';
+    }
+  });
 </script>
 
 <svelte:document onkeydown={onKeyDown} onkeyup={onKeyUp} />
@@ -136,8 +157,15 @@
 <UserPageLayout title={data.meta.title} scrollbar={true}>
   {#snippet buttons()}
     <div class="flex gap-2 justify-end place-items-center">
-      <Text class="hidden md:block mr-4" size="tiny" color="muted">{$t('geolocation_instruction_location')}</Text>
-      <div class="border flex place-items-center place-content-center px-2 py-1 bg-primary/10 rounded-2xl">
+      {#if geocodeAddress}
+        <Text class="hidden md:block mr-4 text-xs font-semibold max-w-[250px] truncate" color="muted" title={geocodeAddress}>
+          {geocodeAddress}
+        </Text>
+      {/if}
+      <div
+        title={$t('geolocation_instruction_location')}
+        class="border flex place-items-center place-content-center px-2 py-1 bg-primary/10 rounded-2xl cursor-help"
+      >
         <Text class="hidden md:inline-block font-mono mr-5 ml-2" color="muted" size="tiny">
           {$t('selected_gps_coordinates')}
         </Text>

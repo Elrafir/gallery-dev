@@ -5,6 +5,7 @@
   import { handleError } from '$lib/utils/handle-error';
   import { getAllPeople, type PersonResponseDto } from '@immich/sdk';
   import { Button, HStack, Modal, ModalBody, ModalFooter } from '@immich/ui';
+  import PersonTooltip from '$lib/components/people/PersonTooltip.svelte';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
   import LoadingSpinner from '$lib/components/shared-components/LoadingSpinner.svelte';
@@ -71,22 +72,26 @@
           <div class="grid grid-cols-3 gap-4 p-2">
             {#each filteredPeople as person (person.id)}
               {@const isSelected = selectedPeople.some((p) => p.id === person.id)}
-              <button
-                type="button"
-                onclick={() => togglePerson(person)}
-                class="flex flex-col items-center gap-2 rounded-xl p-2 transition-all hover:bg-subtle {isSelected
-                  ? 'bg-primary/10 ring-2 ring-primary'
-                  : ''}"
-              >
-                <ImageThumbnail
-                  circle
-                  shadow
-                  url={getPeopleThumbnailUrl(person)}
-                  altText={person.name}
-                  widthStyle="100%"
-                />
-                <p class="line-clamp-2 text-center text-sm font-medium">{person.name}</p>
-              </button>
+              <PersonTooltip name={person.name} description={person.description} class="w-full inline-block">
+                {#snippet child()}
+                  <button
+                    type="button"
+                    onclick={() => togglePerson(person)}
+                    class="flex flex-col items-center gap-2 rounded-xl p-2 transition-all hover:bg-subtle {isSelected
+                      ? 'bg-primary/10 ring-2 ring-primary'
+                      : ''}"
+                  >
+                    <ImageThumbnail
+                      circle
+                      shadow
+                      url={getPeopleThumbnailUrl(person)}
+                      altText={person.name}
+                      widthStyle="100%"
+                    />
+                    <p class="line-clamp-2 text-center text-sm font-medium">{person.name}</p>
+                  </button>
+                {/snippet}
+              </PersonTooltip>
             {/each}
           </div>
         {:else}

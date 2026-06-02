@@ -300,6 +300,7 @@
     species: person.species,
     assetCount: person.numberOfAssets,
     canEditPersonalProfile: isPersonalPrimary(person),
+    description: person.description,
   });
 
   const onNameChangeSubmit = async (name: string, targetPerson: PersonResponseDto) => {

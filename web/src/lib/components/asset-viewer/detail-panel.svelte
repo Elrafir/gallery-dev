@@ -22,10 +22,13 @@
     AssetMediaSize,
     getAllAlbums,
     getAssetInfo,
+    getPerson,
     type AlbumResponseDto,
     type AssetResponseDto,
   } from '@immich/sdk';
-  import { Icon, IconButton, Text } from '@immich/ui';
+  import { SvelteMap } from 'svelte/reactivity';
+  import { Icon, IconButton, Text, Tooltip } from '@immich/ui';
+  import PersonTooltip from '$lib/components/people/PersonTooltip.svelte';
   import {
     mdiCamera,
     mdiCameraIris,
@@ -76,6 +79,32 @@
   );
   let previousId: string | undefined = $state();
   let previousRoute = $derived(currentAlbum?.id ? Route.viewAlbum(currentAlbum) : Route.photos());
+
+  let peopleDescriptions = $state(new SvelteMap<string, string>());
+
+  $effect(() => {
+    const currentPeople = people;
+    const peopleIds = currentPeople.map((p) => p.id);
+    
+    const loadDescriptions = async () => {
+      const newDescriptions = new SvelteMap<string, string>();
+      await Promise.all(
+        peopleIds.map(async (id) => {
+          try {
+            const personDto = await getPerson({ id });
+            if (personDto.description) {
+              newDescriptions.set(id, personDto.description);
+            }
+          } catch (e) {
+            console.error('Failed to load person description for ID:', id, e);
+          }
+        })
+      );
+      peopleDescriptions = newDescriptions;
+    };
+    
+    loadDescriptions();
+  });
 
   const refreshAlbums = async () => {
     if (authManager.isSharedLink) {
@@ -220,60 +249,63 @@
             {#if showingHiddenPeople || !person.isHidden}
               {@const isHighlighted = people[index].faces.some((f) => $boundingBoxesArray.some((b) => b.id === f.id))}
               {@const personThumbnailUrl = getPersonThumbnailUrl(person)}
-              <a
-                class="group w-22 outline-none"
-                href={effectiveSpaceId && person.spacePersonId
-                  ? Route.viewSpacePerson(effectiveSpaceId, person.spacePersonId)
-                  : Route.viewPerson(person, { previousRoute })}
-                onfocus={() => ($boundingBoxesArray = people[index].faces)}
-                onblur={() => ($boundingBoxesArray = [])}
-                onmouseover={() => ($boundingBoxesArray = people[index].faces)}
-                onmouseleave={() => ($boundingBoxesArray = [])}
-              >
-                <div class="relative">
-                  <ImageThumbnail
-                    curve
-                    shadow
-                    url={personThumbnailUrl}
-                    altText={person.name}
-                    title={person.name}
-                    widthStyle="90px"
-                    heightStyle="90px"
-                    hidden={person.isHidden}
-                    highlighted={isHighlighted}
-                    class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
-                  />
-                </div>
-                <p class="mt-1 truncate font-medium" title={person.name}>{person.name}</p>
-                {#if person.birthDate}
-                  {@const personBirthDate = DateTime.fromISO(person.birthDate)}
-                  {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
-                  {@const ageInMonths = Math.floor(
-                    DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
-                  )}
-                  {#if age >= 0}
-                    <p
-                      class="font-light"
-                      title={personBirthDate.toLocaleString(
-                        {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        },
-                        { locale: $locale },
+              <PersonTooltip name={person.name} description={peopleDescriptions.get(person.id)} class="inline-block w-22 text-center">
+                {#snippet child()}
+                  <a
+                    class="group w-22 outline-none"
+                    href={effectiveSpaceId && person.spacePersonId
+                      ? Route.viewSpacePerson(effectiveSpaceId, person.spacePersonId)
+                      : Route.viewPerson(person, { previousRoute })}
+                    onfocus={() => ($boundingBoxesArray = people[index].faces)}
+                    onblur={() => ($boundingBoxesArray = [])}
+                    onmouseover={() => ($boundingBoxesArray = people[index].faces)}
+                    onmouseleave={() => ($boundingBoxesArray = [])}
+                  >
+                    <div class="relative">
+                      <ImageThumbnail
+                        curve
+                        shadow
+                        url={personThumbnailUrl}
+                        altText={person.name}
+                        widthStyle="90px"
+                        heightStyle="90px"
+                        hidden={person.isHidden}
+                        highlighted={isHighlighted}
+                        class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
+                      />
+                    </div>
+                    <p class="mt-1 truncate font-medium">{person.name}</p>
+                    {#if person.birthDate}
+                      {@const personBirthDate = DateTime.fromISO(person.birthDate)}
+                      {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
+                      {@const ageInMonths = Math.floor(
+                        DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'months').months,
                       )}
-                    >
-                      {#if ageInMonths <= 11}
-                        {$t('age_months', { values: { months: ageInMonths } })}
-                      {:else if ageInMonths > 12 && ageInMonths <= 23}
-                        {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
-                      {:else}
-                        {$t('age_years', { values: { years: age } })}
+                      {#if age >= 0}
+                        <p
+                          class="font-light"
+                          title={personBirthDate.toLocaleString(
+                            {
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric',
+                            },
+                            { locale: $locale },
+                          )}
+                        >
+                          {#if ageInMonths <= 11}
+                            {$t('age_months', { values: { months: ageInMonths } })}
+                          {:else if ageInMonths > 12 && ageInMonths <= 23}
+                            {$t('age_year_months', { values: { months: ageInMonths - 12 } })}
+                          {:else}
+                            {$t('age_years', { values: { years: age } })}
+                          {/if}
+                        </p>
                       {/if}
-                    </p>
-                  {/if}
-                {/if}
-              </a>
+                    {/if}
+                  </a>
+                {/snippet}
+              </PersonTooltip>
             {/if}
           {/each}
         </div>

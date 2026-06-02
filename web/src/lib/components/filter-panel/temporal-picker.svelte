@@ -3,6 +3,12 @@
   import { get } from 'svelte/store';
   import { t } from 'svelte-i18n';
   import { aggregateYears, getMonthsForYear } from './temporal-utils';
+  import type { ViewportTopMonth } from '$lib/managers/timeline-manager/types';
+  import { SvelteSet } from 'svelte/reactivity';
+  import { slide } from 'svelte/transition';
+  import { Icon } from '@immich/ui';
+  import { mdiChevronDown } from '@mdi/js';
+
   const tLocal = get(t);
   const CUSTOM_RANGE_ERROR_ID = 'custom-date-range-error';
 
@@ -15,6 +21,7 @@
     onCustomRangeChange?: (dateAfter?: string, dateBefore?: string) => void;
     onYearSelect?: (year: number | undefined) => void;
     onMonthSelect?: (year: number, month: number | undefined) => void;
+    activeTimelineMonth?: ViewportTopMonth;
   }
 
   let {
@@ -26,6 +33,7 @@
     onCustomRangeChange,
     onYearSelect,
     onMonthSelect,
+    activeTimelineMonth = undefined,
   }: Props = $props();
 
   let years = $derived(aggregateYears(timeBuckets));
@@ -37,6 +45,69 @@
   let toValue = $state('');
   let customRangeError = $state<string | undefined>();
   let customRangeErrorTarget = $state<'from' | 'to' | 'range' | undefined>();
+
+  interface YearGroup {
+    label: string;
+    years: typeof years;
+    minYear: number;
+    maxYear: number;
+  }
+
+  let groups = $derived.by<YearGroup[]>(() => {
+    if (years.length === 0) return [];
+    
+    const res: YearGroup[] = [];
+    
+    // до 1980
+    const before1980 = years.filter(y => y.year < 1980);
+    if (before1980.length > 0) {
+      res.push({
+        label: 'до 1980',
+        years: before1980,
+        minYear: -Infinity,
+        maxYear: 1979
+      });
+    }
+    
+    // С 1980 по 2000, с 2000 по 2020 и т.д.
+    const maxYearInTimeline = Math.max(...years.map(y => y.year), 1980);
+    let start = 1980;
+    while (start <= maxYearInTimeline) {
+      const end = start + 20;
+      const intervalYears = years.filter(y => y.year >= start && y.year < end);
+      if (intervalYears.length > 0) {
+        res.push({
+          label: `${start} - ${end}`,
+          years: intervalYears,
+          minYear: start,
+          maxYear: end - 1
+        });
+      }
+      start = end;
+    }
+    
+    return res;
+  });
+
+  let expandedGroups = $state(new SvelteSet<string>());
+  let lastAutoOpenedGroup = $state<string | null>(null);
+
+  // Автоматически раскрываем нужную группу лет при скролле таймлайна
+  $effect(() => {
+    if (activeTimelineMonth && typeof activeTimelineMonth === 'object' && 'year' in activeTimelineMonth) {
+      const activeYear = activeTimelineMonth.year;
+      const matchingGroup = groups.find(
+        (g) => activeYear >= g.minYear && activeYear <= g.maxYear
+      );
+      if (matchingGroup) {
+        if (matchingGroup.label !== lastAutoOpenedGroup) {
+          expandedGroups.clear();
+          expandedGroups.add(matchingGroup.label);
+          lastAutoOpenedGroup = matchingGroup.label;
+        }
+      }
+    }
+  });
 
   $effect(() => {
     fromValue = dateAfter ?? '';
@@ -76,7 +147,6 @@
   }
 
   function validateAndEmitCustomRange() {
-    //const tLocal = get(t);
     const parsedFrom = parseDateOnly(fromValue);
     if (!parsedFrom.valid) {
       customRangeError = tLocal('filter_custom_date_invalid_from');
@@ -228,27 +298,57 @@
       {/each}
     </div>
   {:else}
-    <div class="flex flex-wrap gap-1.5" data-testid="year-grid">
-      {#each years as y (y.year)}
-        <button
-          type="button"
-          class="year-chip flex min-w-[54px] flex-1 basis-[calc(25%-5px)] flex-col items-center rounded-lg border px-2 py-1.5 transition-all duration-100
-            {y.count === 0
-            ? 'cursor-default border-gray-200 opacity-30 dark:border-gray-700'
-            : 'cursor-pointer border-gray-200 hover:border-immich-primary hover:bg-immich-primary/5 dark:border-gray-700 dark:hover:border-immich-dark-primary dark:hover:bg-immich-dark-primary/5'}"
-          onclick={() => handleYearClick(y.year, y.count)}
-          data-testid="year-btn-{y.year}"
-        >
-          <span class="text-xs font-semibold leading-tight">{y.year}</span>
-          <span class="text-xs leading-tight text-gray-400 opacity-60 dark:text-gray-500">{y.count}</span>
-          <div class="mt-0.5 h-[2px] w-full overflow-hidden rounded-sm bg-gray-200 dark:bg-gray-700">
-            <div
-              class="h-full rounded-sm bg-immich-primary transition-[width] duration-300 dark:bg-immich-dark-primary"
-              style="width: {y.volumePercent}%"
-            ></div>
-          </div>
-        </button>
+    <div class="space-y-1" data-testid="year-grid">
+      {#each groups as group (group.label)}
+        {@const isExpanded = expandedGroups.has(group.label)}
+        <div class="border-b border-gray-100 dark:border-zinc-800 last:border-0 pb-1">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between py-1.5 text-xs font-medium hover:text-immich-primary dark:hover:text-immich-dark-primary"
+            onclick={() => {
+              if (expandedGroups.has(group.label)) {
+                expandedGroups.delete(group.label);
+              } else {
+                expandedGroups.clear();
+                expandedGroups.add(group.label);
+              }
+            }}
+          >
+            <span>{group.label}</span>
+            <Icon
+              icon={mdiChevronDown}
+              size="16"
+              class="text-gray-500 transition-transform dark:text-gray-400 {isExpanded ? '' : '-rotate-90'}"
+            />
+          </button>
+          
+          {#if isExpanded}
+            <div class="flex flex-wrap gap-1.5 pt-1" transition:slide={{ duration: 250 }}>
+              {#each group.years as y (y.year)}
+                <button
+                  type="button"
+                  class="year-chip flex min-w-[54px] flex-1 basis-[calc(25%-5px)] flex-col items-center rounded-lg border px-2 py-1.5 transition-all duration-100
+                    {y.count === 0
+                    ? 'cursor-default border-gray-200 opacity-30 dark:border-gray-700'
+                    : 'cursor-pointer border-gray-200 hover:border-immich-primary hover:bg-immich-primary/5 dark:border-gray-700 dark:hover:border-immich-dark-primary dark:hover:bg-immich-dark-primary/5'}"
+                  onclick={() => handleYearClick(y.year, y.count)}
+                  data-testid="year-btn-{y.year}"
+                >
+                  <span class="text-xs font-semibold leading-tight">{y.year}</span>
+                  <span class="text-xs leading-tight text-gray-400 opacity-60 dark:text-gray-500">{y.count}</span>
+                  <div class="mt-0.5 h-[2px] w-full overflow-hidden rounded-sm bg-gray-200 dark:bg-gray-700">
+                    <div
+                      class="h-full rounded-sm bg-immich-primary transition-[width] duration-300 dark:bg-immich-dark-primary"
+                      style="width: {y.volumePercent}%"
+                    ></div>
+                  </div>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/each}
     </div>
   {/if}
 </div>
+

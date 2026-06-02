@@ -8,6 +8,7 @@
   import { getPersonNameWithHiddenValue } from '$lib/utils/person';
   import { AssetTypeEnum, getAllPeople, type AssetFaceResponseDto, type PersonResponseDto } from '@immich/sdk';
   import { IconButton } from '@immich/ui';
+  import PersonTooltip from '$lib/components/people/PersonTooltip.svelte';
   import { mdiArrowLeftThin, mdiClose, mdiMagnify, mdiPlus } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
@@ -158,27 +159,27 @@
         {#each showPeople as person (person.id)}
           {#if !editedFace.person || person.id !== editedFace.person.id}
             <div class="w-fit">
-              <button type="button" class="w-22.5" onclick={() => onReassign(person)}>
-                <div class="relative">
-                  <ImageThumbnail
-                    curve
-                    shadow
-                    url={getPeopleThumbnailUrl(person)}
-                    altText={$getPersonNameWithHiddenValue(person.name, person.isHidden)}
-                    title={$getPersonNameWithHiddenValue(person.name, person.isHidden)}
-                    widthStyle="90px"
-                    heightStyle="90px"
-                    hidden={person.isHidden}
-                  />
-                </div>
+              <PersonTooltip name={$getPersonNameWithHiddenValue(person.name, person.isHidden)} description={person.description}>
+                {#snippet child()}
+                  <button type="button" class="w-22.5" onclick={() => onReassign(person)}>
+                    <div class="relative">
+                      <ImageThumbnail
+                        curve
+                        shadow
+                        url={getPeopleThumbnailUrl(person)}
+                        altText={$getPersonNameWithHiddenValue(person.name, person.isHidden)}
+                        widthStyle="90px"
+                        heightStyle="90px"
+                        hidden={person.isHidden}
+                      />
+                    </div>
 
-                <p
-                  class="mt-1 truncate font-medium"
-                  title={$getPersonNameWithHiddenValue(person.name, person.isHidden)}
-                >
-                  {person.name}
-                </p>
-              </button>
+                    <p class="mt-1 truncate font-medium">
+                      {person.name}
+                    </p>
+                  </button>
+                {/snippet}
+              </PersonTooltip>
             </div>
           {/if}
         {/each}

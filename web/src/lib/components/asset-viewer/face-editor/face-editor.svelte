@@ -7,7 +7,8 @@
   import { getNaturalSize, scaleToFit } from '$lib/utils/container-utils';
   import { handleError } from '$lib/utils/handle-error';
   import { createFace, getAllPeople, type PersonResponseDto } from '@immich/sdk';
-  import { Button, Input, modalManager, toastManager } from '@immich/ui';
+  import { Button, Input, modalManager, toastManager, Tooltip } from '@immich/ui';
+  import PersonTooltip from '$lib/components/people/PersonTooltip.svelte';
   import { Canvas, InteractiveFabricObject, Rect } from 'fabric';
   import { clamp } from 'lodash-es';
   import { onDestroy, onMount, tick } from 'svelte';
@@ -388,24 +389,27 @@
       {#if filteredCandidates.length > 0}
         <div class="mt-2 rounded-lg">
           {#each filteredCandidates as person (person.id)}
-            <button
-              onclick={() => tagFace(person)}
-              type="button"
-              class="w-full flex place-items-center gap-2 rounded-lg ps-1 pe-4 py-2 hover:bg-immich-primary/25"
-            >
-              <ImageThumbnail
-                curve
-                shadow
-                url={getPeopleThumbnailUrl(person)}
-                altText={person.name}
-                title={person.name}
-                widthStyle="30px"
-                heightStyle="30px"
-              />
-              <p class="text-sm">
-                {person.name}
-              </p>
-            </button>
+            <PersonTooltip name={person.name} description={person.description}>
+              {#snippet child()}
+                <button
+                  onclick={() => tagFace(person)}
+                  type="button"
+                  class="w-full flex place-items-center gap-2 rounded-lg ps-1 pe-4 py-2 hover:bg-immich-primary/25"
+                >
+                  <ImageThumbnail
+                    curve
+                    shadow
+                    url={getPeopleThumbnailUrl(person)}
+                    altText={person.name}
+                    widthStyle="30px"
+                    heightStyle="30px"
+                  />
+                  <p class="text-sm">
+                    {person.name}
+                  </p>
+                </button>
+              {/snippet}
+            </PersonTooltip>
           {/each}
         </div>
       {:else}

@@ -19,6 +19,7 @@
     type PersonResponseDto,
   } from '@immich/sdk';
   import { Icon, IconButton, modalManager, toastManager } from '@immich/ui';
+  import PersonTooltip from '$lib/components/people/PersonTooltip.svelte';
   import { mdiAccountOff, mdiArrowLeftThin, mdiPencil, mdiRestart, mdiTrashCan } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
@@ -185,6 +186,20 @@
       handleError(error, $t('error_delete_face'));
     }
   };
+  const getFaceTooltipInfo = (face: AssetFaceResponseDto) => {
+    if (selectedPersonToCreate[face.id]) {
+      return { name: $t('new_person') };
+    }
+    const reassigned = selectedPersonToReassign[face.id];
+    if (reassigned) {
+      return { name: reassigned.name, description: reassigned.description };
+    }
+    if (face.person) {
+      const name = $getPersonNameWithHiddenValue(face.person.name, face.person.isHidden);
+      return { name, description: face.person.description };
+    }
+    return { name: $t('face_unassigned') };
+  };
 </script>
 
 <OnEvents {onPersonThumbnailReady} />
@@ -242,89 +257,86 @@
           {@const personName = face.person ? face.person?.name : $t('face_unassigned')}
           {@const isHighlighted = $boundingBoxesArray.some((b) => b.id === face.id)}
           <div class="relative h-29 w-24">
-            <div
-              role="button"
-              tabindex={index}
-              class="absolute start-0 top-0 h-22.5 w-22.5 cursor-default"
-              onfocus={() => ($boundingBoxesArray = [peopleWithFaces[index]])}
-              onmouseover={() => ($boundingBoxesArray = [peopleWithFaces[index]])}
-              onmouseleave={() => ($boundingBoxesArray = [])}
-            >
-              <div class="relative">
-                {#if selectedPersonToCreate[face.id]}
-                  <ImageThumbnail
-                    curve
-                    shadow
-                    highlighted={isHighlighted}
-                    url={selectedPersonToCreate[face.id]}
-                    altText={$t('new_person')}
-                    title={$t('new_person')}
-                    widthStyle={thumbnailWidth}
-                    heightStyle={thumbnailWidth}
-                  />
-                {:else if selectedPersonToReassign[face.id]}
-                  <ImageThumbnail
-                    curve
-                    shadow
-                    highlighted={isHighlighted}
-                    url={getPeopleThumbnailUrl(selectedPersonToReassign[face.id])}
-                    altText={selectedPersonToReassign[face.id].name}
-                    title={$getPersonNameWithHiddenValue(
-                      selectedPersonToReassign[face.id].name,
-                      selectedPersonToReassign[face.id]?.isHidden,
-                    )}
-                    widthStyle={thumbnailWidth}
-                    heightStyle={thumbnailWidth}
-                    hidden={selectedPersonToReassign[face.id].isHidden}
-                  />
-                {:else if face.person}
-                  <ImageThumbnail
-                    curve
-                    shadow
-                    highlighted={isHighlighted}
-                    url={getPeopleThumbnailUrl(face.person)}
-                    altText={face.person.name}
-                    title={$getPersonNameWithHiddenValue(face.person.name, face.person.isHidden)}
-                    widthStyle={thumbnailWidth}
-                    heightStyle={thumbnailWidth}
-                    hidden={face.person.isHidden}
-                  />
-                {:else}
-                  {#await zoomImageToBase64(face, assetId, assetType, assetViewerManager.imgRef)}
-                    <ImageThumbnail
-                      curve
-                      shadow
-                      highlighted={isHighlighted}
-                      url="/src/lib/assets/no-thumbnail.png"
-                      altText={$t('face_unassigned')}
-                      title={$t('face_unassigned')}
-                      widthStyle="90px"
-                      heightStyle="90px"
-                    />
-                  {:then data}
-                    <ImageThumbnail
-                      curve
-                      shadow
-                      highlighted={isHighlighted}
-                      url={data === null ? '/src/lib/assets/no-thumbnail.png' : data}
-                      altText={$t('face_unassigned')}
-                      title={$t('face_unassigned')}
-                      widthStyle="90px"
-                      heightStyle="90px"
-                    />
-                  {/await}
-                {/if}
-              </div>
+            <PersonTooltip name={getFaceTooltipInfo(face).name} description={getFaceTooltipInfo(face).description}>
+              {#snippet child()}
+                <div
+                  role="button"
+                  tabindex={index}
+                  class="absolute start-0 top-0 h-22.5 w-22.5 cursor-default"
+                  onfocus={() => ($boundingBoxesArray = [peopleWithFaces[index]])}
+                  onmouseover={() => ($boundingBoxesArray = [peopleWithFaces[index]])}
+                  onmouseleave={() => ($boundingBoxesArray = [])}
+                >
+                  <div class="relative">
+                    {#if selectedPersonToCreate[face.id]}
+                      <ImageThumbnail
+                        curve
+                        shadow
+                        highlighted={isHighlighted}
+                        url={selectedPersonToCreate[face.id]}
+                        altText={$t('new_person')}
+                        widthStyle={thumbnailWidth}
+                        heightStyle={thumbnailWidth}
+                      />
+                    {:else if selectedPersonToReassign[face.id]}
+                      <ImageThumbnail
+                        curve
+                        shadow
+                        highlighted={isHighlighted}
+                        url={getPeopleThumbnailUrl(selectedPersonToReassign[face.id])}
+                        altText={selectedPersonToReassign[face.id].name}
+                        widthStyle={thumbnailWidth}
+                        heightStyle={thumbnailWidth}
+                        hidden={selectedPersonToReassign[face.id].isHidden}
+                      />
+                    {:else if face.person}
+                      <ImageThumbnail
+                        curve
+                        shadow
+                        highlighted={isHighlighted}
+                        url={getPeopleThumbnailUrl(face.person)}
+                        altText={face.person.name}
+                        widthStyle={thumbnailWidth}
+                        heightStyle={thumbnailWidth}
+                        hidden={face.person.isHidden}
+                      />
+                    {:else}
+                      {#await zoomImageToBase64(face, assetId, assetType, assetViewerManager.imgRef)}
+                        <ImageThumbnail
+                          curve
+                          shadow
+                          highlighted={isHighlighted}
+                          url="/src/lib/assets/no-thumbnail.png"
+                          altText={$t('face_unassigned')}
+                          widthStyle="90px"
+                          heightStyle="90px"
+                        />
+                      {:then data}
+                        <ImageThumbnail
+                          curve
+                          shadow
+                          highlighted={isHighlighted}
+                          url={data === null ? '/src/lib/assets/no-thumbnail.png' : data}
+                          altText={$t('face_unassigned')}
+                          widthStyle="90px"
+                          heightStyle="90px"
+                        />
+                      {/await}
+                    {/if}
+                  </div>
 
-              {#if !selectedPersonToCreate[face.id]}
-                <p class="relative mt-1 truncate font-medium" title={personName}>
-                  {#if selectedPersonToReassign[face.id]?.id}
-                    {selectedPersonToReassign[face.id]?.name}
-                  {:else}
-                    <span class={personName === $t('face_unassigned') ? 'dark:text-gray-500' : ''}>{personName}</span>
+                  {#if !selectedPersonToCreate[face.id]}
+                    <p class="relative mt-1 truncate font-medium">
+                      {#if selectedPersonToReassign[face.id]?.id}
+                        {selectedPersonToReassign[face.id]?.name}
+                      {:else}
+                        <span class={personName === $t('face_unassigned') ? 'dark:text-gray-500' : ''}>{personName}</span>
+                      {/if}
+                    </p>
                   {/if}
-                </p>
-              {/if}
+                </div>
+              {/snippet}
+            </PersonTooltip>
 
               <div class="absolute -end-[3px] -top-[3px] h-5 w-5 rounded-full">
                 {#if selectedPersonToCreate[face.id] || selectedPersonToReassign[face.id]}
@@ -373,10 +385,9 @@
                 </div>
               {/if}
             </div>
-          </div>
-        {/each}
-      {/if}
-    </div>
+          {/each}
+        {/if}
+      </div>
   </div>
 </section>
 

@@ -1032,7 +1032,6 @@ export class SearchRepository {
             return uniqueResults;
           }
         }
-      }
     } catch (error: any) {
       // Логируем ошибку, но даем коду выполниться дальше и сделать фоллбэк к БД
       console.error(`Ошибка поиска мест через локальный Nominatim: ${error.message}`);
