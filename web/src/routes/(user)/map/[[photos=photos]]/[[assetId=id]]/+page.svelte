@@ -433,7 +433,7 @@
         >
           <!-- Floating Search Input Overlay -->
           <div
-            class="absolute top-4 left-[51px] z-20 flex items-center transition-all duration-300 ease-out"
+            class="absolute top-[10px] left-[45px] z-20 flex items-center transition-all duration-300 ease-out"
             use:clickOutside={{
               onOutclick: () => {
                 if (searchWord === '') {
@@ -454,7 +454,7 @@
                   onclick={() => (isSearchExpanded = true)}
                   title="Поиск мест"
                 >
-                  <Icon icon={mdiMagnify} size="18" class="text-black/85 dark:text-white/85" />
+                  <Icon icon={mdiMagnify} size="20" class="text-zinc-800 dark:text-zinc-200" />
                 </button>
               </div>
             {:else}
