@@ -499,7 +499,7 @@
           <ButtonContextMenu
             buttonClass="icon-white-drop-shadow"
             color="secondary"
-            size="medium"
+            size="24"
             variant="filled"
             icon={mdiDotsVertical}
             title={$t('show_person_options')}

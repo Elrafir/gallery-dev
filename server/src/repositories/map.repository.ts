@@ -308,7 +308,7 @@ this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, nul
           city = city ? `${streetPart}, ${city}` : streetPart;
         }
 
-        const state = data.address.state || data.address.region || data.address.state_district || null;
+        let state = data.address.state || data.address.region || data.address.state_district || null;
         let country = data.address.country || null;
 
         if (country && state && config.reverseGeocoding.substitutions?.length) {
@@ -330,7 +330,8 @@ this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, nul
             if (rule.endYear !== undefined && year !== null && year > rule.endYear) {
               continue;
             }
-            country = rule.replacement;
+            country = rule.replacementCountry || rule.replacement || rule.country;
+            state = rule.replacementState || rule.state;
             break;
           }
         }

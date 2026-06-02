@@ -65,9 +65,6 @@ export class SystemConfigService extends BaseService {
         if (!r1.state || !r1.state.trim()) {
           throw new Error('Поле Область/Регион должно быть заполнено');
         }
-        if (!r1.replacement || !r1.replacement.trim()) {
-          throw new Error('Поле Желаемое значение должно быть заполнено');
-        }
         if (r1.startYear !== undefined && r1.endYear !== undefined && r1.startYear > r1.endYear) {
           throw new Error(`Некорректный диапазон лет: год начала (${r1.startYear}) не может быть больше года окончания (${r1.endYear})`);
         }

@@ -939,17 +939,51 @@ export class SearchRepository {
   async searchPlaces(placeName: string, geocoderUrl: string, featuretype?: string) {
     // Если включен опрос локального Nominatim, ищем места через него
     try {
-      let url = `${geocoderUrl}/search?format=jsonv2&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
+      const urls: string[] = [];
+      
+      // Добавляем обычный текстовый поиск с ограничением по типу
+      let mainUrl = `${geocoderUrl}/search?format=jsonv2&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
       if (featuretype) {
-        url += `&featuretype=${encodeURIComponent(featuretype)}`;
+        mainUrl += `&featuretype=${encodeURIComponent(featuretype)}`;
       }
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }
+      urls.push(mainUrl);
+
+      // Если указан тип (country/state), добавляем точечный поиск по структурированному параметру
+      if (featuretype === 'country') {
+        urls.push(`${geocoderUrl}/search?format=jsonv2&country=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`);
+      } else if (featuretype === 'state') {
+        urls.push(`${geocoderUrl}/search?format=jsonv2&state=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`);
+      }
+
+      // Выполняем запросы параллельно
+      const fetchPromises = urls.map(async (u) => {
+        try {
+          const r = await fetch(u, {
+            headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }
+          });
+          if (r.ok) {
+            return (await r.json()) as any[];
+          }
+        } catch (e) {
+          // Игнорируем отдельные ошибки запросов
+        }
+        return [];
       });
 
-      if (res.ok) {
-        const data = (await res.json()) as any[];
-        if (Array.isArray(data) && data.length > 0) {
+      const responses = await Promise.all(fetchPromises);
+      // Объединяем результаты
+      const data: any[] = [];
+      const seenPlaceIds = new Set<number>();
+      for (const list of responses) {
+        for (const item of list) {
+          if (item && item.place_id && !seenPlaceIds.has(item.place_id)) {
+            seenPlaceIds.add(item.place_id);
+            data.push(item);
+          }
+        }
+      }
+
+      if (data.length > 0) {
           const results = [];
           for (const item of data) {
             if (item.address) {

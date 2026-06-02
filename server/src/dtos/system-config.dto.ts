@@ -280,7 +280,9 @@ const CountrySubstitutionRuleSchema = z
   .object({
     country: z.string().min(1).describe('Original country name'),
     state: z.string().min(1).describe('Original state/region/republic name'),
-    replacement: z.string().min(1).describe('Replacement country name'),
+    replacementCountry: z.string().optional().describe('Replacement country name'),
+    replacementState: z.string().optional().describe('Replacement state/region name'),
+    replacement: z.string().optional().describe('Replacement country name (legacy)'),
     startYear: z.coerce.number().int().min(1000).max(3000).optional().describe('Start year (inclusive)'),
     endYear: z.coerce.number().int().min(1000).max(3000).optional().describe('End year (inclusive)'),
   })
