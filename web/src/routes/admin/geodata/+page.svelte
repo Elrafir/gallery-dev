@@ -1419,13 +1419,12 @@
             <tbody class="divide-y divide-gray-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
               {#each ruleItems as rule, idx}
                 <tr 
-                  class="hover:bg-gray-50 dark:hover:bg-zinc-850/30 transition-colors"
-                  class:bg-green-50={rule.status === 'added'}
-                  class:dark:bg-green-950/20={rule.status === 'added'}
-                  class:bg-yellow-50={rule.status === 'edited'}
-                  class:dark:bg-yellow-950/20={rule.status === 'edited'}
-                  class:bg-red-50={rule.status === 'deleted'}
-                  class:dark:bg-red-950/20={rule.status === 'deleted'}
+                  class={[
+                    "hover:bg-gray-50 dark:hover:bg-zinc-850/30 transition-colors",
+                    rule.status === 'added' && "bg-green-50 dark:bg-green-950/20",
+                    rule.status === 'edited' && "bg-yellow-50 dark:bg-yellow-950/20",
+                    rule.status === 'deleted' && "bg-red-50 dark:bg-red-950/20"
+                  ]}
                 >
                   <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{rule.country}</td>
                   <td class="px-6 py-4 text-sm text-gray-600 dark:text-zinc-300">{rule.state}</td>

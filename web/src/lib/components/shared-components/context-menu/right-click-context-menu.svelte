@@ -91,7 +91,7 @@
         },
       ]}
     >
-      <section class="fixed start-0 top-0 flex h-dvh w-dvw" {oncontextmenu} role="presentation">
+      <section class="fixed start-0 top-0 flex h-dvh w-dvw z-50" {oncontextmenu} role="presentation">
         <ContextMenu
           {direction}
           {x}

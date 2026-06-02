@@ -36,6 +36,10 @@
     onShowContextMenu?.(getContextMenuPositionFromEvent(e));
   };
 
+  // Элемент контейнера карточки для замера позиции на экране
+  let cardElement = $state<HTMLDivElement>();
+  let hoverBelow = $state(false);
+
   // Состояние всплывающего окна при наведении
   let showHoverCard = $state(false);
   let hoverPeople = $state<Array<{ id: string; name: string; thumbnailUrl: string }>>([]);
@@ -53,7 +57,14 @@
       clearTimeout(hoverCardTimeout);
     }
 
+    // Время для срабатывания снижено до 0.7 секунды
     hoverCardTimeout = setTimeout(async () => {
+      if (cardElement) {
+        const rect = cardElement.getBoundingClientRect();
+        // Если верхняя граница карточки ближе чем 280px к верху экрана, выводим окно снизу
+        hoverBelow = rect.top < 280;
+      }
+      
       isLoadingPeople = true;
       try {
         const suggestions = await getFilterSuggestions({ albumId: album.id });
@@ -68,7 +79,7 @@
       } finally {
         isLoadingPeople = false;
       }
-    }, 1500);
+    }, 700);
   };
 
   const handleMouseLeave = () => {
@@ -97,6 +108,7 @@
 </script>
 
 <div
+  bind:this={cardElement}
   class="group relative rounded-2xl border border-transparent p-5 hover:bg-gray-100 hover:border-gray-200 dark:hover:border-gray-800 dark:hover:bg-gray-900"
   data-testid="album-card"
   onmouseenter={handleMouseEnter}
@@ -170,7 +182,10 @@
   <!-- Всплывающее информационное окно о деталях альбома -->
   {#if showHoverCard}
     <div
-      class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-80 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 z-40 text-left cursor-default transition-all"
+      class={[
+        "absolute left-1/2 transform -translate-x-1/2 w-80 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 z-40 text-left cursor-default transition-all",
+        hoverBelow ? "top-full mt-3" : "bottom-full mb-3"
+      ]}
       transition:fade={{ duration: 150 }}
       onmouseenter={handleHoverCardMouseEnter}
       onmouseleave={handleHoverCardMouseLeave}
