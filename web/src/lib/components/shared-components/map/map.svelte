@@ -24,6 +24,7 @@
 
   const getIconSvg = (key: string | null | undefined): string => {
     switch (key) {
+      case 'star': return mdiStar;
       case 'home': return mdiHome;
       case 'work': return mdiBriefcase;
       case 'school': return mdiSchool;
@@ -31,9 +32,9 @@
       case 'car': return mdiCar;
       case 'beach': return mdiUmbrellaBeach;
       case 'culture': return mdiBank;
-      case 'person':
+      case 'person': return mdiAccount;
       default:
-        return mdiAccount;
+        return mdiStar;
     }
   };
   import {
@@ -567,18 +568,18 @@
               class="group flex items-center justify-center cursor-pointer transition-all duration-300 relative"
             >
               {#if isFav}
-                <!-- FAVORITE MARKER (Amber drop shape, 100% size, star icon) -->
+                <!-- FAVORITE MARKER (Amber drop shape, 100% size, dynamic icon) -->
                 <div
-                  class="w-8 h-8 rounded-t-full rounded-bl-full rotate-45 bg-amber-500 text-white group-hover:bg-white group-hover:text-amber-500 border-2 border-white dark:border-zinc-950 shadow-md group-hover:scale-110 opacity-75 group-hover:opacity-100 transition-all duration-300"
+                  class="w-8 h-8 rounded-t-full rounded-bl-full rotate-45 bg-amber-500 text-white group-hover:bg-white group-hover:text-amber-500 border-2 border-white dark:border-zinc-950 shadow-md group-hover:scale-110 opacity-[0.55] group-hover:opacity-100 transition-all duration-300"
                 >
                   <div class="-rotate-45 flex items-center justify-center w-full h-full">
-                    <Icon icon={mdiStar} size="18" />
+                    <Icon icon={getIconSvg(iconKey)} size="18" />
                   </div>
                 </div>
               {:else}
                 <!-- DEFAULT MARKER (Pale yellow drop shape, 20% smaller) -->
                 <div
-                  class="w-[25px] h-[25px] rounded-t-full rounded-bl-full rotate-45 bg-[#fef08a] dark:bg-yellow-300/80 text-yellow-700 dark:text-yellow-900 group-hover:bg-white group-hover:text-yellow-600 border-[1.5px] border-white dark:border-zinc-950 shadow-sm group-hover:scale-110 opacity-75 group-hover:opacity-100 transition-all duration-300"
+                  class="w-[25px] h-[25px] rounded-t-full rounded-bl-full rotate-45 bg-[#fef08a] dark:bg-yellow-300/80 text-yellow-700 dark:text-yellow-900 group-hover:bg-white group-hover:text-yellow-600 border-[1.5px] border-white dark:border-zinc-950 shadow-sm group-hover:scale-110 opacity-[0.55] group-hover:opacity-100 transition-all duration-300"
                 >
                   <div class="-rotate-45 flex items-center justify-center w-full h-full">
                     {#if iconKey}

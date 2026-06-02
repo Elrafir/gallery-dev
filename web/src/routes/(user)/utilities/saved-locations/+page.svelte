@@ -39,6 +39,7 @@
 
   const getIconSvg = (key: string | null | undefined): string => {
     switch (key) {
+      case 'star': return mdiStar;
       case 'home': return mdiHome;
       case 'work': return mdiBriefcase;
       case 'school': return mdiSchool;

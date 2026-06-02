@@ -13,6 +13,7 @@
     mdiUmbrellaBeach,
     mdiBank,
     mdiAccount,
+    mdiStar,
   } from '@mdi/js';
   import { t } from 'svelte-i18n';
 
@@ -39,11 +40,12 @@
   let name = $state(initialData?.name ?? defaultName ?? '');
   let lat = $state(initialData?.latitude ?? latitude ?? 0);
   let lng = $state(initialData?.longitude ?? longitude ?? 0);
-  let icon = $state(initialData?.icon ?? 'person');
+  let icon = $state(initialData?.icon ?? 'star');
 
   let isSubmitting = $state(false);
 
   const iconMap: Record<string, string> = {
+    star: mdiStar,
     home: mdiHome,
     work: mdiBriefcase,
     school: mdiSchool,
@@ -56,6 +58,7 @@
 
   const getIconTitle = (key: string) => {
     switch (key) {
+      case 'star': return 'Звезда';
       case 'home': return 'Дом';
       case 'work': return 'Работа';
       case 'school': return 'Учебное заведение';
