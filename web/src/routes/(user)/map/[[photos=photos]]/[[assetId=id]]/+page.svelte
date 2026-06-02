@@ -24,7 +24,7 @@
   import { getFilteredMapMarkers, getTimeBuckets, type MapMarkerResponseDto, searchSmart, searchPlaces, getSavedLocations, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon, IconButton } from '@immich/ui';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-  import { mdiArrowLeft, mdiFilterVariant } from '@mdi/js';
+  import { mdiArrowLeft, mdiFilterVariant, mdiMagnify } from '@mdi/js';
   import { onDestroy, onMount } from 'svelte';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
@@ -66,6 +66,31 @@
   let suggestionContainer = $state<HTMLDivElement>();
   let savedLocations = $state<SavedLocationResponseDto[]>([]);
   let mapElement = $state<ReturnType<typeof Map>>();
+
+  let isSearchExpanded = $state(false);
+  let hoverTimeout: number | undefined;
+
+  const handleMouseEnter = () => {
+    if (isSearchExpanded) return;
+    hoverTimeout = window.setTimeout(() => {
+      isSearchExpanded = true;
+    }, 800);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      hoverTimeout = undefined;
+    }
+    setTimeout(() => {
+      const activeEl = document.activeElement;
+      const inputEl = suggestionContainer?.parentElement?.querySelector('input');
+      if (activeEl !== inputEl && searchWord === '') {
+        isSearchExpanded = false;
+        hideSuggestion = true;
+      }
+    }, 100);
+  };
 
   onMount(async () => {
     checkMobile();
@@ -407,39 +432,70 @@
           ]}
         >
           <!-- Floating Search Input Overlay -->
-          <div class="absolute top-4 left-4 z-20 w-64 sm:w-96" use:clickOutside={{ onOutclick: () => (hideSuggestion = true) }}>
-            <div use:listNavigation={suggestionContainer}>
-              <button type="button" class="w-full text-left" onclick={() => (hideSuggestion = false)}>
-                <SearchBar
-                  placeholder={$t('search_places')}
-                  bind:name={searchWord}
-                  {showLoadingSpinner}
-                  onReset={() => (places = [])}
-                  onSearch={handleSearchPlaces}
-                  roundedBottom={suggestedPlaces.length === 0 || hideSuggestion}
-                />
+          <div
+            class="absolute top-[84px] left-[56px] z-20 flex items-center transition-all duration-300 ease-out"
+            use:clickOutside={{
+              onOutclick: () => {
+                if (searchWord === '') {
+                  hideSuggestion = true;
+                  isSearchExpanded = false;
+                }
+              }
+            }}
+            onmouseenter={handleMouseEnter}
+            onmouseleave={handleMouseLeave}
+          >
+            {#if !isSearchExpanded}
+              <!-- Collapsed Search Button (aligned with GeolocateControl to the right of stack) -->
+              <button
+                type="button"
+                class="w-[29px] h-[29px] bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded shadow hover:bg-gray-50 dark:hover:bg-zinc-700/80 flex items-center justify-center cursor-pointer focus:outline-none transition-colors duration-200"
+                onclick={() => (isSearchExpanded = true)}
+                title="Поиск мест"
+              >
+                <Icon icon={mdiMagnify} size="18" class="text-black/80 dark:text-white" />
               </button>
-            </div>
-
-            <div
-              class="absolute w-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-lg"
-              id="suggestion"
-              bind:this={suggestionContainer}
-            >
-              {#if !hideSuggestion}
-                {#each suggestedPlaces as place (place.latitude + place.longitude)}
-                  <button
-                    type="button"
-                    class="flex w-full border-t border-gray-100 dark:border-zinc-700 h-12 place-items-center px-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 text-left focus:outline-none focus:bg-gray-50 dark:focus:bg-zinc-700/50 last:rounded-b-lg"
-                    onclick={() => handleUseSuggested(place.latitude, place.longitude)}
-                  >
-                    <p class="text-sm text-gray-700 dark:text-gray-200 truncate">
-                      {getLocation(place.name, place.admin1name, place.admin2name)}
-                    </p>
+            {:else}
+              <!-- Expanded Search Input -->
+              <div class="relative w-64 sm:w-96 transition-all duration-300">
+                <div use:listNavigation={suggestionContainer}>
+                  <button type="button" class="w-full text-left" onclick={() => (hideSuggestion = false)}>
+                    <SearchBar
+                      placeholder={$t('search_places')}
+                      bind:name={searchWord}
+                      {showLoadingSpinner}
+                      onReset={() => {
+                        places = [];
+                        isSearchExpanded = false;
+                        hideSuggestion = true;
+                      }}
+                      onSearch={handleSearchPlaces}
+                      roundedBottom={suggestedPlaces.length === 0 || hideSuggestion}
+                    />
                   </button>
-                {/each}
-              {/if}
-            </div>
+                </div>
+
+                <div
+                  class="absolute w-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-lg"
+                  id="suggestion"
+                  bind:this={suggestionContainer}
+                >
+                  {#if !hideSuggestion}
+                    {#each suggestedPlaces as place (place.latitude + place.longitude)}
+                      <button
+                        type="button"
+                        class="flex w-full border-t border-gray-100 dark:border-zinc-700 h-12 place-items-center px-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 text-left focus:outline-none focus:bg-gray-50 dark:focus:bg-zinc-700/50 last:rounded-b-lg"
+                        onclick={() => handleUseSuggested(place.latitude, place.longitude)}
+                      >
+                        <p class="text-sm text-gray-700 dark:text-gray-200 truncate">
+                          {getLocation(place.name, place.admin1name, place.admin2name)}
+                        </p>
+                      </button>
+                    {/each}
+                  {/if}
+                </div>
+              </div>
+            {/if}
           </div>
 
           {#await import('$lib/components/shared-components/map/map.svelte')}

@@ -388,7 +388,7 @@
   {hash}
   style=""
   class="h-full {rounded ? 'rounded-2xl' : 'rounded-none'}"
-  {zoom}
+  bind:zoom={zoom}
   {center}
   bounds={initialBounds}
   fitBoundsOptions={{ padding: 50, maxZoom: 15 }}
@@ -515,16 +515,18 @@
           {#if useLocationPin}
             <Icon icon={mdiMapMarker} size="50px" class="text-primary -translate-y-[50%]" />
           {:else}
-            <img
-              src={getAssetMediaUrl({ id: feature.properties?.id })}
-              class="rounded-full w-15 h-15 border-2 border-immich-primary shadow-lg hover:border-immich-dark-primary transition-all duration-200 hover:scale-150 object-cover bg-immich-primary"
-              alt={feature.properties?.city && feature.properties.country
-                ? $t('map_marker_for_images', {
-                    values: { city: feature.properties.city, country: feature.properties.country },
-                  })
-                : $t('map_marker_with_image')}
-              data-testid="map-marker"
-            />
+            <div style="transform: scale({Math.max(0.5, Math.min(1.0, (zoom ?? 12) / 12))}); transition: transform 0.2s;">
+              <img
+                src={getAssetMediaUrl({ id: feature.properties?.id })}
+                class="rounded-full w-11 h-11 border-[1.5px] border-immich-primary shadow-lg hover:border-immich-dark-primary transition-all duration-200 hover:scale-150 object-cover bg-immich-primary"
+                alt={feature.properties?.city && feature.properties.country
+                  ? $t('map_marker_for_images', {
+                      values: { city: feature.properties.city, country: feature.properties.country },
+                    })
+                  : $t('map_marker_with_image')}
+                data-testid="map-marker"
+              />
+            </div>
           {/if}
           {#if popup}
             <Popup offset={[0, -30]} openOn="click" closeOnClickOutside>
