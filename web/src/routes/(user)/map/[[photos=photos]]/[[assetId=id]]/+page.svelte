@@ -433,7 +433,7 @@
         >
           <!-- Floating Search Input Overlay -->
           <div
-            class="absolute top-[84px] left-[56px] z-20 flex items-center transition-all duration-300 ease-out"
+            class="absolute top-4 left-[51px] z-20 flex items-center transition-all duration-300 ease-out"
             use:clickOutside={{
               onOutclick: () => {
                 if (searchWord === '') {
@@ -446,15 +446,17 @@
             onmouseleave={handleMouseLeave}
           >
             {#if !isSearchExpanded}
-              <!-- Collapsed Search Button (aligned with GeolocateControl to the right of stack) -->
-              <button
-                type="button"
-                class="w-[29px] h-[29px] bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded shadow hover:bg-gray-50 dark:hover:bg-zinc-700/80 flex items-center justify-center cursor-pointer focus:outline-none transition-colors duration-200"
-                onclick={() => (isSearchExpanded = true)}
-                title="Поиск мест"
-              >
-                <Icon icon={mdiMagnify} size="18" class="text-black/80 dark:text-white" />
-              </button>
+              <!-- Collapsed Search Button (aligned with zoom-in plus button, styled like MapLibre controls) -->
+              <div class="maplibregl-ctrl maplibregl-ctrl-group shadow-md">
+                <button
+                  type="button"
+                  class="w-[29px] h-[29px] flex items-center justify-center cursor-pointer focus:outline-none"
+                  onclick={() => (isSearchExpanded = true)}
+                  title="Поиск мест"
+                >
+                  <Icon icon={mdiMagnify} size="18" class="text-black/85 dark:text-white/85" />
+                </button>
+              </div>
             {:else}
               <!-- Expanded Search Input -->
               <div class="relative w-64 sm:w-96 transition-all duration-300">
