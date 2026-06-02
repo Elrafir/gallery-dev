@@ -21,7 +21,7 @@
   import { buildMapFilterConfig } from '$lib/utils/map-filter-config';
   import { navigate } from '$lib/utils/navigation';
   import { buildSmartSearchParams, SEARCH_FILTER_DEBOUNCE_MS } from '$lib/utils/space-search';
-  import { getFilteredMapMarkers, getTimeBuckets, type MapMarkerResponseDto, searchSmart } from '@immich/sdk';
+  import { getFilteredMapMarkers, getTimeBuckets, type MapMarkerResponseDto, searchSmart, searchPlaces, getSavedLocations, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon, IconButton } from '@immich/ui';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { mdiArrowLeft, mdiFilterVariant } from '@mdi/js';
@@ -29,6 +29,11 @@
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
   import LoadingSpinner from '$lib/components/shared-components/LoadingSpinner.svelte';
+  import SearchBar from '$lib/elements/SearchBar.svelte';
+  import { clickOutside } from '$lib/actions/click-outside';
+  import { listNavigation } from '$lib/actions/list-navigation';
+  import { timeDebounceOnSearch } from '$lib/constants';
+  import type Map from '$lib/components/shared-components/map/map.svelte';
 
   interface Props {
     data: PageData;
@@ -52,11 +57,113 @@
     }
   }
 
-  onMount(() => {
+  let places = $state<PlacesResponseDto[]>([]);
+  let suggestedPlaces = $derived(places.slice(0, 5));
+  let searchWord = $state('');
+  let latestSearchTimeout: number;
+  let showLoadingSpinner = $state(false);
+  let hideSuggestion = $state(true);
+  let suggestionContainer = $state<HTMLDivElement>();
+  let savedLocations = $state<SavedLocationResponseDto[]>([]);
+  let mapElement = $state<ReturnType<typeof Map>>();
+
+  onMount(async () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
+    try {
+      savedLocations = await getSavedLocations();
+    } catch {
+      // ignore
+    }
     return () => window.removeEventListener('resize', checkMobile);
   });
+
+  const getLocation = (name: string, admin1Name?: string, admin2Name?: string): string => {
+    return [name, admin1Name, admin2Name].filter(Boolean).join(', ');
+  };
+
+  const handleSearchPlaces = () => {
+    if (latestSearchTimeout) {
+      clearTimeout(latestSearchTimeout);
+    }
+    showLoadingSpinner = true;
+
+    const searchTimeout = window.setTimeout(() => {
+      if (searchWord === '') {
+        places = [];
+        showLoadingSpinner = false;
+        return;
+      }
+
+      const coordinateParts = searchWord.split(',').map((part) => part.trim());
+      if (coordinateParts.length === 2) {
+        const coordinateLat = Number.parseFloat(coordinateParts[0]);
+        const coordinateLng = Number.parseFloat(coordinateParts[1]);
+
+        if (
+          !Number.isNaN(coordinateLat) &&
+          !Number.isNaN(coordinateLng) &&
+          coordinateLat >= -90 &&
+          coordinateLat <= 90 &&
+          coordinateLng >= -180 &&
+          coordinateLng <= 180
+        ) {
+          places = [];
+          showLoadingSpinner = false;
+          handleUseSuggested(coordinateLat, coordinateLng);
+          return;
+        }
+      }
+
+      searchPlaces({ name: searchWord })
+        .then((searchResult) => {
+          if (latestSearchTimeout === searchTimeout) {
+            const query = searchWord.toLowerCase();
+            const localMatches = savedLocations
+              .filter(
+                (loc) =>
+                  loc.label.toLowerCase().includes(query) ||
+                  loc.name.toLowerCase().includes(query)
+              )
+              .map((loc) => ({
+                name: `⭐ ${loc.label}`,
+                admin1name: loc.name,
+                admin2name: '',
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+              }));
+            places = [...localMatches, ...searchResult];
+            showLoadingSpinner = false;
+          }
+        })
+        .catch(() => {
+          if (latestSearchTimeout === searchTimeout) {
+            const query = searchWord.toLowerCase();
+            const localMatches = savedLocations
+              .filter(
+                (loc) =>
+                  loc.label.toLowerCase().includes(query) ||
+                  loc.name.toLowerCase().includes(query)
+              )
+              .map((loc) => ({
+                name: `⭐ ${loc.label}`,
+                admin1name: loc.name,
+                admin2name: '',
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+              }));
+            places = localMatches;
+            showLoadingSpinner = false;
+          }
+        });
+    }, timeDebounceOnSearch);
+    latestSearchTimeout = searchTimeout;
+  };
+
+  const handleUseSuggested = (latitude: number, longitude: number) => {
+    hideSuggestion = true;
+    mapElement?.flyTo(longitude, latitude, 14);
+  };
 
   // Filter state
   let filters = $state<FilterState>(createFilterState());
@@ -299,6 +406,42 @@
             isTimelinePanelVisible ? 'h-1/2 w-full pb-2 sm:h-full sm:w-2/3 sm:pe-2 sm:pb-0' : 'h-full w-full',
           ]}
         >
+          <!-- Floating Search Input Overlay -->
+          <div class="absolute top-4 left-4 z-20 w-64 sm:w-96" use:clickOutside={{ onOutclick: () => (hideSuggestion = true) }}>
+            <div use:listNavigation={suggestionContainer}>
+              <button type="button" class="w-full text-left" onclick={() => (hideSuggestion = false)}>
+                <SearchBar
+                  placeholder={$t('search_places')}
+                  bind:name={searchWord}
+                  {showLoadingSpinner}
+                  onReset={() => (places = [])}
+                  onSearch={handleSearchPlaces}
+                  roundedBottom={suggestedPlaces.length === 0 || hideSuggestion}
+                />
+              </button>
+            </div>
+
+            <div
+              class="absolute w-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-b-lg shadow-lg"
+              id="suggestion"
+              bind:this={suggestionContainer}
+            >
+              {#if !hideSuggestion}
+                {#each suggestedPlaces as place (place.latitude + place.longitude)}
+                  <button
+                    type="button"
+                    class="flex w-full border-t border-gray-100 dark:border-zinc-700 h-12 place-items-center px-4 hover:bg-gray-50 dark:hover:bg-zinc-700/50 text-left focus:outline-none focus:bg-gray-50 dark:focus:bg-zinc-700/50 last:rounded-b-lg"
+                    onclick={() => handleUseSuggested(place.latitude, place.longitude)}
+                  >
+                    <p class="text-sm text-gray-700 dark:text-gray-200 truncate">
+                      {getLocation(place.name, place.admin1name, place.admin2name)}
+                    </p>
+                  </button>
+                {/each}
+              {/if}
+            </div>
+          </div>
+
           {#await import('$lib/components/shared-components/map/map.svelte')}
             {#await delay(timeToLoadTheMap) then}
               <div class="flex items-center justify-center h-full w-full">
@@ -306,7 +449,15 @@
               </div>
             {/await}
           {:then { default: Map }}
-            <Map hash onSelect={onViewAssets} {onClusterSelect} {spaceId} showSettings={false} {mapMarkers} />
+            <Map
+              bind:this={mapElement}
+              hash
+              onSelect={onViewAssets}
+              {onClusterSelect}
+              {spaceId}
+              showSettings={false}
+              {mapMarkers}
+            />
           {/await}
           {#if noResults}
             <div class="pointer-events-none absolute inset-0 flex items-center justify-center">

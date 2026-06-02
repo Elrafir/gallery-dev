@@ -168,6 +168,12 @@
     }
   }
 
+  export function flyTo(lng: number, lat: number, targetZoom = 14) {
+    if (map) {
+      map.flyTo({ center: [lng, lat], zoom: targetZoom, duration: 1500 });
+    }
+  }
+
   function handleAssetClick(assetId: string, map: Map | null) {
     if (!map) {
       return;
@@ -490,7 +496,7 @@
       >
         {#snippet children({ feature })}
           <div
-            class="rounded-full w-10 h-10 bg-immich-primary text-white flex justify-center items-center font-mono font-bold shadow-lg hover:bg-immich-dark-primary transition-all duration-200 hover:text-immich-dark-bg opacity-90"
+            class="rounded-full w-7 h-7 bg-immich-primary text-white flex justify-center items-center font-mono font-bold text-sm shadow-lg hover:bg-immich-dark-primary transition-all duration-200 hover:text-immich-dark-bg opacity-90"
           >
             {feature.properties?.point_count?.toLocaleString()}
           </div>
