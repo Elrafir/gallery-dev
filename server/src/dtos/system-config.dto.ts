@@ -276,10 +276,20 @@ const SystemConfigPasswordLoginSchema = z
   .object({ enabled: configBool.describe('Enabled') })
   .meta({ id: 'SystemConfigPasswordLoginDto' });
 
+const CountrySubstitutionRuleSchema = z
+  .object({
+    original: z.string().min(1).describe('Original country name'),
+    replacement: z.string().min(1).describe('Replacement country name'),
+    startYear: z.coerce.number().int().min(1000).max(3000).optional().describe('Start year (inclusive)'),
+    endYear: z.coerce.number().int().min(1000).max(3000).optional().describe('End year (inclusive)'),
+  })
+  .meta({ id: 'CountrySubstitutionRuleDto' });
+
 const SystemConfigReverseGeocodingSchema = z
   .object({
     enabled: configBool.describe('Enabled'),
     geocoderUrl: z.string().url().default('http://192.168.100.78:8088').describe('Geocoder URL'),
+    substitutions: z.array(CountrySubstitutionRuleSchema).default([]).describe('Country substitution rules'),
   })
   .meta({ id: 'SystemConfigReverseGeocodingDto' });
 

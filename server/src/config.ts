@@ -17,6 +17,13 @@ import { ConcurrentQueueName, FullsizeImageOptions, ImageOptions } from 'src/typ
 
 export type ClassificationFaceExclusion = 'off' | 'any_assigned_face' | 'named_people' | 'named_visible_people';
 
+export type CountrySubstitutionRule = {
+  original: string;
+  replacement: string;
+  startYear?: number;
+  endYear?: number;
+};
+
 export type SystemConfig = {
   backup: {
     database: {
@@ -98,6 +105,7 @@ export type SystemConfig = {
   reverseGeocoding: {
     enabled: boolean;
     geocoderUrl: string;
+    substitutions: CountrySubstitutionRule[];
   };
   metadata: {
     faces: {
@@ -318,6 +326,7 @@ export const defaults = Object.freeze<SystemConfig>({
   reverseGeocoding: {
     enabled: true,
     geocoderUrl: 'http://192.168.100.78:8088',
+    substitutions: [],
   },
   metadata: {
     faces: {

@@ -312,7 +312,7 @@ export class MetadataService extends BaseService {
   
             if (reverseGeocoding.enabled) {
               this.logger.log(`DEBUG: Вызываю MapRepository.reverseGeocode...`); // Добавь это
-              geo = await this.mapRepository.reverseGeocode({ latitude, longitude });
+              geo = await this.mapRepository.reverseGeocode({ latitude, longitude }, dates.dateTimeOriginal);
               this.logger.log(`DEBUG: Результат от MapRepository: ${JSON.stringify(geo)}`); // Добавь это
             } else {
               this.logger.log(`DEBUG: reverseGeocoding отключен в настройках!`); // Добавь это

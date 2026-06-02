@@ -234,7 +234,7 @@ export class MapRepository {
       .$narrowType<{ lat: NotNull; lon: NotNull }>();
   }
 
-  async reverseGeocode(point: GeoPoint): Promise<ReverseGeocodeResult> {
+  async reverseGeocode(point: GeoPoint, date?: Date | null): Promise<ReverseGeocodeResult> {
     const config = await getConfig(
       {
         configRepo: this.configRepository,
@@ -279,7 +279,27 @@ this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, nul
         }
 
         const state = data.address.state || data.address.region || data.address.state_district || null;
-        const country = data.address.country || null;
+        let country = data.address.country || null;
+
+        if (country && config.reverseGeocoding.substitutions?.length) {
+          const year = date ? new Date(date).getFullYear() : null;
+          for (const rule of config.reverseGeocoding.substitutions) {
+            const hasYearRestriction = rule.startYear !== undefined || rule.endYear !== undefined;
+            if (hasYearRestriction && year === null) {
+              continue;
+            }
+            if (rule.startYear !== undefined && year !== null && year < rule.startYear) {
+              continue;
+            }
+            if (rule.endYear !== undefined && year !== null && year > rule.endYear) {
+              continue;
+            }
+            const regex = new RegExp(rule.original, 'gi');
+            if (regex.test(country)) {
+              country = country.replace(regex, rule.replacement);
+            }
+          }
+        }
 
         this.logger.debug(`Результат Nominatim: ${city}, ${state}, ${country}`);
 
