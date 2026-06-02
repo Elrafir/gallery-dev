@@ -9116,3 +9116,91 @@ export enum UserMetadataKey {
     License = "license",
     Onboarding = "onboarding"
 }
+
+export interface CreateSavedLocationDto {
+    name: string;
+    label: string;
+    description?: string | null;
+    latitude: number;
+    longitude: number;
+}
+
+export interface UpdateSavedLocationDto {
+    name?: string;
+    label?: string;
+    description?: string | null;
+    latitude?: number;
+    longitude?: number;
+    isFavorite?: boolean;
+}
+
+export interface SavedLocationResponseDto {
+    id: string;
+    userId: string;
+    name: string;
+    label: string;
+    description: string | null;
+    latitude: number;
+    longitude: number;
+    isFavorite: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/**
+ * Create a saved location
+ */
+export function createSavedLocation({ createSavedLocationDto }: {
+    createSavedLocationDto: CreateSavedLocationDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: SavedLocationResponseDto;
+    }>("/saved-locations", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: createSavedLocationDto
+    })));
+}
+
+/**
+ * Get all saved locations
+ */
+export function getSavedLocations(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SavedLocationResponseDto[];
+    }>("/saved-locations", {
+        ...opts
+    }));
+}
+
+/**
+ * Update a saved location
+ */
+export function updateSavedLocation({ id, updateSavedLocationDto }: {
+    id: string;
+    updateSavedLocationDto: UpdateSavedLocationDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SavedLocationResponseDto;
+    }>(`/saved-locations/${encodeURIComponent(id)}`, oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: updateSavedLocationDto
+    })));
+}
+
+/**
+ * Delete a saved location
+ */
+export function deleteSavedLocation({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/saved-locations/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+

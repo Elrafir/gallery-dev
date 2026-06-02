@@ -50,6 +50,7 @@ import { UserGroupService } from 'src/services/user-group.service';
 import { UserService } from 'src/services/user.service';
 import { VersionService } from 'src/services/version.service';
 import { ViewService } from 'src/services/view.service';
+import { SavedLocationService } from 'src/services/saved-location.service';
 import { WorkflowService } from 'src/services/workflow.service';
 
 export const services = [
@@ -106,4 +107,5 @@ export const services = [
   VersionService,
   ViewService,
   WorkflowService,
+  SavedLocationService,
 ];

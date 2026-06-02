@@ -10,9 +10,10 @@
   import type { LatLng } from '$lib/types';
   import { delay } from '$lib/utils/asset-utils';
   import { handleError } from '$lib/utils/handle-error';
-  import { searchPlaces, type AssetResponseDto, type PlacesResponseDto } from '@immich/sdk';
+  import { searchPlaces, getSavedLocations, type AssetResponseDto, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { ConfirmModal, LoadingSpinner } from '@immich/ui';
   import { mdiMapMarkerMultipleOutline } from '@mdi/js';
+  import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
 
   type Props = {
@@ -48,6 +49,15 @@
   let point = $state<LatLng | undefined>(initialPoint ?? assetPoint);
   let zoom = $state(point ? 12.5 : 1);
   let center = $state(point ?? geolocationManager.lastPoint);
+  let savedLocations = $state<SavedLocationResponseDto[]>([]);
+
+  onMount(async () => {
+    try {
+      savedLocations = await getSavedLocations();
+    } catch {
+      // ignore
+    }
+  });
 
   $effect(() => {
     if (mapElement && initialPoint) {
@@ -107,14 +117,42 @@
         .then((searchResult) => {
           // skip result when a newer search is happening
           if (latestSearchTimeout === searchTimeout) {
-            places = searchResult;
+            const query = searchWord.toLowerCase();
+            const localMatches = savedLocations
+              .filter(
+                (loc) =>
+                  loc.label.toLowerCase().includes(query) ||
+                  loc.name.toLowerCase().includes(query)
+              )
+              .map((loc) => ({
+                name: `⭐ ${loc.label}`,
+                admin1name: loc.name,
+                admin2name: '',
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+              }));
+            places = [...localMatches, ...searchResult];
             showLoadingSpinner = false;
           }
         })
         .catch((error) => {
           // skip error when a newer search is happening
           if (latestSearchTimeout === searchTimeout) {
-            places = [];
+            const query = searchWord.toLowerCase();
+            const localMatches = savedLocations
+              .filter(
+                (loc) =>
+                  loc.label.toLowerCase().includes(query) ||
+                  loc.name.toLowerCase().includes(query)
+              )
+              .map((loc) => ({
+                name: `⭐ ${loc.label}`,
+                admin1name: loc.name,
+                admin2name: '',
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+              }));
+            places = localMatches;
             handleError(error, $t('errors.cant_search_places'));
             showLoadingSpinner = false;
           }

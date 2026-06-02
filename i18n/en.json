@@ -1908,6 +1908,8 @@
   "maintenance_title": "Temporarily Unavailable",
   "make": "Make",
   "manage_geolocation": "Manage location",
+  "saved_locations": "Saved locations",
+  "manage_saved_locations": "Manage saved locations",
   "manage_media_access_rationale": "This permission is required for proper handling of moving assets to the trash and restoring them from it.",
   "manage_media_access_settings": "Open settings",
   "manage_media_access_subtitle": "Allow the Immich app to manage and move media files.",

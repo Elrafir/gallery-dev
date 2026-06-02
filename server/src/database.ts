@@ -19,6 +19,7 @@ import { AlbumTable } from 'src/schema/tables/album.table';
 import { AssetExifTable } from 'src/schema/tables/asset-exif.table';
 import { AssetTable } from 'src/schema/tables/asset.table';
 import { PluginActionTable, PluginFilterTable } from 'src/schema/tables/plugin.table';
+import { SavedLocationTable } from 'src/schema/tables/saved-location.table';
 import { WorkflowActionTable, WorkflowFilterTable, WorkflowTable } from 'src/schema/tables/workflow.table';
 import { UserMetadataItem } from 'src/types';
 import type { ActionConfig, FilterConfig, JSONSchema } from 'src/types/plugin-schema.types';
@@ -93,6 +94,19 @@ export type Tag = {
   updatedAt: Date;
   color: string | null;
   parentId: string | null;
+};
+
+export type SavedLocation = {
+  id: string;
+  userId: string;
+  name: string;
+  label: string;
+  description: string | null;
+  latitude: number;
+  longitude: number;
+  isFavorite: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Memory = {
@@ -496,6 +510,18 @@ export const columns = {
     'storageLabel',
     'quotaSizeInBytes',
     'quotaUsageInBytes',
+  ],
+  savedLocation: [
+    'saved_location.id',
+    'saved_location.userId',
+    'saved_location.name',
+    'saved_location.label',
+    'saved_location.description',
+    'saved_location.latitude',
+    'saved_location.longitude',
+    'saved_location.isFavorite',
+    'saved_location.createdAt',
+    'saved_location.updatedAt',
   ],
   tag: ['tag.id', 'tag.value', 'tag.createdAt', 'tag.updatedAt', 'tag.color', 'tag.parentId'],
   apiKey: ['id', 'name', 'userId', 'createdAt', 'updatedAt', 'permissions'],

@@ -79,6 +79,7 @@ import { SharedSpacePersonFaceTable } from 'src/schema/tables/shared-space-perso
 import { SharedSpacePersonTable } from 'src/schema/tables/shared-space-person.table';
 import { SharedSpaceTable } from 'src/schema/tables/shared-space.table';
 import { SmartSearchTable } from 'src/schema/tables/smart-search.table';
+import { SavedLocationTable } from 'src/schema/tables/saved-location.table';
 import { StackAuditTable } from 'src/schema/tables/stack-audit.table';
 import { StackTable } from 'src/schema/tables/stack.table';
 import { StorageMigrationLogTable } from 'src/schema/tables/storage-migration-log.table';
@@ -159,6 +160,7 @@ export class ImmichDatabase {
     SharedSpacePersonAliasTable,
     UserGroupTable,
     UserGroupMemberTable,
+    SavedLocationTable,
     SmartSearchTable,
     StackTable,
     StackAuditTable,
@@ -294,6 +296,8 @@ export interface DB {
   user_group_member: UserGroupMemberTable;
 
   smart_search: SmartSearchTable;
+
+  saved_location: SavedLocationTable;
 
   stack: StackTable;
   stack_audit: StackAuditTable;

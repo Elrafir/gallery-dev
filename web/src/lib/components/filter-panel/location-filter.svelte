@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { FilterContext } from './filter-panel';
 
+  import { getSavedLocations, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon } from '@immich/ui';
-  import { mdiMagnify } from '@mdi/js';
-  import { untrack } from 'svelte';
+  import { mdiMagnify, mdiStar } from '@mdi/js';
+  import { onMount, untrack } from 'svelte';
   import { t } from 'svelte-i18n';
 
   interface Props {
@@ -39,6 +40,46 @@
   const COUNTRY_SHOW_COUNT = 10;
   const CITY_SHOW_COUNT = 10;
   const MIN_CITY_SEARCH_LENGTH = 2;
+
+  let savedLocations = $state<SavedLocationResponseDto[]>([]);
+
+  onMount(async () => {
+    try {
+      savedLocations = await getSavedLocations();
+    } catch {
+      // ignore
+    }
+  });
+
+  let filteredSavedLocations = $derived(
+    savedLocations.filter(
+      (loc) =>
+        !normalizedSearchQuery ||
+        loc.label.toLowerCase().includes(normalizedSearchQuery) ||
+        loc.name.toLowerCase().includes(normalizedSearchQuery)
+    )
+  );
+
+  function getCountryFromSaved(loc: SavedLocationResponseDto): string | undefined {
+    const parts = loc.name.split(',').map((p) => p.trim());
+    return parts.length > 0 ? parts[parts.length - 1] : undefined;
+  }
+
+  function getCityFromSaved(loc: SavedLocationResponseDto): string | undefined {
+    const parts = loc.name.split(',').map((p) => p.trim());
+    return parts.length > 1 ? parts[0] : undefined;
+  }
+
+  function handleSavedLocationSelect(loc: SavedLocationResponseDto) {
+    const country = getCountryFromSaved(loc);
+    const city = getCityFromSaved(loc);
+
+    if (selectedCountry === country && selectedCity === city) {
+      onSelectionChange(undefined, undefined);
+    } else {
+      onSelectionChange(country, city);
+    }
+  }
 
   let normalizedSearchQuery = $derived(searchQuery.trim().toLowerCase());
   let shouldFetchCitiesForSearch = $derived(normalizedSearchQuery.length >= MIN_CITY_SEARCH_LENGTH);
@@ -287,6 +328,26 @@
 </script>
 
 <div data-testid="location-filter">
+  <!-- Saved Locations List -->
+  {#if filteredSavedLocations.length > 0}
+    <div class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 mt-1">
+      Сохранённые места
+    </div>
+    <div class="max-h-[160px] overflow-y-auto pr-1 flex flex-col gap-0.5 mb-2 border-b border-gray-100 dark:border-zinc-800 pb-2">
+      {#each filteredSavedLocations as loc (loc.id)}
+        {@const isSelected = selectedCountry === getCountryFromSaved(loc) && selectedCity === getCityFromSaved(loc)}
+        <button
+          type="button"
+          class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-subtle {isSelected ? 'font-semibold text-primary dark:text-primary-light bg-primary/5' : 'text-gray-600 dark:text-gray-300'}"
+          onclick={() => handleSavedLocationSelect(loc)}
+        >
+          <Icon icon={mdiStar} class="text-amber-500 shrink-0" size="14" />
+          <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{loc.label}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   {#if countries.length === 0 && !orphanedCountry}
     <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-empty">
       {emptyText ?? $t('filter_no_locations_found')}

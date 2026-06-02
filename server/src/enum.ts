@@ -1122,6 +1122,7 @@ export enum ApiTag {
   UserGroups = 'User Groups',
   Views = 'Views',
   Workflows = 'Workflows',
+  SavedLocations = 'Saved Locations',
 }
 
 export enum PluginContext {

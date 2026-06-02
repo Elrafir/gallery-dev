@@ -39,6 +39,7 @@ import { TimelineController } from 'src/controllers/timeline.controller';
 import { TrashController } from 'src/controllers/trash.controller';
 import { UserAdminController } from 'src/controllers/user-admin.controller';
 import { UserGroupController } from 'src/controllers/user-group.controller';
+import { SavedLocationController } from 'src/controllers/saved-location.controller';
 import { UserController } from 'src/controllers/user.controller';
 import { ViewController } from 'src/controllers/view.controller';
 import { WorkflowController } from 'src/controllers/workflow.controller';
@@ -88,4 +89,5 @@ export const controllers = [
   UserController,
   ViewController,
   WorkflowController,
+  SavedLocationController,
 ];

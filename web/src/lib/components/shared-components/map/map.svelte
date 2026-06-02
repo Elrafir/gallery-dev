@@ -15,9 +15,9 @@
   import MapSettingsModal from '$lib/modals/MapSettingsModal.svelte';
   import { mapSettings } from '$lib/stores/preferences.store';
   import { getAssetMediaUrl, handlePromiseError } from '$lib/utils';
-  import { getMapMarkers, getSpaceMapMarkers, type MapMarkerResponseDto } from '@immich/sdk';
+  import { getMapMarkers, getSpaceMapMarkers, getSavedLocations, type MapMarkerResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon, modalManager, Theme, themeManager } from '@immich/ui';
-  import { mdiCog, mdiMap, mdiMapMarker, mdiThemeLightDark } from '@mdi/js';
+  import { mdiCog, mdiMap, mdiMapMarker, mdiThemeLightDark, mdiStar, mdiStarOutline } from '@mdi/js';
   import type { Feature, GeoJsonProperties, Geometry, Point } from 'geojson';
   import { isEqual, omit } from 'lodash-es';
   import { DateTime, Duration } from 'luxon';
@@ -103,6 +103,31 @@
   })();
 
   let map: Map | undefined = $state();
+  let savedLocations = $state<SavedLocationResponseDto[]>([]);
+  let showOnlyFavoriteLocations = $state(false);
+
+  const loadSavedLocations = async () => {
+    try {
+      savedLocations = await getSavedLocations();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSavedLocationClick = (loc: SavedLocationResponseDto) => {
+    if (clickable) {
+      onClickPoint({ lat: loc.latitude, lng: loc.longitude });
+      addClipMapMarker(loc.longitude, loc.latitude);
+    } else {
+      center = { lat: loc.latitude, lng: loc.longitude };
+      zoom = 16;
+    }
+  };
+
+  let visibleSavedLocations = $derived(
+    savedLocations.filter((loc) => !showOnlyFavoriteLocations || loc.isFavorite)
+  );
+
   let marker: Marker | null = null;
   let abortController: AbortController;
 
@@ -282,6 +307,7 @@
     if (!mapMarkers) {
       mapMarkers = await loadMapMarkers();
     }
+    await loadSavedLocations();
   });
 
   onDestroy(() => {
@@ -396,6 +422,21 @@
       </Control>
     {/if}
 
+    <Control position="top-right">
+      <ControlGroup>
+        <ControlButton
+          onclick={() => (showOnlyFavoriteLocations = !showOnlyFavoriteLocations)}
+          title="Только избранные сохранённые места"
+        >
+          <Icon
+            icon={showOnlyFavoriteLocations ? mdiStar : mdiStarOutline}
+            size="100%"
+            class={showOnlyFavoriteLocations ? 'text-amber-500' : 'text-black/80'}
+          />
+        </ControlButton>
+      </ControlGroup>
+    </Control>
+
     <GeoJSON
       data={{
         type: 'FeatureCollection',
@@ -449,5 +490,41 @@
         {/snippet}
       </MarkerLayer>
     </GeoJSON>
+
+    <!-- Saved Locations Layer -->
+    {#if visibleSavedLocations.length > 0}
+      <GeoJSON
+        data={{
+          type: 'FeatureCollection',
+          features: visibleSavedLocations.map((loc) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [loc.longitude, loc.latitude] },
+            properties: { id: loc.id, label: loc.label, name: loc.name },
+          })),
+        }}
+        id="saved-locations-geojson"
+      >
+        <MarkerLayer
+          applyToClusters={false}
+          asButton
+          onclick={(event) => {
+            const id = event.feature.properties?.id;
+            const loc = savedLocations.find((l) => l.id === id);
+            if (loc) {
+              handleSavedLocationClick(loc);
+            }
+          }}
+        >
+          {#snippet children({ feature }: { feature: Feature })}
+            <div
+              title={`${feature.properties?.label}\n${feature.properties?.name}`}
+              class="flex items-center justify-center p-1.5 bg-amber-400 dark:bg-amber-500 hover:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-full border border-white dark:border-zinc-950 shadow-md hover:scale-125 transition-transform cursor-pointer"
+            >
+              <Icon icon={mdiStar} size="16" class="text-white" />
+            </div>
+          {/snippet}
+        </MarkerLayer>
+      </GeoJSON>
+    {/if}
   {/snippet}
 </MapLibre>

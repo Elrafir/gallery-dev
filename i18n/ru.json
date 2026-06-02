@@ -1496,6 +1496,8 @@
   "maintenance_title": "Временно недоступно",
   "make": "Производитель",
   "manage_geolocation": "Управление местами съёмки",
+  "saved_locations": "Сохранённые места",
+  "manage_saved_locations": "Управление сохранёнными местами",
   "manage_media_access_rationale": "Это разрешение необходимо для корректного перемещения объектов в корзину и восстановления их из неё.",
   "manage_media_access_settings": "Перейти к настройкам",
   "manage_media_access_subtitle": "Разрешите приложению Immich управлять медиафайлами.",

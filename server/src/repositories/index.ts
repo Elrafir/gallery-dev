@@ -54,6 +54,7 @@ import { UserRepository } from 'src/repositories/user.repository';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository';
 import { ViewRepository } from 'src/repositories/view-repository';
 import { WebsocketRepository } from 'src/repositories/websocket.repository';
+import { SavedLocationRepository } from 'src/repositories/saved-location.repository';
 import { WorkflowRepository } from 'src/repositories/workflow.repository';
 
 export const repositories = [
@@ -114,4 +115,5 @@ export const repositories = [
   VersionHistoryRepository,
   WebsocketRepository,
   WorkflowRepository,
+  SavedLocationRepository,
 ];
