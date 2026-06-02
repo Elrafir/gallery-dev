@@ -129,6 +129,7 @@ const SmartSearchFacetsSchema = BaseSearchSchema.pick({
 const SearchPlacesSchema = z
   .object({
     name: z.string().describe('Place name to search for'),
+    featuretype: z.string().optional().describe('Feature type to filter (e.g. country, state, city)'),
   })
   .meta({ id: 'SearchPlacesDto' });
 

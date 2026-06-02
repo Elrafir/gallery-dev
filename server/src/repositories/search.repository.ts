@@ -935,11 +935,14 @@ export class SearchRepository {
     });
   }
 
-  @GenerateSql({ params: [DummyValue.STRING, DummyValue.STRING] })
-  async searchPlaces(placeName: string, geocoderUrl: string) {
+  @GenerateSql({ params: [DummyValue.STRING, DummyValue.STRING, DummyValue.STRING] })
+  async searchPlaces(placeName: string, geocoderUrl: string, featuretype?: string) {
     // Если включен опрос локального Nominatim, ищем места через него
     try {
-      const url = `${geocoderUrl}/search?format=json&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
+      let url = `${geocoderUrl}/search?format=jsonv2&q=${encodeURIComponent(placeName)}&addressdetails=1&accept-language=ru&limit=20`;
+      if (featuretype) {
+        url += `&featuretype=${encodeURIComponent(featuretype)}`;
+      }
       const res = await fetch(url, {
         headers: { 'User-Agent': 'Gallery-Dev-Local-Geocoder' }
       });

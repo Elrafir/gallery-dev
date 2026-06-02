@@ -3,7 +3,7 @@
   import AdminPageLayout from '$lib/components/layouts/AdminPageLayout.svelte';
   import { systemConfigManager } from '$lib/managers/system-config-manager.svelte';
   import { handleSystemConfigSave } from '$lib/services/system-config.service';
-  import { getBaseUrl } from '@immich/sdk';
+  import { getBaseUrl, defaults } from '@immich/sdk';
   import { Button, toastManager } from '@immich/ui';
   import { fade } from 'svelte/transition';
 
@@ -18,6 +18,10 @@
   let startYearInput = $state<number | null>(null);
   let endYearInput = $state<number | null>(null);
 
+  // Сохранение последних валидных выбранных значений
+  let lastValidCountry = $state('');
+  let lastValidState = $state('');
+
   // Режим редактирования
   let editingIndex = $state<number | null>(null);
 
@@ -31,14 +35,26 @@
   let showStateDropdown = $state(false);
   let isNominatimLoading = $state(false);
 
-  // Загрузка уникальных стран и штатов из БД
+  // Конфигурирование заголовков авторизации для fetch
+  const getAuthFetchInit = async (): Promise<RequestInit> => {
+    const headers = typeof defaults.headers === 'function' ? await defaults.headers() : defaults.headers;
+    return {
+      headers: {
+        ...headers,
+      },
+      credentials: 'include'
+    };
+  };
+
+  // Загрузка уникальных стран и регионов из БД
   const loadDbData = async () => {
     try {
-      const countriesRes = await fetch(`${getBaseUrl()}/map/countries`);
+      const initOpts = await getAuthFetchInit();
+      const countriesRes = await fetch(`${getBaseUrl()}/map/countries`, initOpts);
       if (countriesRes.ok) {
         dbCountries = await countriesRes.json();
       }
-      const statesRes = await fetch(`${getBaseUrl()}/map/states`);
+      const statesRes = await fetch(`${getBaseUrl()}/map/states`, initOpts);
       if (statesRes.ok) {
         dbStates = await statesRes.json();
       }
@@ -51,9 +67,9 @@
     loadDbData();
   });
 
-  // Поиск через Nominatim
+  // Поиск через Nominatim с ограничением по featuretype
   let searchTimeout: NodeJS.Timeout;
-  const searchNominatim = (query: string) => {
+  const searchNominatim = (query: string, type: 'country' | 'state') => {
     clearTimeout(searchTimeout);
     if (!query || query.trim().length < 2) {
       nominatimSuggestions = [];
@@ -63,18 +79,34 @@
     searchTimeout = setTimeout(async () => {
       isNominatimLoading = true;
       try {
-        const res = await fetch(`${getBaseUrl()}/search/places?name=${encodeURIComponent(query)}`);
+        const initOpts = await getAuthFetchInit();
+        const res = await fetch(
+          `${getBaseUrl()}/search/places?name=${encodeURIComponent(query)}&featuretype=${type}`,
+          initOpts
+        );
         if (res.ok) {
           const data = await res.json();
-          // Извлекаем уникальные связки страна + регион
-          const unique: Record<string, { country: string; state: string }> = {};
+          const unique = new Set<string>();
+          const tempSuggestions: Array<{ country: string; state: string }> = [];
+
           for (const item of data) {
-            if (item.country && item.state) {
-              const key = `${item.country.trim().toLowerCase()}|${item.state.trim().toLowerCase()}`;
-              unique[key] = { country: item.country.trim(), state: item.state.trim() };
+            const country = item.country?.trim() || '';
+            const state = item.state?.trim() || '';
+            
+            if (type === 'country' && country) {
+              if (!unique.has(country.toLowerCase())) {
+                unique.add(country.toLowerCase());
+                tempSuggestions.push({ country, state: '' });
+              }
+            } else if (type === 'state' && state) {
+              const key = `${country.toLowerCase()}|${state.toLowerCase()}`;
+              if (!unique.has(key)) {
+                unique.add(key);
+                tempSuggestions.push({ country, state });
+              }
             }
           }
-          nominatimSuggestions = Object.values(unique);
+          nominatimSuggestions = tempSuggestions;
         }
       } catch (e) {
         console.error('Ошибка поиска в Nominatim', e);
@@ -92,6 +124,68 @@
   let filteredStates = $derived(
     dbStates.filter(s => s.toLowerCase().includes(stateInput.toLowerCase()))
   );
+
+  // Валидация ввода при потере фокуса (блокировка произвольного ручного ввода)
+  const validateCountryInput = () => {
+    const val = countryInput.trim().toLowerCase();
+    if (!val) {
+      countryInput = '';
+      lastValidCountry = '';
+      return;
+    }
+    // Проверяем БД
+    const dbMatch = dbCountries.find(c => c.toLowerCase() === val);
+    if (dbMatch) {
+      countryInput = dbMatch;
+      lastValidCountry = dbMatch;
+      return;
+    }
+    // Проверяем Nominatim подсказки
+    const sugMatch = nominatimSuggestions.find(s => s.country.toLowerCase() === val);
+    if (sugMatch) {
+      countryInput = sugMatch.country;
+      lastValidCountry = sugMatch.country;
+      return;
+    }
+    // Если нет совпадений - откатываем к последнему валидному значению
+    countryInput = lastValidCountry;
+    if (!lastValidCountry) {
+      toastManager.warning('Пожалуйста, выберите исходную страну из списка автодополнения');
+    }
+  };
+
+  const validateStateInput = () => {
+    const val = stateInput.trim().toLowerCase();
+    if (!val) {
+      stateInput = '';
+      lastValidState = '';
+      return;
+    }
+    // Проверяем БД
+    const dbMatch = dbStates.find(s => s.toLowerCase() === val);
+    if (dbMatch) {
+      stateInput = dbMatch;
+      lastValidState = dbMatch;
+      return;
+    }
+    // Проверяем Nominatim подсказки
+    const sugMatch = nominatimSuggestions.find(s => s.state.toLowerCase() === val);
+    if (sugMatch) {
+      stateInput = sugMatch.state;
+      lastValidState = sugMatch.state;
+      // Если в подсказке указана страна, и поле страны пустое или отличается - подставим ее
+      if (sugMatch.country && countryInput !== sugMatch.country) {
+        countryInput = sugMatch.country;
+        lastValidCountry = sugMatch.country;
+      }
+      return;
+    }
+    // Если нет совпадений - откатываем
+    stateInput = lastValidState;
+    if (!lastValidState) {
+      toastManager.warning('Пожалуйста, выберите область/регион из списка автодополнения');
+    }
+  };
 
   // Валидация диапазонов годов на пересечения
   const checkOverlaps = (
@@ -116,7 +210,7 @@
         const e2 = rule.endYear ?? Infinity;
 
         if (s1 <= e2 && s2 <= e1) {
-          return true; // Есть пересечение!
+          return true; // Пересечение!
         }
       }
     }
@@ -176,6 +270,8 @@
     replacementInput = '';
     startYearInput = null;
     endYearInput = null;
+    lastValidCountry = '';
+    lastValidState = '';
     nominatimSuggestions = [];
   };
 
@@ -190,6 +286,8 @@
     const rule = substitutions[index];
     countryInput = rule.country;
     stateInput = rule.state;
+    lastValidCountry = rule.country;
+    lastValidState = rule.state;
     replacementInput = rule.replacement;
     startYearInput = rule.startYear ?? null;
     endYearInput = rule.endYear ?? null;
@@ -201,6 +299,8 @@
   const cancelEdit = () => {
     countryInput = '';
     stateInput = '';
+    lastValidCountry = '';
+    lastValidState = '';
     replacementInput = '';
     startYearInput = null;
     endYearInput = null;
@@ -227,10 +327,19 @@
     toastManager.info('Изменения сброшены к последним сохраненным');
   };
 
-  // Выбор подсказки из Nominatim (заполняет страну и регион сразу)
-  const selectNominatimSuggestion = (item: { country: string; state: string }) => {
-    countryInput = item.country;
-    stateInput = item.state;
+  // Выбор подсказки из Nominatim
+  const selectNominatimSuggestion = (item: { country: string; state: string }, type: 'country' | 'state') => {
+    if (type === 'country') {
+      countryInput = item.country;
+      lastValidCountry = item.country;
+    } else {
+      stateInput = item.state;
+      lastValidState = item.state;
+      if (item.country) {
+        countryInput = item.country;
+        lastValidCountry = item.country;
+      }
+    }
     showCountryDropdown = false;
     showStateDropdown = false;
     nominatimSuggestions = [];
@@ -262,9 +371,9 @@
             type="text"
             placeholder="Введите для поиска страны..."
             bind:value={countryInput}
-            onfocus={() => { showCountryDropdown = true; searchNominatim(countryInput); }}
-            onblur={() => setTimeout(() => showCountryDropdown = false, 250)}
-            oninput={() => { showCountryDropdown = true; searchNominatim(countryInput); }}
+            onfocus={() => { showCountryDropdown = true; searchNominatim(countryInput, 'country'); }}
+            onblur={() => { setTimeout(validateCountryInput, 200); setTimeout(() => showCountryDropdown = false, 250); }}
+            oninput={() => { showCountryDropdown = true; searchNominatim(countryInput, 'country'); }}
             class="w-full text-sm p-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
 
@@ -279,7 +388,7 @@
                   <button
                     type="button"
                     class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-800 dark:text-zinc-200"
-                    onclick={() => { countryInput = c; showCountryDropdown = false; }}
+                    onclick={() => { countryInput = c; lastValidCountry = c; showCountryDropdown = false; }}
                   >
                     {c}
                   </button>
@@ -300,9 +409,9 @@
                   <button
                     type="button"
                     class="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-700 dark:text-zinc-300"
-                    onclick={() => selectNominatimSuggestion(item)}
+                    onclick={() => selectNominatimSuggestion(item, 'country')}
                   >
-                    <span class="font-semibold text-gray-900 dark:text-white">{item.country}</span> ({item.state})
+                    <span class="font-semibold text-gray-900 dark:text-white">{item.country}</span>
                   </button>
                 {/each}
               {:else if countryInput.length >= 2}
@@ -321,9 +430,9 @@
             type="text"
             placeholder="Введите для поиска региона..."
             bind:value={stateInput}
-            onfocus={() => { showStateDropdown = true; searchNominatim(stateInput); }}
-            onblur={() => setTimeout(() => showStateDropdown = false, 250)}
-            oninput={() => { showStateDropdown = true; searchNominatim(stateInput); }}
+            onfocus={() => { showStateDropdown = true; searchNominatim(stateInput, 'state'); }}
+            onblur={() => { setTimeout(validateStateInput, 200); setTimeout(() => showStateDropdown = false, 250); }}
+            oninput={() => { showStateDropdown = true; searchNominatim(stateInput, 'state'); }}
             class="w-full text-sm p-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
 
@@ -338,7 +447,7 @@
                   <button
                     type="button"
                     class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-800 dark:text-zinc-200"
-                    onclick={() => { stateInput = s; showStateDropdown = false; }}
+                    onclick={() => { stateInput = s; lastValidState = s; showStateDropdown = false; }}
                   >
                     {s}
                   </button>
@@ -359,9 +468,13 @@
                   <button
                     type="button"
                     class="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-700 dark:text-zinc-300"
-                    onclick={() => selectNominatimSuggestion(item)}
+                    onclick={() => selectNominatimSuggestion(item, 'state')}
                   >
-                    {item.country} – <span class="font-semibold text-gray-900 dark:text-white">{item.state}</span>
+                    {#if item.country}
+                      {item.country} – <span class="font-semibold text-gray-900 dark:text-white">{item.state}</span>
+                    {:else}
+                      <span class="font-semibold text-gray-900 dark:text-white">{item.state}</span>
+                    {/if}
                   </button>
                 {/each}
               {:else if stateInput.length >= 2}
