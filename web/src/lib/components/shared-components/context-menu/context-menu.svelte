@@ -64,7 +64,7 @@
 <div
   bind:this={menuScrollView}
   class={[
-    'duration-250 ease-in-out fixed min-w-50 w-max max-w-75 rounded-lg shadow-lg bg-slate-100 z-1 immich-scrollbar',
+    'duration-250 ease-in-out fixed min-w-50 w-max max-w-75 rounded-lg shadow-lg bg-slate-100 z-30 immich-scrollbar',
     position.needScrollBar ? 'overflow-auto' : 'overflow-hidden',
   ]}
   style:left="{position.left}px"

@@ -9,7 +9,33 @@
 
   // Состояние конфигурации
   let configToEdit = $state(systemConfigManager.cloneValue());
-  let substitutions = $derived(configToEdit.reverseGeocoding?.substitutions || []);
+
+  type RuleState = {
+    id: string;
+    country: string;
+    state: string;
+    replacementCountry?: string;
+    replacementState?: string;
+    replacement?: string;
+    startYear?: number;
+    endYear?: number;
+    status: 'unchanged' | 'added' | 'edited' | 'deleted';
+    originalValue?: any;
+  };
+
+  // Локальный список правил с отслеживанием статусов изменений
+  let ruleItems = $state<RuleState[]>([]);
+
+  // Заполнение локального списка при монтировании или сбросе
+  const initRuleItems = () => {
+    const subs = configToEdit.reverseGeocoding?.substitutions || [];
+    ruleItems = subs.map((rule, idx) => ({
+      id: `rule-${idx}-${Date.now()}`,
+      ...rule,
+      status: 'unchanged',
+      originalValue: { ...rule }
+    }));
+  };
 
   // Состояние формы
   let countryInput = $state('');
@@ -55,6 +81,31 @@
   // Справочная система
   let activeHelpField = $state<string | null>(null);
   let showFullManualModal = $state(false);
+
+  // Состояние модального окна подтверждения перед сохранением
+  let showConfirmSaveModal = $state(false);
+
+  // Отчетность о несохраненных изменениях
+  let addedCount = $derived(ruleItems.filter(item => item.status === 'added').length);
+  let editedCount = $derived(ruleItems.filter(item => item.status === 'edited').length);
+  let deletedCount = $derived(ruleItems.filter(item => item.status === 'deleted').length);
+  let hasChanges = $derived(addedCount > 0 || editedCount > 0 || deletedCount > 0);
+
+  // Стили для кнопки "Сохранить настройки"
+  let hasAddedOrEdited = $derived(addedCount > 0 || editedCount > 0);
+  let hasDeleted = $derived(deletedCount > 0);
+
+  let saveBtnStyle = $derived.by(() => {
+    if (hasAddedOrEdited && hasDeleted) {
+      // background green, border red
+      return 'background-color: rgb(22 163 74) !important; border: 2px solid rgb(220 38 38) !important; color: white !important;';
+    } else if (hasAddedOrEdited) {
+      return 'background-color: rgb(22 163 74) !important; border-color: transparent !important; color: white !important;';
+    } else if (hasDeleted) {
+      return 'background-color: rgb(220 38 38) !important; border-color: transparent !important; color: white !important;';
+    }
+    return '';
+  });
 
   const fieldsHelp = {
     country: {
@@ -137,6 +188,7 @@
 
   onMount(() => {
     loadDbData();
+    initRuleItems();
   });
 
   // Поиск через Nominatim с ограничением по featuretype
@@ -237,8 +289,9 @@
     const state = stateInput.trim();
     if (!country || !state) return;
 
-    const matches = substitutions.filter(
-      r => r.country.toLowerCase() === country.toLowerCase() &&
+    const matches = ruleItems.filter(
+      r => r.status !== 'deleted' &&
+           r.country.toLowerCase() === country.toLowerCase() &&
            r.state.toLowerCase() === state.toLowerCase()
     );
 
@@ -463,9 +516,10 @@
     const s1 = startYear ?? -Infinity;
     const e1 = endYear ?? Infinity;
 
-    for (let i = 0; i < substitutions.length; i++) {
+    for (let i = 0; i < ruleItems.length; i++) {
+      if (ruleItems[i].status === 'deleted') continue;
       if (excludeIndex !== null && i === excludeIndex) continue;
-      const rule = substitutions[i];
+      const rule = ruleItems[i];
 
       if (
         rule.country.trim().toLowerCase() === country.trim().toLowerCase() &&
@@ -509,27 +563,38 @@
       return;
     }
 
-    const newRule = {
-      country: countryInput.trim(),
-      state: stateInput.trim(),
-      replacementCountry: finalReplacementCountry,
-      replacementState: finalReplacementState,
-      replacement: finalReplacementCountry, // Сохраняем для обратной совместимости
-      startYear: startYearInput || undefined,
-      endYear: endYearInput || undefined,
-    };
-
-    let updatedRules = [...substitutions];
     if (editingIndex !== null) {
-      updatedRules[editingIndex] = newRule;
-      editingIndex = null;
-      toastManager.info('Правило обновлено в списке');
-    } else {
-      updatedRules.push(newRule);
-      toastManager.info('Правило добавлено в список');
-    }
+      // Редактирование
+      const item = ruleItems[editingIndex];
+      item.country = countryInput.trim();
+      item.state = stateInput.trim();
+      item.replacementCountry = finalReplacementCountry;
+      item.replacementState = finalReplacementState;
+      item.replacement = finalReplacementCountry;
+      item.startYear = startYearInput || undefined;
+      item.endYear = endYearInput || undefined;
 
-    configToEdit.reverseGeocoding.substitutions = updatedRules;
+      // Если поле добавлено, но не сохранено и подверглось редактированию то оно остаётся в статусе просто добавленного
+      if (item.status !== 'added') {
+        item.status = 'edited';
+      }
+      editingIndex = null;
+      toastManager.info('Правило изменено локально');
+    } else {
+      // Добавление
+      ruleItems.push({
+        id: `rule-new-${Date.now()}`,
+        country: countryInput.trim(),
+        state: stateInput.trim(),
+        replacementCountry: finalReplacementCountry,
+        replacementState: finalReplacementState,
+        replacement: finalReplacementCountry,
+        startYear: startYearInput || undefined,
+        endYear: endYearInput || undefined,
+        status: 'added'
+      });
+      toastManager.info('Правило добавлено локально');
+    }
 
     // Очистка формы
     countryInput = '';
@@ -545,13 +610,25 @@
 
   // Удаление правила
   const removeRule = (index: number) => {
-    configToEdit.reverseGeocoding.substitutions = substitutions.filter((_, i) => i !== index);
-    toastManager.info('Правило удалено из списка');
+    const item = ruleItems[index];
+    if (item.status === 'added') {
+      // Если поле было добавлено, но не было ещё сохранено - удаляем без подтверждений
+      ruleItems = ruleItems.filter((_, i) => i !== index);
+      toastManager.info('Новое правило удалено');
+    } else {
+      // Иначе помечаем как удаленное (не скрываем до подтверждения/сохранения)
+      item.status = 'deleted';
+      toastManager.info('Правило помечено на удаление');
+    }
   };
 
   // Запуск редактирования
   const startEdit = (index: number) => {
-    const rule = substitutions[index];
+    const rule = ruleItems[index];
+    if (rule.status === 'deleted') {
+      toastManager.warning('Нельзя редактировать правило, помеченное на удаление');
+      return;
+    }
     countryInput = rule.country;
     stateInput = rule.state;
     lastValidCountry = rule.country;
@@ -577,14 +654,68 @@
     editingIndex = null;
   };
 
+  // Удаление конкретного изменения из списка изменений в модальном окне
+  const revertChange = (id: string) => {
+    const index = ruleItems.findIndex(item => item.id === id);
+    if (index === -1) return;
+    const item = ruleItems[index];
+
+    if (item.status === 'added') {
+      // Удаляем новое правило из списка
+      ruleItems = ruleItems.filter(item => item.id !== id);
+    } else if (item.status === 'edited' || item.status === 'deleted') {
+      // Возвращаем к исходному сохраненному значению
+      ruleItems[index] = {
+        ...item.originalValue,
+        id: item.id,
+        status: 'unchanged',
+        originalValue: item.originalValue
+      };
+    }
+
+    // Если изменений больше нет, закрываем модальное окно
+    if (!hasChanges) {
+      showConfirmSaveModal = false;
+    }
+  };
+
   // Сохранение всей конфигурации на сервер
   const handleSaveConfig = async () => {
+    // Формируем список правил, отсекая помеченные на удаление
+    const finalSubstitutions = ruleItems
+      .filter(item => item.status !== 'deleted')
+      .map(item => ({
+        country: item.country,
+        state: item.state,
+        replacementCountry: item.replacementCountry,
+        replacementState: item.replacementState,
+        replacement: item.replacementCountry,
+        startYear: item.startYear,
+        endYear: item.endYear
+      }));
+
+    configToEdit.reverseGeocoding.substitutions = finalSubstitutions;
+
     try {
       await handleSystemConfigSave({
         reverseGeocoding: configToEdit.reverseGeocoding
       });
+      
+      // В хинте показываем отчёт о внесенных изменениях
+      let msg = 'Изменения успешно сохранены.';
+      const parts = [];
+      if (addedCount > 0) parts.push(`добавлено: ${addedCount}`);
+      if (editedCount > 0) parts.push(`отредактировано: ${editedCount}`);
+      if (deletedCount > 0) parts.push(`удалено: ${deletedCount}`);
+      if (parts.length > 0) {
+        msg += ` (${parts.join(', ')})`;
+      }
+      toastManager.success(msg);
+
       // Обновляем локальные списки стран/регионов из БД
       loadDbData();
+      initRuleItems();
+      showConfirmSaveModal = false;
     } catch (e) {
       console.error(e);
     }
@@ -593,6 +724,7 @@
   // Сброс к последней сохраненной конфигурации
   const handleResetConfig = () => {
     configToEdit = systemConfigManager.cloneValue();
+    initRuleItems();
     cancelEdit();
     toastManager.info('Изменения сброшены к последним сохраненным');
   };
@@ -714,7 +846,6 @@
               onmouseenter={() => isOverCountryDropdown = true}
               onmouseleave={() => isOverCountryDropdown = false}
             >
-              <!-- Секция БД -->
               <div class="p-2 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Существующие в БД</span>
               </div>
@@ -732,7 +863,6 @@
                 <div class="px-4 py-2 text-xs italic text-gray-400">Нет совпадений в БД</div>
               {/if}
 
-              <!-- Секция Nominatim -->
               <div class="p-2 border-b border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 flex justify-between items-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Поиск на сервере геокодирования</span>
                 {#if isNominatimLoading}
@@ -829,7 +959,6 @@
               onmouseenter={() => isOverStateDropdown = true}
               onmouseleave={() => isOverStateDropdown = false}
             >
-              <!-- Секция БД -->
               <div class="p-2 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Существующие в БД</span>
               </div>
@@ -847,7 +976,6 @@
                 <div class="px-4 py-2 text-xs italic text-gray-400">Нет совпадений в БД</div>
               {/if}
 
-              <!-- Секция Nominatim -->
               <div class="p-2 border-b border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 flex justify-between items-center">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Поиск на сервере геокодирования</span>
                 {#if isNominatimLoading}
@@ -1254,11 +1382,28 @@
 
     <!-- Таблица существующих правил -->
     <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden mb-8 transition-colors">
-      <div class="p-6 border-b border-gray-200 dark:border-zinc-800">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-zinc-200">Таблица настроенных замен</h2>
+      <div class="p-6 border-b border-gray-200 dark:border-zinc-800 flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-zinc-200">Таблица настроенных замен</h2>
+          
+          {#if hasChanges}
+            <div class="text-xs px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-gray-500 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700">
+              Несохранённых изменений: 
+              {#if addedCount > 0}
+                <span class="text-green-600 dark:text-green-400 font-bold ml-1.5">добавлено: {addedCount}</span>
+              {/if}
+              {#if editedCount > 0}
+                <span class="text-yellow-600 dark:text-yellow-500 font-bold ml-1.5">отредактировано: {editedCount}</span>
+              {/if}
+              {#if deletedCount > 0}
+                <span class="text-red-600 dark:text-red-400 font-bold ml-1.5">удалено: {deletedCount}</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
       </div>
 
-      {#if substitutions.length > 0}
+      {#if ruleItems.length > 0}
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
             <thead class="bg-gray-50 dark:bg-zinc-950">
@@ -1272,12 +1417,24 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
-              {#each substitutions as rule, idx}
-                <tr class="hover:bg-gray-50 dark:hover:bg-zinc-850/30 transition-colors">
+              {#each ruleItems as rule, idx}
+                <tr 
+                  class="hover:bg-gray-50 dark:hover:bg-zinc-850/30 transition-colors"
+                  class:bg-green-50={rule.status === 'added'}
+                  class:dark:bg-green-950/20={rule.status === 'added'}
+                  class:bg-yellow-50={rule.status === 'edited'}
+                  class:dark:bg-yellow-950/20={rule.status === 'edited'}
+                  class:bg-red-50={rule.status === 'deleted'}
+                  class:dark:bg-red-950/20={rule.status === 'deleted'}
+                >
                   <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{rule.country}</td>
                   <td class="px-6 py-4 text-sm text-gray-600 dark:text-zinc-300">{rule.state}</td>
-                  <td class="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">{rule.replacementCountry || rule.replacement || rule.country}</td>
-                  <td class="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">{rule.replacementState || rule.state}</td>
+                  <td class="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    {rule.replacementCountry || rule.replacement || rule.country}
+                  </td>
+                  <td class="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    {rule.replacementState || rule.state}
+                  </td>
                   <td class="px-6 py-4 text-sm text-gray-500 dark:text-zinc-400">
                     {#if rule.startYear && rule.endYear}
                       с {rule.startYear} по {rule.endYear}
@@ -1290,12 +1447,19 @@
                     {/if}
                   </td>
                   <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-2">
-                    <Button size="small" variant="secondary" shape="round" onclick={() => startEdit(idx)}>
-                      Редактировать
-                    </Button>
-                    <Button size="small" variant="ghost" shape="round" onclick={() => removeRule(idx)}>
-                      Удалить
-                    </Button>
+                    {#if rule.status !== 'deleted'}
+                      <Button size="small" variant="secondary" shape="round" onclick={() => startEdit(idx)}>
+                        Редактировать
+                      </Button>
+                      <Button size="small" variant="ghost" shape="round" onclick={() => removeRule(idx)}>
+                        Удалить
+                      </Button>
+                    {:else}
+                      <span class="text-xs text-red-500 italic font-semibold flex items-center pr-2">Помечено на удаление</span>
+                      <Button size="small" variant="secondary" shape="round" onclick={() => { rule.status = 'unchanged'; toastManager.info('Удаление отменено'); }}>
+                        Вернуть
+                      </Button>
+                    {/if}
                   </td>
                 </tr>
               {/each}
@@ -1314,12 +1478,114 @@
       <Button shape="round" color="secondary" onclick={handleResetConfig}>
         Сбросить изменения
       </Button>
-      <Button shape="round" onclick={handleSaveConfig}>
+      
+      <!-- Кастомизированная кнопка с динамическими стилями в зависимости от статуса изменений -->
+      <button
+        type="button"
+        class="px-5 py-2.5 text-sm font-semibold rounded-full shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center"
+        style={saveBtnStyle || 'background-color: var(--primary); color: white;'}
+        onclick={() => {
+          if (hasChanges) {
+            showConfirmSaveModal = true;
+          } else {
+            toastManager.warning('Нет изменений для сохранения');
+          }
+        }}
+      >
         Сохранить настройки
-      </Button>
+      </button>
     </div>
   </div>
 </AdminPageLayout>
+
+<!-- Всплывающее окно подтверждения изменений перед отправкой на сервер -->
+{#if showConfirmSaveModal}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" transition:fade={{ duration: 150 }}>
+    <div 
+      class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-2xl overflow-hidden text-left"
+      use:clickOutside={() => showConfirmSaveModal = false}
+    >
+      <div class="p-6 border-b border-gray-150 dark:border-zinc-850 flex justify-between items-center bg-gray-50 dark:bg-zinc-950">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          📝 Проверка вносимых изменений
+        </h3>
+        <button 
+          type="button" 
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-150 dark:hover:bg-zinc-850"
+          onclick={() => showConfirmSaveModal = false}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 max-h-[50vh]">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
+          <thead class="bg-gray-50 dark:bg-zinc-950">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase">Действие</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase">Локация</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase">Новые значения</th>
+              <th class="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase w-16">Отмена</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
+            {#each ruleItems.filter(item => item.status !== 'unchanged') as item}
+              <tr class="hover:bg-gray-50 dark:hover:bg-zinc-850/30">
+                <td class="px-4 py-3 text-xs font-semibold">
+                  {#if item.status === 'added'}
+                    <span class="px-2 py-0.5 bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300 rounded">Добавление</span>
+                  {:else if item.status === 'edited'}
+                    <span class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 rounded">Изменение</span>
+                  {:else if item.status === 'deleted'}
+                    <span class="px-2 py-0.5 bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 rounded">Удаление</span>
+                  {/if}
+                </td>
+                <td class="px-4 py-3 text-xs font-medium text-gray-900 dark:text-white">
+                  {item.country} – {item.state}
+                </td>
+                <td class="px-4 py-3 text-xs text-gray-600 dark:text-zinc-300">
+                  {#if item.status !== 'deleted'}
+                    <div>Страна: <span class="font-bold text-blue-600 dark:text-blue-400">{item.replacementCountry || item.country}</span></div>
+                    <div>Регион: <span class="font-bold text-blue-600 dark:text-blue-400">{item.replacementState || item.state}</span></div>
+                  {:else}
+                    <span class="italic text-gray-400">Правило будет удалено</span>
+                  {/if}
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button 
+                    type="button" 
+                    class="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    onclick={() => revertChange(item.id)}
+                    title="Убрать из списка изменений"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="p-4 border-t border-gray-150 dark:border-zinc-850 bg-gray-50 dark:bg-zinc-950 flex justify-end gap-3">
+        <Button variant="secondary" shape="round" onclick={() => showConfirmSaveModal = false}>
+          Продолжить редактирование
+        </Button>
+        <button 
+          type="button" 
+          class="px-5 py-2 text-sm font-semibold rounded-full text-white bg-green-600 hover:bg-green-700 transition-colors shadow"
+          onclick={handleSaveConfig}
+        >
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if showFullManualModal}
   <!-- Модальное окно полной инструкции -->

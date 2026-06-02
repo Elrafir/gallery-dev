@@ -35,11 +35,13 @@
     buttonClass?: string | undefined;
     hideContent?: boolean;
     children?: Snippet;
+    isOpen?: boolean;
     offset?: {
       x: number;
       y: number;
     };
   } & HTMLAttributes<HTMLDivElement>;
+
 
   let {
     icon,
@@ -52,11 +54,11 @@
     buttonClass = undefined,
     hideContent = false,
     children,
+    isOpen = $bindable(false),
     offset,
     ...restProps
   }: Props = $props();
 
-  let isOpen = $state(false);
   let contextMenuPosition = $state({ x: 0, y: 0 });
   let menuContainer: HTMLUListElement | undefined = $state();
   let buttonContainer: HTMLDivElement | undefined = $state();

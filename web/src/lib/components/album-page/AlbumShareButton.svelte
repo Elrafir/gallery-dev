@@ -1,3 +1,11 @@
+<script lang="ts" context="module">
+  import { writable } from 'svelte/store';
+
+  // Global shared store to track which album's share dropdown is currently open.
+  // This ensures only one album share details popover is open at any given time.
+  const activeShareAlbumId = writable<string | null>(null);
+</script>
+
 <script lang="ts">
   import ButtonContextMenu from '$lib/components/shared-components/context-menu/button-context-menu.svelte';
   import { mdiAccountMultiple } from '@mdi/js';
@@ -14,6 +22,24 @@
   const { album }: Props = $props();
 
   const sharedCount = (album.albumUsers?.length ?? 0) + 1;
+  let isOpen = $state(false);
+
+  // When this dropdown is opened, set the active global ID to this album's ID
+  $effect(() => {
+    if (isOpen) {
+      activeShareAlbumId.set(album.id);
+    }
+  });
+
+  // Automatically close this dropdown if another album's dropdown becomes active
+  $effect(() => {
+    const unsubscribe = activeShareAlbumId.subscribe((id) => {
+      if (id !== album.id && isOpen) {
+        isOpen = false;
+      }
+    });
+    return unsubscribe;
+  });
 
   async function openSharedOptions() {
     await modalManager.show(AlbumOptionsModal, { album });
@@ -27,9 +53,6 @@
 </script>
 
 {#if album.shared || (album.albumUsers && album.albumUsers.length > 0)}
-  <!-- We wrap the ButtonContextMenu in a container, but to make the ENTIRE block act as the button trigger,
-       we position the ButtonContextMenu to cover 100% width and height of the wrapper with z-index,
-       and place the label text inside the button container so that it's also clickable. -->
   <div 
     class="absolute end-4 bottom-4 flex items-center justify-center rounded-full bg-immich-primary hover:bg-green-600 transition-colors duration-250 z-10 h-8 cursor-pointer shadow-md select-none overflow-hidden"
     onclick={handleContainerClick}
@@ -40,9 +63,8 @@
       icon={mdiAccountMultiple}
       title={$t('shared_with_count', { values: { count: sharedCount } })}
       buttonClass="w-full h-full px-2.5 flex items-center justify-center gap-1.5 text-white"
+      bind:isOpen={isOpen}
     >
-      <!-- We render the count text directly inside the ButtonContextMenu's trigger button by slotting it or letting the layout flow.
-           Since ButtonContextMenu only expects to render <Icon />, we can overlay the span as absolute but pointer-events-none inside the same relative container. -->
       <ul class="bg-white dark:bg-gray-800 rounded-md shadow-lg p-2 min-w-[220px]" role="menu">
         {#if album.owner}
           <li class="flex items-center gap-3 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer" role="menuitem">
