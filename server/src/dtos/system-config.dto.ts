@@ -278,7 +278,8 @@ const SystemConfigPasswordLoginSchema = z
 
 const CountrySubstitutionRuleSchema = z
   .object({
-    original: z.string().min(1).describe('Original country name'),
+    country: z.string().min(1).describe('Original country name'),
+    state: z.string().min(1).describe('Original state/region/republic name'),
     replacement: z.string().min(1).describe('Replacement country name'),
     startYear: z.coerce.number().int().min(1000).max(3000).optional().describe('Start year (inclusive)'),
     endYear: z.coerce.number().int().min(1000).max(3000).optional().describe('End year (inclusive)'),

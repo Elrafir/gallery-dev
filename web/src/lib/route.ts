@@ -139,6 +139,7 @@ export const Route = {
   systemStatistics: () => '/admin/server-status',
   systemMaintenance: (params?: { continue?: string }) => '/admin/maintenance' + asQueryString(params),
   storageMigration: () => '/admin/storage-migration',
+  geodata: () => '/admin/geodata',
 
   // tags
   tags: (params?: { path?: string }) => '/tags' + asQueryString(params),

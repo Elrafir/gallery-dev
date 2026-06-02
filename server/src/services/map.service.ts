@@ -45,4 +45,12 @@ export class MapService extends BaseService {
     const result = await this.mapRepository.reverseGeocode({ latitude, longitude });
     return result ? [result] : [];
   }
+
+  async getUniqueCountries(): Promise<string[]> {
+    return this.mapRepository.getUniqueCountries();
+  }
+
+  async getUniqueStates(country?: string): Promise<string[]> {
+    return this.mapRepository.getUniqueStates(country);
+  }
 }

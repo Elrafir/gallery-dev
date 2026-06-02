@@ -18,7 +18,8 @@ import { ConcurrentQueueName, FullsizeImageOptions, ImageOptions } from 'src/typ
 export type ClassificationFaceExclusion = 'off' | 'any_assigned_face' | 'named_people' | 'named_visible_people';
 
 export type CountrySubstitutionRule = {
-  original: string;
+  country: string;
+  state: string;
   replacement: string;
   startYear?: number;
   endYear?: number;

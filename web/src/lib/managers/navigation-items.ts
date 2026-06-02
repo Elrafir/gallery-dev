@@ -95,6 +95,15 @@ const SYSTEM_SETTINGS: readonly NavigationItem[] = SYSTEM_SETTINGS_SOURCE.map(([
 
 const ADMIN_PAGES: readonly NavigationItem[] = [
   {
+    id: 'nav:admin:geodata',
+    category: 'admin',
+    labelKey: 'Редактор геоданных',
+    descriptionKey: 'Управление заменами названий стран и регионов по датам съемок',
+    icon: mdiMapMarkerOutline,
+    route: '/admin/geodata',
+    adminOnly: true,
+  },
+  {
     id: 'nav:admin:users',
     category: 'admin',
     labelKey: 'users',

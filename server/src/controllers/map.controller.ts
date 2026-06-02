@@ -39,4 +39,26 @@ export class MapController {
   reverseGeocode(@Query() dto: MapReverseGeocodeDto): Promise<MapReverseGeocodeResponseDto[]> {
     return this.service.reverseGeocode(dto);
   }
+
+  @Get('countries')
+  @Authenticated({ admin: true })
+  @Endpoint({
+    summary: 'Get unique countries from geodata',
+    description: 'Retrieve list of all unique countries available in database metadata.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  getUniqueCountries(): Promise<string[]> {
+    return this.service.getUniqueCountries();
+  }
+
+  @Get('states')
+  @Authenticated({ admin: true })
+  @Endpoint({
+    summary: 'Get unique states from geodata',
+    description: 'Retrieve list of all unique states/regions available in database metadata, optionally filtered by country.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  getUniqueStates(@Query('country') country?: string): Promise<string[]> {
+    return this.service.getUniqueStates(country);
+  }
 }

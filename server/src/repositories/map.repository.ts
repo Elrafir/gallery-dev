@@ -234,6 +234,36 @@ export class MapRepository {
       .$narrowType<{ lat: NotNull; lon: NotNull }>();
   }
 
+  async getUniqueCountries(): Promise<string[]> {
+    const res = await this.db
+      .selectFrom('asset')
+      .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
+      .select('asset_exif.country')
+      .distinct()
+      .where('asset.deletedAt', 'is', null)
+      .where('asset_exif.country', 'is not', null)
+      .where('asset_exif.country', '!=', '')
+      .orderBy('asset_exif.country')
+      .execute();
+    return res.map((row) => row.country!);
+  }
+
+  async getUniqueStates(country?: string): Promise<string[]> {
+    let query = this.db
+      .selectFrom('asset')
+      .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
+      .select('asset_exif.state')
+      .distinct()
+      .where('asset.deletedAt', 'is', null)
+      .where('asset_exif.state', 'is not', null)
+      .where('asset_exif.state', '!=', '');
+    if (country) {
+      query = query.where('asset_exif.country', '=', country);
+    }
+    const res = await query.orderBy('asset_exif.state').execute();
+    return res.map((row) => row.state!);
+  }
+
   async reverseGeocode(point: GeoPoint, date?: Date | null): Promise<ReverseGeocodeResult> {
     const config = await getConfig(
       {
@@ -281,9 +311,15 @@ this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, nul
         const state = data.address.state || data.address.region || data.address.state_district || null;
         let country = data.address.country || null;
 
-        if (country && config.reverseGeocoding.substitutions?.length) {
+        if (country && state && config.reverseGeocoding.substitutions?.length) {
           const year = date ? new Date(date).getFullYear() : null;
           for (const rule of config.reverseGeocoding.substitutions) {
+            if (country.trim().toLowerCase() !== rule.country.trim().toLowerCase()) {
+              continue;
+            }
+            if (state.trim().toLowerCase() !== rule.state.trim().toLowerCase()) {
+              continue;
+            }
             const hasYearRestriction = rule.startYear !== undefined || rule.endYear !== undefined;
             if (hasYearRestriction && year === null) {
               continue;
@@ -294,10 +330,8 @@ this.logger.debug(`Полный ответ Nominatim: ${JSON.stringify(data, nul
             if (rule.endYear !== undefined && year !== null && year > rule.endYear) {
               continue;
             }
-            const regex = new RegExp(rule.original, 'gi');
-            if (regex.test(country)) {
-              country = country.replace(regex, rule.replacement);
-            }
+            country = rule.replacement;
+            break;
           }
         }
 

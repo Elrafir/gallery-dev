@@ -54,6 +54,40 @@ export class SystemConfigService extends BaseService {
     if (!_.isEqual(toPlainObject(newConfig.logging), oldConfig.logging) && logLevel) {
       throw new Error('Logging cannot be changed while the environment variable IMMICH_LOG_LEVEL is set.');
     }
+
+    const substitutions = newConfig.reverseGeocoding?.substitutions;
+    if (Array.isArray(substitutions)) {
+      for (let i = 0; i < substitutions.length; i++) {
+        const r1 = substitutions[i];
+        if (!r1.country || !r1.country.trim()) {
+          throw new Error('Поле Исходная страна должно быть заполнено');
+        }
+        if (!r1.state || !r1.state.trim()) {
+          throw new Error('Поле Область/Регион должно быть заполнено');
+        }
+        if (!r1.replacement || !r1.replacement.trim()) {
+          throw new Error('Поле Желаемое значение должно быть заполнено');
+        }
+        if (r1.startYear !== undefined && r1.endYear !== undefined && r1.startYear > r1.endYear) {
+          throw new Error(`Некорректный диапазон лет: год начала (${r1.startYear}) не может быть больше года окончания (${r1.endYear})`);
+        }
+        for (let j = i + 1; j < substitutions.length; j++) {
+          const r2 = substitutions[j];
+          if (
+            r1.country.trim().toLowerCase() === r2.country.trim().toLowerCase() &&
+            r1.state.trim().toLowerCase() === r2.state.trim().toLowerCase()
+          ) {
+            const s1 = r1.startYear ?? -Infinity;
+            const e1 = r1.endYear ?? Infinity;
+            const s2 = r2.startYear ?? -Infinity;
+            const e2 = r2.endYear ?? Infinity;
+            if (s1 <= e2 && s2 <= e1) {
+              throw new Error(`Обнаружено пересечение диапазонов дат для локации "${r1.country.trim()} - ${r1.state.trim()}"`);
+            }
+          }
+        }
+      }
+    }
   }
 
   async updateSystemConfig(dto: SystemConfigDto): Promise<SystemConfigDto> {
