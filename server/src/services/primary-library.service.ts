@@ -240,6 +240,48 @@ export class PrimaryLibraryService extends BaseService {
     await this.sharedSpaceRepository.updateMember(settings.spaceId, userId, dto);
   }
 
+  // ==========================================
+  // Phase 3.3: Space Tag Management (admin)
+  // ==========================================
+
+  /**
+   * Привязать теги к системному пространству.
+   */
+  async addSpaceTags(tagIds: string[]): Promise<void> {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      throw new Error('Primary Library is not enabled');
+    }
+
+    await this.sharedSpaceRepository.addSpaceTags(settings.spaceId, tagIds);
+    this.logger.log(`Linked ${tagIds.length} tags to Primary Library`);
+  }
+
+  /**
+   * Отвязать теги от системного пространства.
+   */
+  async removeSpaceTags(tagIds: string[]): Promise<void> {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      throw new Error('Primary Library is not enabled');
+    }
+
+    await this.sharedSpaceRepository.removeSpaceTags(settings.spaceId, tagIds);
+    this.logger.log(`Unlinked ${tagIds.length} tags from Primary Library`);
+  }
+
+  /**
+   * Получить список привязанных тегов.
+   */
+  async getSpaceTags() {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      return [];
+    }
+
+    return this.sharedSpaceRepository.getSpaceTags(settings.spaceId);
+  }
+
   /**
    * Зачислить всех существующих пользователей в Primary Library.
    * Используется при первом включении системы.

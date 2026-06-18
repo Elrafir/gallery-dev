@@ -9,6 +9,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Endpoint, HistoryBuilder } from 'src/decorators';
 import {
   PrimaryLibraryLinkLibraryDto,
+  PrimaryLibraryTagsDto,
   UpdatePrimaryLibraryMemberDto,
   UpdatePrimaryLibrarySettingsDto,
 } from 'src/dtos/primary-library.dto';
@@ -118,5 +119,40 @@ export class PrimaryLibraryController {
   })
   unlinkLibraries(@Body() dto: PrimaryLibraryLinkLibraryDto) {
     return this.service.unlinkLibraries(dto.libraryIds);
+  }
+
+  // ─── Phase 3.3: Space Tag Management ───────────────────────────────────
+
+  @Get('tags')
+  @Authenticated({ permission: Permission.SystemConfigRead, admin: true })
+  @Endpoint({
+    summary: 'Get linked tags',
+    description: 'Получить список тегов, привязанных к базовой библиотеке.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  getSpaceTags() {
+    return this.service.getSpaceTags();
+  }
+
+  @Put('tags')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Link tags to Primary Library',
+    description: 'Привязать теги к базовой библиотеке.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  addSpaceTags(@Body() dto: PrimaryLibraryTagsDto) {
+    return this.service.addSpaceTags(dto.tagIds);
+  }
+
+  @Delete('tags')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Unlink tags from Primary Library',
+    description: 'Отвязать теги от базовой библиотеки.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  unlinkSpaceTags(@Body() dto: PrimaryLibraryTagsDto) {
+    return this.service.removeSpaceTags(dto.tagIds);
   }
 }

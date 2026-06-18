@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Endpoint, HistoryBuilder } from 'src/decorators';
 import { BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
+import type { TagOverrideResponseDto, TagOverrideUpsertDto } from 'src/dtos/primary-library.dto';
 import {
   TagBulkAssetsDto,
   TagBulkAssetsResponseDto,
@@ -64,6 +65,49 @@ export class TagController {
   bulkTagAssets(@Auth() auth: AuthDto, @Body() dto: TagBulkAssetsDto): Promise<TagBulkAssetsResponseDto> {
     return this.service.bulkTagAssets(auth, dto);
   }
+
+  // ─── Phase 3.3: User Tag Overrides ──────────────────────────────────────
+
+  @Get('overrides')
+  @Authenticated({ permission: Permission.TagRead })
+  @Endpoint({
+    summary: 'Get my tag overrides',
+    description: 'Retrieve all tag overrides for the authenticated user.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  getOverrides(@Auth() auth: AuthDto): Promise<TagOverrideResponseDto[]> {
+    return this.service.getOverrides(auth);
+  }
+
+  @Put(':id/override')
+  @Authenticated({ permission: Permission.TagRead })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Upsert tag override',
+    description: 'Create or update a personal tag override (hide, alias, color).',
+    history: new HistoryBuilder().added('v1'),
+  })
+  upsertOverride(
+    @Auth() auth: AuthDto,
+    @Param() { id }: UUIDParamDto,
+    @Body() dto: TagOverrideUpsertDto,
+  ): Promise<void> {
+    return this.service.upsertOverride(auth, id, dto);
+  }
+
+  @Delete(':id/override')
+  @Authenticated({ permission: Permission.TagRead })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Delete tag override',
+    description: 'Remove a personal tag override.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  deleteOverride(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<void> {
+    return this.service.deleteOverride(auth, id);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   @Get(':id')
   @Authenticated({ permission: Permission.TagRead })

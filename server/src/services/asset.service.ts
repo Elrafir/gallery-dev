@@ -41,7 +41,7 @@ import {
   Permission,
   QueueName,
 } from 'src/enum';
-import type { LinkedSpacePerson } from 'src/repositories/shared-space.repository';
+import type { LinkedSpacePerson, LinkedSpaceTag } from 'src/repositories/shared-space.repository';
 import { BaseService } from 'src/services/base.service';
 import { StorageService } from 'src/services/storage.service';
 import { JobItem, JobOf } from 'src/types';
@@ -131,6 +131,13 @@ export class AssetService extends BaseService {
         this.applySpacePeople(data, spacePersonMap);
         data.people = data.people.filter((p) => p.spacePersonId && !spacePersonMap.get(p.id)?.isHidden);
       }
+
+      // Phase 3.3: Tag overlay
+      if (data.tags?.length) {
+        const tagIds = data.tags.map((t) => t.id);
+        const tagOverrideMap = await this.sharedSpaceRepository.findSpaceTagOverrides(spaceId, auth.user.id, tagIds);
+        this.applySpaceTags(data, tagOverrideMap);
+      }
     } else if (data.ownerId !== auth.user.id) {
       data.unassignedFaces = [];
 
@@ -145,6 +152,17 @@ export class AssetService extends BaseService {
         this.applySpacePeople(data, spacePersonMap);
         data.people = (data.people || []).filter((p) => p.spacePersonId && !spacePersonMap.get(p.id)?.isHidden);
         data.resolvedSpaceId = spaceForAsset.spaceId;
+
+        // Phase 3.3: Tag overlay for auto-detected space
+        if (data.tags?.length) {
+          const tagIds = data.tags.map((t) => t.id);
+          const tagOverrideMap = await this.sharedSpaceRepository.findSpaceTagOverrides(
+            spaceForAsset.spaceId,
+            auth.user.id,
+            tagIds,
+          );
+          this.applySpaceTags(data, tagOverrideMap);
+        }
       } else {
         const albumAccess = await this.accessRepository.asset.checkAlbumAccess(auth.user.id, new Set([id]));
         if (albumAccess.has(id)) {
@@ -187,6 +205,36 @@ export class AssetService extends BaseService {
         person.type = spacePerson.type;
       }
     }
+  }
+
+  /**
+   * Phase 3.3: Применить пользовательские overrides к тегам ассета.
+   * Подменяет value (alias), color и фильтрует скрытые теги.
+   */
+  private applySpaceTags(data: AssetResponseDto, tagOverrideMap: Map<string, LinkedSpaceTag>) {
+    if (!data.tags || tagOverrideMap.size === 0) {
+      return;
+    }
+
+    for (const tag of data.tags) {
+      const override = tagOverrideMap.get(tag.id);
+      if (!override) {
+        continue;
+      }
+
+      if (override.alias !== null) {
+        tag.value = override.alias;
+      }
+      if (override.color !== null) {
+        tag.color = override.color;
+      }
+    }
+
+    // Фильтруем скрытые теги
+    data.tags = data.tags.filter((tag) => {
+      const override = tagOverrideMap.get(tag.id);
+      return !override?.isHidden;
+    });
   }
 
   async update(auth: AuthDto, id: string, dto: UpdateAssetDto): Promise<AssetResponseDto> {

@@ -3,6 +3,7 @@ import { Insertable } from 'kysely';
 import { OnJob } from 'src/decorators';
 import { BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
+import type { TagOverrideResponseDto, TagOverrideUpsertDto } from 'src/dtos/primary-library.dto';
 import {
   TagBulkAssetsDto,
   TagBulkAssetsResponseDto,
@@ -12,12 +13,13 @@ import {
   TagUpsertDto,
   mapTag,
 } from 'src/dtos/tag.dto';
-import { JobName, JobStatus, Permission, QueueName } from 'src/enum';
+import { JobName, JobStatus, Permission, QueueName, SystemMetadataKey } from 'src/enum';
 import { TagAssetTable } from 'src/schema/tables/tag-asset.table';
 import { BaseService } from 'src/services/base.service';
 import { addAssets, removeAssets } from 'src/utils/asset.util';
 import { updateLockedColumns } from 'src/utils/database';
 import { upsertTags } from 'src/utils/tag';
+import type { PrimaryLibrarySettings } from 'src/types';
 
 @Injectable()
 export class TagService extends BaseService {
@@ -142,12 +144,69 @@ export class TagService extends BaseService {
     return JobStatus.Success;
   }
 
+  // ==========================================
+  // Phase 3.3: Tag Overrides (user-facing)
+  // ==========================================
+
+  /**
+   * Создать или обновить пользовательский override для тега.
+   */
+  async upsertOverride(auth: AuthDto, tagId: string, dto: TagOverrideUpsertDto): Promise<void> {
+    const spaceId = await this.getSystemSpaceId();
+    if (!spaceId) {
+      throw new BadRequestException('Primary Library is not enabled');
+    }
+
+    await this.sharedSpaceRepository.upsertTagOverride(spaceId, tagId, auth.user.id, dto);
+  }
+
+  /**
+   * Удалить пользовательский override для тега.
+   */
+  async deleteOverride(auth: AuthDto, tagId: string): Promise<void> {
+    const spaceId = await this.getSystemSpaceId();
+    if (!spaceId) {
+      throw new BadRequestException('Primary Library is not enabled');
+    }
+
+    await this.sharedSpaceRepository.deleteTagOverride(spaceId, tagId, auth.user.id);
+  }
+
+  /**
+   * Получить все overrides текущего пользователя.
+   */
+  async getOverrides(auth: AuthDto): Promise<TagOverrideResponseDto[]> {
+    const spaceId = await this.getSystemSpaceId();
+    if (!spaceId) {
+      return [];
+    }
+
+    const overrides = await this.sharedSpaceRepository.getTagOverridesForUser(spaceId, auth.user.id);
+    return overrides.map((o) => ({
+      tagId: o.tagId,
+      isHidden: o.isHidden,
+      alias: o.alias,
+      color: o.color,
+    }));
+  }
+
   private async findOrFail(id: string) {
     const tag = await this.tagRepository.get(id);
     if (!tag) {
       throw new BadRequestException('Tag not found');
     }
     return tag;
+  }
+
+  /**
+   * Получить ID системного пространства из настроек Primary Library.
+   */
+  private async getSystemSpaceId(): Promise<string | null> {
+    const settings = await this.systemMetadataRepository.get(SystemMetadataKey.PrimaryLibrarySpaceId) as PrimaryLibrarySettings | null;
+    if (!settings?.enabled || !settings.spaceId) {
+      return null;
+    }
+    return settings.spaceId;
   }
 
   private async updateTags(assetId: string) {

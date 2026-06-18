@@ -74,3 +74,29 @@ export const PrimaryLibraryLinkLibrarySchema = z.object({
 });
 
 export type PrimaryLibraryLinkLibraryDto = z.infer<typeof PrimaryLibraryLinkLibrarySchema>;
+
+/** Схема для привязки/отвязки тегов к пространству (admin) */
+export const PrimaryLibraryTagsSchema = z.object({
+  tagIds: z.array(z.string().uuid()).describe('ID тегов для привязки/отвязки'),
+});
+
+export type PrimaryLibraryTagsDto = z.infer<typeof PrimaryLibraryTagsSchema>;
+
+/** Схема для пользовательского override тега */
+export const TagOverrideUpsertSchema = z.object({
+  isHidden: z.boolean().optional().describe('Скрыть тег для пользователя'),
+  alias: z.string().nullable().optional().describe('Пользовательское имя тега'),
+  color: z.string().nullable().optional().describe('Пользовательский цвет тега'),
+});
+
+export type TagOverrideUpsertDto = z.infer<typeof TagOverrideUpsertSchema>;
+
+/** Схема ответа tag override */
+export const TagOverrideResponseSchema = z.object({
+  tagId: z.string().uuid(),
+  isHidden: z.boolean(),
+  alias: z.string().nullable(),
+  color: z.string().nullable(),
+});
+
+export type TagOverrideResponseDto = z.infer<typeof TagOverrideResponseSchema>;

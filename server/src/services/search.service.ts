@@ -323,7 +323,40 @@ export class SearchService extends BaseService {
       }
     }
 
-    return this.searchRepository.getAccessibleTags(userIds, { ...dto, timelineSpaceIds });
+    let tags = await this.searchRepository.getAccessibleTags(userIds, { ...dto, timelineSpaceIds });
+
+    // Phase 3.3: Apply tag overrides (post-processing)
+    if (timelineSpaceIds?.length) {
+      for (const spaceId of timelineSpaceIds) {
+        const overrideMap = await this.sharedSpaceRepository.findSpaceTagOverrides(
+          spaceId,
+          auth.user.id,
+          tags.map((t) => t.id),
+        );
+
+        if (overrideMap.size > 0) {
+          // Apply alias overrides
+          tags = tags.map((tag) => {
+            const override = overrideMap.get(tag.id);
+            if (!override) {
+              return tag;
+            }
+            return {
+              ...tag,
+              value: override.alias ?? tag.value,
+            };
+          });
+
+          // Filter out hidden tags
+          tags = tags.filter((tag) => {
+            const override = overrideMap.get(tag.id);
+            return !override?.isHidden;
+          });
+        }
+      }
+    }
+
+    return tags;
   }
 
   async getFilterSuggestions(auth: AuthDto, dto: FilterSuggestionsRequestDto): Promise<FilterSuggestionsResponseDto> {

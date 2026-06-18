@@ -32,6 +32,13 @@ export type LinkedSpacePerson = {
   type?: string;
 };
 
+export type LinkedSpaceTag = {
+  tagId: string;
+  isHidden: boolean;
+  color: string | null;
+  alias: string | null;
+};
+
 export type SpacePersonPersonalThumbnail = {
   personId: string;
   thumbnailPath: string;
@@ -2295,4 +2302,156 @@ export class SharedSpaceRepository {
       .limit(1)
       .executeTakeFirst();
   }
+
+  // ==========================================
+  // Shared Space Tag CRUD (Phase 3.3)
+  // ==========================================
+
+  /**
+   * Привязать теги к пространству (admin).
+   * Использует ON CONFLICT DO NOTHING для идемпотентности.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, [DummyValue.UUID]] })
+  async addSpaceTags(spaceId: string, tagIds: string[]) {
+    if (tagIds.length === 0) {
+      return;
+    }
+
+    const values = tagIds.map((tagId) => ({ spaceId, tagId }));
+    await this.db
+      .insertInto('shared_space_tag')
+      .values(values)
+      .onConflict((oc) => oc.doNothing())
+      .execute();
+  }
+
+  /**
+   * Отвязать теги от пространства.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, [DummyValue.UUID]] })
+  async removeSpaceTags(spaceId: string, tagIds: string[]) {
+    if (tagIds.length === 0) {
+      return;
+    }
+
+    await this.db
+      .deleteFrom('shared_space_tag')
+      .where('spaceId', '=', spaceId)
+      .where('tagId', 'in', tagIds)
+      .execute();
+  }
+
+  /**
+   * Получить список тегов, привязанных к пространству.
+   * JOIN с tag для получения полных данных.
+   */
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getSpaceTags(spaceId: string) {
+    return this.db
+      .selectFrom('shared_space_tag')
+      .innerJoin('tag', 'tag.id', 'shared_space_tag.tagId')
+      .select([
+        'tag.id',
+        'tag.value',
+        'tag.color',
+        'tag.parentId',
+        'tag.createdAt',
+        'tag.updatedAt',
+        'shared_space_tag.createdAt as linkedAt',
+      ])
+      .where('shared_space_tag.spaceId', '=', spaceId)
+      .orderBy('tag.value', 'asc')
+      .execute();
+  }
+
+  /**
+   * Получить пользовательские overrides для списка тегов.
+   * Возвращает Map<tagId, LinkedSpaceTag> для применения overlay.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, [DummyValue.UUID]] })
+  async findSpaceTagOverrides(
+    spaceId: string,
+    userId: string,
+    tagIds: string[],
+  ): Promise<Map<string, LinkedSpaceTag>> {
+    if (tagIds.length === 0) {
+      return new Map<string, LinkedSpaceTag>();
+    }
+
+    const results = await this.db
+      .selectFrom('shared_space_tag_override')
+      .select(['tagId', 'isHidden', 'color', 'alias'])
+      .where('spaceId', '=', spaceId)
+      .where('userId', '=', userId)
+      .where('tagId', 'in', tagIds)
+      .execute();
+
+    const map = new Map<string, LinkedSpaceTag>();
+    for (const row of results) {
+      map.set(row.tagId, {
+        tagId: row.tagId,
+        isHidden: row.isHidden,
+        color: row.color,
+        alias: row.alias,
+      });
+    }
+    return map;
+  }
+
+  /**
+   * Создать или обновить пользовательский override для тега.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID, { isHidden: true }] })
+  async upsertTagOverride(
+    spaceId: string,
+    tagId: string,
+    userId: string,
+    data: { isHidden?: boolean; alias?: string | null; color?: string | null },
+  ) {
+    await this.db
+      .insertInto('shared_space_tag_override')
+      .values({
+        spaceId,
+        tagId,
+        userId,
+        isHidden: data.isHidden ?? false,
+        alias: data.alias ?? null,
+        color: data.color ?? null,
+      })
+      .onConflict((oc) =>
+        oc.columns(['spaceId', 'tagId', 'userId']).doUpdateSet({
+          ...(data.isHidden !== undefined ? { isHidden: data.isHidden } : {}),
+          ...(data.alias !== undefined ? { alias: data.alias } : {}),
+          ...(data.color !== undefined ? { color: data.color } : {}),
+        }),
+      )
+      .execute();
+  }
+
+  /**
+   * Удалить пользовательский override для тега.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID] })
+  async deleteTagOverride(spaceId: string, tagId: string, userId: string) {
+    await this.db
+      .deleteFrom('shared_space_tag_override')
+      .where('spaceId', '=', spaceId)
+      .where('tagId', '=', tagId)
+      .where('userId', '=', userId)
+      .execute();
+  }
+
+  /**
+   * Получить все overrides пользователя для пространства.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID] })
+  getTagOverridesForUser(spaceId: string, userId: string) {
+    return this.db
+      .selectFrom('shared_space_tag_override')
+      .select(['tagId', 'isHidden', 'color', 'alias'])
+      .where('spaceId', '=', spaceId)
+      .where('userId', '=', userId)
+      .execute();
+  }
 }
+
