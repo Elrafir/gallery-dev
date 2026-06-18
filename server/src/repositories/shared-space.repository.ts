@@ -1849,7 +1849,15 @@ export class SharedSpaceRepository {
     return this.db
       .insertInto('shared_space_person_alias')
       .values(values)
-      .onConflict((oc) => oc.columns(['personId', 'userId']).doUpdateSet((eb) => ({ alias: eb.ref('excluded.alias') })))
+      .onConflict((oc) =>
+        oc.columns(['personId', 'userId']).doUpdateSet((eb) => ({
+          alias: eb.ref('excluded.alias'),
+          isHidden: eb.ref('excluded.isHidden'),
+          birthDate: eb.ref('excluded.birthDate'),
+          description: eb.ref('excluded.description'),
+          representativeFaceId: eb.ref('excluded.representativeFaceId'),
+        })),
+      )
       .returningAll()
       .executeTakeFirstOrThrow();
   }
@@ -1893,6 +1901,35 @@ export class SharedSpaceRepository {
 
     // Delete source aliases
     await this.db.deleteFrom('shared_space_person_alias').where('personId', '=', fromPersonId).execute();
+  }
+
+  /**
+   * Phase 3.4: Batch-загрузка alias overrides для списка space person IDs.
+   * Возвращает Map<personId, alias данные> для применения overlay.
+   */
+  @GenerateSql({ params: [[DummyValue.UUID], DummyValue.UUID] })
+  async findPersonAliasOverrides(personIds: string[], userId: string) {
+    if (personIds.length === 0) {
+      return new Map<string, { alias: string | null; isHidden: boolean; birthDate: string | null; description: string | null }>();
+    }
+
+    const results = await this.db
+      .selectFrom('shared_space_person_alias')
+      .select(['personId', 'alias', 'isHidden', 'birthDate', 'description'])
+      .where('personId', 'in', personIds)
+      .where('userId', '=', userId)
+      .execute();
+
+    const map = new Map<string, { alias: string | null; isHidden: boolean; birthDate: string | null; description: string | null }>();
+    for (const row of results) {
+      map.set(row.personId, {
+        alias: row.alias,
+        isHidden: row.isHidden,
+        birthDate: row.birthDate as string | null,
+        description: row.description,
+      });
+    }
+    return map;
   }
 
   // ==========================================

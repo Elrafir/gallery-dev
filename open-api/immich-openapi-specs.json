@@ -29032,11 +29032,24 @@
             "maxLength": 100,
             "minLength": 1,
             "type": "string"
+          },
+          "birthDate": {
+            "description": "User-specific birth date",
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "User-specific notes about this person",
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "isHidden": {
+            "description": "Hide this person for current user",
+            "type": "boolean"
           }
         },
-        "required": [
-          "alias"
-        ],
         "type": "object"
       },
       "SharedSpacePersonMergeDto": {

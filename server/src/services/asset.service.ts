@@ -138,6 +138,13 @@ export class AssetService extends BaseService {
         const tagOverrideMap = await this.sharedSpaceRepository.findSpaceTagOverrides(spaceId, auth.user.id, tagIds);
         this.applySpaceTags(data, tagOverrideMap);
       }
+
+      // Phase 3.4: Per-user person alias overlay
+      const spacePersonIds = (data.people || []).filter((p) => p.spacePersonId).map((p) => p.spacePersonId!);
+      if (spacePersonIds.length > 0) {
+        const aliasMap = await this.sharedSpaceRepository.findPersonAliasOverrides(spacePersonIds, auth.user.id);
+        this.applyPersonAliases(data, aliasMap);
+      }
     } else if (data.ownerId !== auth.user.id) {
       data.unassignedFaces = [];
 
@@ -162,6 +169,13 @@ export class AssetService extends BaseService {
             tagIds,
           );
           this.applySpaceTags(data, tagOverrideMap);
+        }
+
+        // Phase 3.4: Per-user person alias overlay for auto-detected space
+        const spacePersonIds = (data.people || []).filter((p) => p.spacePersonId).map((p) => p.spacePersonId!);
+        if (spacePersonIds.length > 0) {
+          const aliasMap = await this.sharedSpaceRepository.findPersonAliasOverrides(spacePersonIds, auth.user.id);
+          this.applyPersonAliases(data, aliasMap);
         }
       } else {
         const albumAccess = await this.accessRepository.asset.checkAlbumAccess(auth.user.id, new Set([id]));
@@ -234,6 +248,54 @@ export class AssetService extends BaseService {
     data.tags = data.tags.filter((tag) => {
       const override = tagOverrideMap.get(tag.id);
       return !override?.isHidden;
+    });
+  }
+
+  /**
+   * Phase 3.4: Применить пользовательские alias overrides к людям ассета.
+   * Подменяет name (alias), isHidden, birthDate и фильтрует скрытых.
+   */
+  private applyPersonAliases(
+    data: AssetResponseDto,
+    aliasMap: Map<string, { alias: string | null; isHidden: boolean; birthDate: string | null; description: string | null }>,
+  ) {
+    if (!data.people || aliasMap.size === 0) {
+      return;
+    }
+
+    for (const person of data.people) {
+      if (!person.spacePersonId) {
+        continue;
+      }
+
+      const alias = aliasMap.get(person.spacePersonId);
+      if (!alias) {
+        continue;
+      }
+
+      // Подменяем имя если задан alias
+      if (alias.alias) {
+        person.name = alias.alias;
+      }
+
+      // Per-user isHidden override
+      if (alias.isHidden) {
+        person.isHidden = true;
+      }
+
+      // Per-user birthDate override
+      if (alias.birthDate !== null) {
+        person.birthDate = alias.birthDate;
+      }
+    }
+
+    // Фильтруем скрытых per-user
+    data.people = data.people.filter((person) => {
+      if (!person.spacePersonId) {
+        return true;
+      }
+      const alias = aliasMap.get(person.spacePersonId);
+      return !alias?.isHidden;
     });
   }
 

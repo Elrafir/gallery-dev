@@ -819,7 +819,7 @@ export class SharedSpaceService extends BaseService {
 
     const aliases =
       persons.length > 0 ? await this.sharedSpaceRepository.getAliasesBySpaceAndUser(spaceId, auth.user.id) : [];
-    const aliasMap = new Map(aliases.map((a) => [a.personId, a.alias]));
+    const aliasMap = new Map(aliases.map((a) => [a.personId, a]));
 
     return persons.map((person) => this.mapSpacePerson(person, aliasMap.get(person.id) ?? null));
   }
@@ -934,7 +934,7 @@ export class SharedSpaceService extends BaseService {
         representativeFaceId,
       });
       const alias = await this.sharedSpaceRepository.getAlias(person.id, auth.user.id);
-      return this.mapSpacePerson(updated, alias?.alias ?? null);
+      return this.mapSpacePerson(updated, alias ?? null);
     }
 
     const face = await this.sharedSpaceRepository.getSpaceRepresentativeFaceForUpdate({
@@ -957,7 +957,7 @@ export class SharedSpaceService extends BaseService {
       });
     }
     const alias = await this.sharedSpaceRepository.getAlias(person.id, auth.user.id);
-    return this.mapSpacePerson(updated, alias?.alias ?? null);
+    return this.mapSpacePerson(updated, alias ?? null);
   }
 
   async getSpacePerson(auth: AuthDto, spaceId: string, personId: string): Promise<SharedSpacePersonResponseDto> {
@@ -975,7 +975,7 @@ export class SharedSpaceService extends BaseService {
 
     const alias = await this.sharedSpaceRepository.getAlias(personId, auth.user.id);
 
-    return this.mapSpacePerson(person, alias?.alias ?? null);
+    return this.mapSpacePerson(person, alias ?? null);
   }
 
   async getSpacePersonStatistics(
@@ -1161,7 +1161,7 @@ export class SharedSpaceService extends BaseService {
       throw new BadRequestException('Person not found');
     }
 
-    return this.mapSpacePerson(enriched, alias?.alias ?? null);
+    return this.mapSpacePerson(enriched, alias ?? null);
   }
 
   async deleteSpacePerson(auth: AuthDto, spaceId: string, personId: string): Promise<void> {
@@ -1332,7 +1332,10 @@ export class SharedSpaceService extends BaseService {
     await this.sharedSpaceRepository.upsertAlias({
       personId,
       userId: auth.user.id,
-      alias: dto.alias,
+      alias: dto.alias ?? '',
+      isHidden: dto.isHidden ?? false,
+      birthDate: dto.birthDate ? new Date(dto.birthDate) : null,
+      description: dto.description ?? null,
     });
   }
 
@@ -2518,20 +2521,25 @@ export class SharedSpaceService extends BaseService {
     };
   }
 
-  private mapSpacePerson(person: SharedSpacePerson, alias: string | null): SharedSpacePersonResponseDto {
+  private mapSpacePerson(
+    person: SharedSpacePerson,
+    alias: { alias: string | null; isHidden?: boolean; birthDate?: string | Date | null; description?: string | null } | null,
+  ): SharedSpacePersonResponseDto {
     return {
       id: person.id,
       spaceId: person.spaceId,
       name: person.name || '',
       thumbnailPath: '',
-      isHidden: person.isHidden,
-      birthDate: asBirthDateString(person.birthDate),
-      description: person.description ?? null,
+      isHidden: alias?.isHidden ?? person.isHidden,
+      birthDate: alias?.birthDate !== undefined && alias?.birthDate !== null
+        ? asBirthDateString(alias.birthDate)
+        : asBirthDateString(person.birthDate),
+      description: alias?.description !== undefined ? (alias.description ?? null) : (person.description ?? null),
       representativeFaceId: person.representativeFaceId,
       representativeFaceSource: person.representativeFaceSource ?? 'auto',
       faceCount: person.faceCount,
       assetCount: person.assetCount,
-      alias,
+      alias: alias?.alias || null,
       createdAt: (person.createdAt as unknown as Date).toISOString(),
       updatedAt: (person.updatedAt as unknown as Date).toISOString(),
       type: person.type,

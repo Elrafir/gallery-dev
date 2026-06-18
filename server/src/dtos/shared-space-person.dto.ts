@@ -37,7 +37,15 @@ const SharedSpacePersonUpdateSchema = z
 
 const SharedSpacePersonAliasSchema = z
   .object({
-    alias: z.string().trim().min(1).max(100).describe('Alias name for this person'),
+    alias: z.string().trim().min(1).max(100).optional().describe('Alias name for this person'),
+    isHidden: z.boolean().optional().describe('Hide this person for current user'),
+    birthDate: emptyStringToNull(z.string().nullable())
+      .optional()
+      .describe('User-specific birth date')
+      .meta({ format: 'date' }),
+    description: emptyStringToNull(z.string().max(2000).nullable())
+      .optional()
+      .describe('User-specific notes about this person'),
   })
   .meta({ id: 'SharedSpacePersonAliasDto' });
 
