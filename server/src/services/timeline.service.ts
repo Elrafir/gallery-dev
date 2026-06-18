@@ -67,7 +67,11 @@ export class TimelineService extends BaseService {
 
     const scopedOptions = await this.resolveScopedPersonFilters(auth, { ...options, timelineSpaceIds });
 
-    return { ...scopedOptions, userIds };
+    return {
+      ...scopedOptions,
+      userIds,
+      excludeHiddenForUserId: timelineSpaceIds ? auth.user.id : undefined,
+    };
   }
 
   private async resolveScopedPersonFilters(auth: AuthDto, options: TimeBucketOptions): Promise<TimeBucketOptions> {

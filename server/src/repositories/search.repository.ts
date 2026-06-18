@@ -82,6 +82,7 @@ export interface SearchExifOptions {
   make?: string | null;
   model?: string | null;
   state?: string | null;
+  street?: string | null;
   description?: string | null;
   rating?: number | null;
   ratingIsMinimum?: boolean;
@@ -117,6 +118,8 @@ export interface SearchSpaceOptions {
   spaceId?: string;
   spacePersonIds?: string[];
   timelineSpaceIds?: string[];
+  /** Исключить ассеты, скрытые пользователем через user_asset_override */
+  excludeHiddenForUserId?: string;
 }
 
 export interface SearchOrderOptions {
@@ -225,7 +228,9 @@ interface FilterSuggestionFilterOptions {
   identityIds?: string[];
   forceEmptyResult?: boolean;
   country?: string;
+  state?: string;
   city?: string;
+  street?: string;
   make?: string;
   model?: string;
   tagIds?: string[];
@@ -241,6 +246,7 @@ export interface GetStatesOptions extends ExifSuggestionScopeOptions {
 
 export interface GetCitiesOptions extends SuggestionScopeOptions, FilterSuggestionFilterOptions {
   state?: string;
+  withCounts?: boolean;
 }
 
 export interface GetCameraModelsOptions extends ExifSuggestionScopeOptions {
@@ -273,6 +279,7 @@ type AccessibleTagScopeOptions = Pick<
 
 export interface FilterSuggestionsResult {
   countries: string[];
+  states: string[];
   cameraMakes: string[];
   tags: Array<{ id: string; value: string }>;
   people: FilterSuggestionPerson[];
@@ -1132,18 +1139,29 @@ export class SearchRepository {
   @GenerateSql({ params: [[DummyValue.UUID], DummyValue.STRING, DummyValue.STRING] })
   async getCities(userIds: string[], options: GetCitiesOptions): Promise<string[]> {
     const filteredIds = this.buildFilteredAssetIds(userIds, without(options, 'city'));
-    const res = await this.db
+    const query = this.db
       .selectFrom('asset_exif')
       .select('city')
-      .distinct()
       .where('assetId', 'in', filteredIds)
       .where('city', 'is not', null)
       .where('city', '!=', '')
-      .$if(!!options.state, (qb) => qb.where('state', '=', options.state!))
-      .orderBy('city')
-      .execute();
+      .$if(!!options.state, (qb) => qb.where('state', '=', options.state!));
 
-    return res.map((row) => row.city!);
+    if (options.withCounts) {
+      const res = await query
+        .select((eb) => eb.fn.countAll<number>().as('count'))
+        .groupBy('city')
+        .orderBy('count', 'desc')
+        .orderBy('city', 'asc')
+        .execute();
+      return res.map((row) => `${row.city}:${row.count}`);
+    } else {
+      const res = await query
+        .distinct()
+        .orderBy('city')
+        .execute();
+      return res.map((row) => row.city!);
+    }
   }
 
   @GenerateSql({ params: [[DummyValue.UUID], DummyValue.STRING, DummyValue.STRING] })
@@ -1253,8 +1271,9 @@ export class SearchRepository {
     ],
   })
   async getFilterSuggestions(userIds: string[], options: FilterSuggestionsOptions): Promise<FilterSuggestionsResult> {
-    const [countries, cameraMakes, tags, peopleResult, ratings, mediaTypes] = await Promise.all([
-      this.getFilteredCountries(userIds, without(options, 'country', 'city')),
+    const [countries, states, cameraMakes, tags, peopleResult, ratings, mediaTypes] = await Promise.all([
+      this.getFilteredCountries(userIds, without(options, 'country', 'state', 'city', 'street')),
+      this.getFilteredStates(userIds, without(options, 'state', 'city', 'street')),
       this.getFilteredCameraMakes(userIds, without(options, 'make', 'model')),
       this.getFilteredTags(userIds, without(options, 'tagIds')),
       this.getFilteredPeople(userIds, without(options, 'personIds', 'identityIds')),
@@ -1264,6 +1283,7 @@ export class SearchRepository {
 
     return {
       countries,
+      states,
       cameraMakes,
       tags,
       people: peopleResult.people,
@@ -1447,15 +1467,31 @@ export class SearchRepository {
   private async getFilteredCountries(userIds: string[], options: FilterSuggestionsOptions): Promise<string[]> {
     const filteredIds = this.buildFilteredAssetIds(userIds, options);
     const res = await this.db
+       .selectFrom('asset_exif')
+       .select('country')
+       .distinct()
+       .where('assetId', 'in', filteredIds)
+       .where('country', 'is not', null)
+       .where('country', '!=', '')
+       .orderBy('country')
+       .execute();
+     return res.map((row) => row.country!);
+  }
+
+  private async getFilteredStates(userIds: string[], options: FilterSuggestionsOptions): Promise<string[]> {
+    const filteredIds = this.buildFilteredAssetIds(userIds, options);
+    const res = await this.db
       .selectFrom('asset_exif')
-      .select('country')
-      .distinct()
+      .select('state')
+      .select((eb) => eb.fn.countAll<number>().as('count'))
       .where('assetId', 'in', filteredIds)
-      .where('country', 'is not', null)
-      .where('country', '!=', '')
-      .orderBy('country')
+      .where('state', 'is not', null)
+      .where('state', '!=', '')
+      .groupBy('state')
+      .orderBy('count', 'desc')
+      .orderBy('state', 'asc')
       .execute();
-    return res.map((row) => row.country!);
+    return res.map((row) => row.state!);
   }
 
   private async getFilteredCameraMakes(userIds: string[], options: FilterSuggestionsOptions): Promise<string[]> {

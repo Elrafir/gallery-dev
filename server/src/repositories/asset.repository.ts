@@ -99,12 +99,16 @@ interface AssetBuilderOptions {
   withCoordinates?: boolean;
   bbox?: BoundingBox;
   city?: string;
+  state?: string;
+  street?: string;
   country?: string;
   make?: string;
   model?: string;
   rating?: number;
   takenAfter?: string;
   takenBefore?: string;
+  /** Исключить ассеты, скрытые пользователем через user_asset_override */
+  excludeHiddenForUserId?: string;
 }
 
 export interface TimeBucketOptions extends AssetBuilderOptions {
@@ -190,6 +194,12 @@ const withBoundingBox = <T>(qb: SelectQueryBuilder<DB, 'asset' | 'asset_exif', T
   );
 };
 
+/**
+ * Репозиторий для работы с медиафайлами (Asset).
+ * Предоставляет методы для выполнения сложных запросов к базе данных:
+ * поиск, фильтрация, создание, обновление и удаление медиафайлов и их метаданных,
+ * а также для агрегации статистики и работы с геолокацией (BoundingBox).
+ */
 @Injectable()
 export class AssetRepository {
   constructor(@InjectKysely() private db: Kysely<DB>) {}
@@ -880,6 +890,8 @@ export class AssetRepository {
           .$if(
             !!options.bbox ||
               !!options.city ||
+              !!options.state ||
+              !!options.street ||
               !!options.country ||
               !!options.make ||
               !!options.model ||
@@ -898,7 +910,20 @@ export class AssetRepository {
               }
 
               if (options.city) {
-                q = q.where('asset_exif.city', '=', options.city) as any;
+                q = q.where((eb) => {
+                  const cityVal = options.city as string;
+                  return eb.or([
+                    eb('asset_exif.city', '=', cityVal),
+                    eb('asset_exif.city', 'like', `%, ${cityVal}`),
+                    eb('asset_exif.city', 'like', `%,${cityVal}`),
+                  ]);
+                }) as any;
+              }
+              if (options.state) {
+                q = q.where('asset_exif.state', '=', options.state) as any;
+              }
+              if (options.street) {
+                q = q.where('asset_exif.city', 'like', `${options.street as string}%`) as any;
               }
               if (options.country) {
                 q = q.where('asset_exif.country', '=', options.country) as any;
@@ -985,7 +1010,20 @@ export class AssetRepository {
           )
           .$if(!!options.tagIds?.length, (qb) => withAnyTagId(qb, options.tagIds!))
           .$if(!!options.takenAfter, (qb) => qb.where('asset.localDateTime', '>=', new Date(options.takenAfter!)))
-          .$if(!!options.takenBefore, (qb) => qb.where('asset.localDateTime', '<=', new Date(options.takenBefore!))),
+          .$if(!!options.takenBefore, (qb) => qb.where('asset.localDateTime', '<=', new Date(options.takenBefore!)))
+          .$if(!!options.excludeHiddenForUserId, (qb) =>
+            qb.where((eb) =>
+              eb.not(
+                eb.exists(
+                  eb
+                    .selectFrom('user_asset_override')
+                    .whereRef('user_asset_override.assetId', '=', 'asset.id')
+                    .where('user_asset_override.userId', '=', asUuid(options.excludeHiddenForUserId!))
+                    .where('user_asset_override.isHidden', '=', true),
+                ),
+              ),
+            ),
+          ),
       )
       .selectFrom('asset')
       .select(sql<string>`("timeBucket" AT TIME ZONE 'UTC')::date::text`.as('timeBucket'))
@@ -1089,7 +1127,18 @@ export class AssetRepository {
           .$if(!!options.personIds?.length, (qb) => hasPeople(qb, options.personIds!))
           .$if(!!options.spacePersonIds?.length, (qb) => hasSpacePeople(qb, options.spacePersonIds!))
           .$if(!!options.identityIds?.length, (qb) => hasFaceIdentities(qb, options.identityIds!))
-          .$if(!!options.city, (qb) => qb.where('asset_exif.city', '=', options.city!))
+          .$if(!!options.city, (qb) =>
+            qb.where((eb) => {
+              const cityVal = options.city as string;
+              return eb.or([
+                eb('asset_exif.city', '=', cityVal),
+                eb('asset_exif.city', 'like', `%, ${cityVal}`),
+                eb('asset_exif.city', 'like', `%,${cityVal}`),
+              ]);
+            }),
+          )
+          .$if(!!options.state, (qb) => qb.where('asset_exif.state', '=', options.state!))
+          .$if(!!options.street, (qb) => qb.where('asset_exif.city', 'like', `${options.street!}%`))
           .$if(!!options.country, (qb) => qb.where('asset_exif.country', '=', options.country!))
           .$if(!!options.make, (qb) => qb.where('asset_exif.make', '=', options.make!))
           .$if(!!options.model, (qb) => qb.where('asset_exif.model', '=', options.model!))

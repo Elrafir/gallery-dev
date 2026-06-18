@@ -1,3 +1,9 @@
+/**
+ * Основные типы и конфигурации для работы с базой данных на уровне приложения.
+ * Содержит типы (User, Asset, Album и т.д.), которые проецируются из таблиц БД
+ * или используются для типизации DTO. Также здесь определены константы столбцов
+ * для выборки (SELECT) и блокируемых свойств (LockableProperty).
+ */
 import { Selectable, ShallowDehydrateObject } from 'kysely';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import {
@@ -345,6 +351,7 @@ export type SharedSpace = {
   faceRecognitionEnabled: boolean;
   petsEnabled: boolean;
   lastActivityAt: Date | null;
+  isSystemSpace: boolean;
   createdAt: Date;
   updatedAt: Date;
   createId: string;
@@ -359,6 +366,10 @@ export type SharedSpaceMember = {
   showInTimeline: boolean;
   sharePersonMetadata: boolean;
   lastViewedAt: Date | null;
+  inheritPeople: boolean;
+  inheritTags: boolean;
+  showInMap: boolean;
+  showInMemories: boolean;
   createdAt: Date;
   updatedAt: Date;
   createId: string;
@@ -424,6 +435,10 @@ export type SharedSpacePersonAlias = {
   personId: string;
   userId: string;
   alias: string;
+  isHidden: boolean;
+  birthDate: Date | null;
+  description: string | null;
+  representativeFaceId: string | null;
 };
 
 export type SharedSpaceLibrary = {

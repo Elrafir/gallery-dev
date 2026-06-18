@@ -377,6 +377,7 @@ export enum SystemMetadataKey {
   VersionCheckState = 'version-check-state',
   License = 'license',
   ClassificationConfigState = 'classification-config-state',
+  PrimaryLibrarySpaceId = 'primary-library-space-id',
 }
 
 export enum UserMetadataKey {

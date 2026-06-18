@@ -610,6 +610,27 @@ export type MemoriesState = {
 };
 export type MediaLocation = { location: string };
 
+export type PrimaryLibrarySettings = {
+  /** Включена ли система базовой библиотеки */
+  enabled: boolean;
+  /** ID пространства Primary Library */
+  spaceId: string;
+  /** ID пользователя-источника базовой библиотеки */
+  adminUserId: string;
+  /** Автоматически добавлять новых пользователей */
+  autoEnrollNewUsers: boolean;
+  /** Расшарить распознанные лица */
+  sharePeople: boolean;
+  /** Расшарить теги */
+  shareTags: boolean;
+  /** По умолчанию показывать базу в таймлайне */
+  defaultShowInTimeline: boolean;
+  /** По умолчанию показывать базу на карте */
+  defaultShowInMap: boolean;
+  /** По умолчанию показывать базу в воспоминаниях */
+  defaultShowInMemories: boolean;
+};
+
 export interface SystemMetadata extends Record<SystemMetadataKey, Record<string, any>> {
   [SystemMetadataKey.AdminOnboarding]: { isOnboarded: boolean };
   [SystemMetadataKey.ClassificationConfigState]: SystemConfig['classification'];
@@ -622,6 +643,7 @@ export interface SystemMetadata extends Record<SystemMetadataKey, Record<string,
   [SystemMetadataKey.SystemFlags]: DeepPartial<SystemFlags>;
   [SystemMetadataKey.VersionCheckState]: VersionCheckMetadata;
   [SystemMetadataKey.MemoriesState]: MemoriesState;
+  [SystemMetadataKey.PrimaryLibrarySpaceId]: PrimaryLibrarySettings;
 }
 
 export type UserPreferences = {

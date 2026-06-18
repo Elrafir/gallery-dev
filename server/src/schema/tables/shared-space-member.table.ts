@@ -96,4 +96,20 @@ export class SharedSpaceMemberTable {
 
   @UpdateDateColumn()
   updatedAt!: Generated<Timestamp>;
+
+  /** Наследовать ли базовые лица (People) из системного пространства */
+  @Column({ type: 'boolean', default: true })
+  inheritPeople!: Generated<boolean>;
+
+  /** Наследовать ли базовые теги из системного пространства */
+  @Column({ type: 'boolean', default: true })
+  inheritTags!: Generated<boolean>;
+
+  /** Показывать ли контент системного пространства на карте */
+  @Column({ type: 'boolean', default: true })
+  showInMap!: Generated<boolean>;
+
+  /** Показывать ли контент системного пространства в воспоминаниях */
+  @Column({ type: 'boolean', default: true })
+  showInMemories!: Generated<boolean>;
 }

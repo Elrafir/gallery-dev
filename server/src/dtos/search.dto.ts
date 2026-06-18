@@ -33,6 +33,7 @@ const BaseSearchSchema = z.object({
   takenAfter: isoDatetimeToDate.optional().describe('Filter by taken date (after)'),
   city: emptyStringToNull(z.string().nullable()).optional().describe('Filter by city name'),
   state: emptyStringToNull(z.string().nullable()).optional().describe('Filter by state/province name'),
+  street: emptyStringToNull(z.string().nullable()).optional().describe('Filter by street name'),
   country: emptyStringToNull(z.string().nullable()).optional().describe('Filter by country name'),
   make: emptyStringToNull(z.string().nullable()).optional().describe('Filter by camera make'),
   model: emptyStringToNull(z.string().nullable()).optional().describe('Filter by camera model'),
@@ -189,6 +190,7 @@ const SearchSuggestionRequestBaseSchema = z.object({
   takenBefore: isoDatetimeToDate.optional().describe('Filter suggestions by taken date (before)'),
   spaceId: z.uuidv4().optional().describe('Scope suggestions to a specific shared space'),
   withSharedSpaces: stringToBool.optional().describe('Include suggestions from shared spaces the user is a member of'),
+  withCounts: stringToBool.optional().describe('Include asset counts in the returned suggestions'),
   includeNull: stringToBool
     .optional()
     .describe('Include null values in suggestions')
@@ -237,6 +239,7 @@ const FilterSuggestionsTagSchema = z
 const FilterSuggestionsResponseSchema = z
   .object({
     countries: z.array(z.string()).describe('Available countries'),
+    states: z.array(z.string()).describe('Available states/regions'),
     cameraMakes: z.array(z.string()).describe('Available camera makes'),
     tags: z.array(FilterSuggestionsTagSchema).describe('Available tags'),
     people: z.array(FilterSuggestionsPersonSchema).describe('Available people (named, non-hidden, with thumbnails)'),
@@ -270,7 +273,9 @@ const FilterSuggestionsRequestBaseSchema = z.object({
     .optional()
     .describe('Filter by person IDs'),
   country: z.string().optional().describe('Filter by country'),
+  state: z.string().optional().describe('Filter by state/province'),
   city: z.string().optional().describe('Filter by city'),
+  street: z.string().optional().describe('Filter by street'),
   make: z.string().optional().describe('Filter by camera make'),
   model: z.string().optional().describe('Filter by camera model'),
   tagIds: z

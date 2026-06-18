@@ -78,6 +78,8 @@ import { SharedSpacePersonAliasTable } from 'src/schema/tables/shared-space-pers
 import { SharedSpacePersonFaceTable } from 'src/schema/tables/shared-space-person-face.table';
 import { SharedSpacePersonTable } from 'src/schema/tables/shared-space-person.table';
 import { SharedSpaceTable } from 'src/schema/tables/shared-space.table';
+import { SharedSpaceTagTable } from 'src/schema/tables/shared-space-tag.table';
+import { SharedSpaceTagOverrideTable } from 'src/schema/tables/shared-space-tag-override.table';
 import { SmartSearchTable } from 'src/schema/tables/smart-search.table';
 import { SavedLocationTable } from 'src/schema/tables/saved-location.table';
 import { StackAuditTable } from 'src/schema/tables/stack-audit.table';
@@ -95,6 +97,7 @@ import { UserMetadataAuditTable } from 'src/schema/tables/user-metadata-audit.ta
 import { UserMetadataTable } from 'src/schema/tables/user-metadata.table';
 import { UserTable } from 'src/schema/tables/user.table';
 import { VersionHistoryTable } from 'src/schema/tables/version-history.table';
+import { UserAssetOverrideTable } from 'src/schema/tables/user-asset-override.table';
 import { WorkflowActionTable, WorkflowFilterTable, WorkflowTable } from 'src/schema/tables/workflow.table';
 
 @Extensions(['uuid-ossp', 'unaccent', 'cube', 'earthdistance', 'pg_trgm', 'plpgsql'])
@@ -158,6 +161,8 @@ export class ImmichDatabase {
     SharedSpacePersonTable,
     SharedSpacePersonFaceTable,
     SharedSpacePersonAliasTable,
+    SharedSpaceTagTable,
+    SharedSpaceTagOverrideTable,
     UserGroupTable,
     UserGroupMemberTable,
     SavedLocationTable,
@@ -181,6 +186,7 @@ export class ImmichDatabase {
     WorkflowTable,
     WorkflowFilterTable,
     WorkflowActionTable,
+    UserAssetOverrideTable,
   ];
 
   functions = [
@@ -291,6 +297,8 @@ export interface DB {
   shared_space_person: SharedSpacePersonTable;
   shared_space_person_face: SharedSpacePersonFaceTable;
   shared_space_person_alias: SharedSpacePersonAliasTable;
+  shared_space_tag: SharedSpaceTagTable;
+  shared_space_tag_override: SharedSpaceTagOverrideTable;
 
   user_group: UserGroupTable;
   user_group_member: UserGroupMemberTable;
@@ -324,4 +332,6 @@ export interface DB {
   workflow: WorkflowTable;
   workflow_filter: WorkflowFilterTable;
   workflow_action: WorkflowActionTable;
+
+  user_asset_override: UserAssetOverrideTable;
 }

@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   ForeignKeyColumn,
   Generated,
+  Index,
   PrimaryGeneratedColumn,
   Table,
   Timestamp,
@@ -34,6 +35,7 @@ import { UserTable } from 'src/schema/tables/user.table';
   scope: 'row',
   function: shared_space_delete_library_audit,
 })
+@Index({ name: 'shared_space_system_unique', columns: ['isSystemSpace'], unique: true, where: '"isSystemSpace" = true' })
 export class SharedSpaceTable {
   @PrimaryGeneratedColumn()
   id!: Generated<string>;
@@ -76,4 +78,8 @@ export class SharedSpaceTable {
 
   @UpdateIdColumn({ index: true })
   updateId!: Generated<string>;
+
+  /** Является ли это пространство системным (Primary Library) */
+  @Column({ type: 'boolean', default: false })
+  isSystemSpace!: Generated<boolean>;
 }

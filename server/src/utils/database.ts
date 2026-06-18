@@ -578,17 +578,32 @@ export function searchAssetBuilder(kysely: Kysely<DB>, options: AssetSearchBuild
     .$if(options.city !== undefined, (qb) =>
       qb
         .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
-        .where('asset_exif.city', options.city === null ? 'is' : '=', options.city!),
+        .where((eb) => {
+          if (options.city === null) {
+            return eb('asset_exif.city', 'is', null);
+          }
+          const cityVal = options.city as string;
+          return eb.or([
+            eb('asset_exif.city', '=', cityVal),
+            eb('asset_exif.city', 'like', `%, ${cityVal}`),
+            eb('asset_exif.city', 'like', `%,${cityVal}`),
+          ]);
+        }),
     )
     .$if(options.state !== undefined, (qb) =>
       qb
         .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
-        .where('asset_exif.state', options.state === null ? 'is' : '=', options.state!),
+        .where('asset_exif.state', options.state === null ? 'is' : '=', options.state as string),
+    )
+    .$if(options.street !== undefined, (qb) =>
+      qb
+        .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
+        .where('asset_exif.city', options.street === null ? 'is' : 'like', `${options.street as string}%`),
     )
     .$if(options.country !== undefined, (qb) =>
       qb
         .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
-        .where('asset_exif.country', options.country === null ? 'is' : '=', options.country!),
+        .where('asset_exif.country', options.country === null ? 'is' : '=', options.country as string),
     )
     .$if(options.make !== undefined, (qb) =>
       qb
@@ -673,7 +688,20 @@ export function searchAssetBuilder(kysely: Kysely<DB>, options: AssetSearchBuild
     .$if(options.withStacked === false, (qb) => qb.where('asset.stackId', 'is', null))
     .$if(!!options.withExif, withExifInner)
     .$if(!!(options.withFaces || options.withPeople), (qb) => qb.select(withFacesAndPeople))
-    .$if(!options.withDeleted, (qb) => qb.where('asset.deletedAt', 'is', null));
+    .$if(!options.withDeleted, (qb) => qb.where('asset.deletedAt', 'is', null))
+    .$if(!!options.excludeHiddenForUserId, (qb) =>
+      qb.where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('user_asset_override')
+              .whereRef('user_asset_override.assetId', '=', 'asset.id')
+              .where('user_asset_override.userId', '=', asUuid(options.excludeHiddenForUserId!))
+              .where('user_asset_override.isHidden', '=', true),
+          ),
+        ),
+      ),
+    );
 }
 
 export type ReindexVectorIndexOptions = { indexName: string; lists?: number };

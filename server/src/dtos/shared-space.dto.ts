@@ -55,6 +55,10 @@ const SharedSpaceMemberResponseSchema = z
     avatarColor: z.string().optional().describe('Avatar color'),
     showInTimeline: z.boolean().describe('Show space assets in timeline'),
     sharePersonMetadata: z.boolean().describe('Share person names and birth dates with this space'),
+    inheritPeople: z.boolean().optional().describe('Inherit base people from system space'),
+    inheritTags: z.boolean().optional().describe('Inherit base tags from system space'),
+    showInMap: z.boolean().optional().describe('Show system space content on map'),
+    showInMemories: z.boolean().optional().describe('Show system space content in memories'),
     contributionCount: z.number().optional().describe('Number of photos contributed by this member'),
     lastActiveAt: z.string().nullable().optional().describe('Last time this member added a photo'),
     recentAssetId: z.string().nullable().optional().describe('Most recently added asset ID by this member'),
@@ -112,6 +116,10 @@ const SharedSpaceMemberPreferencesSchema = z
   .object({
     showInTimeline: z.boolean().optional().describe('Show space assets in personal timeline'),
     sharePersonMetadata: z.boolean().optional().describe('Share person names and birth dates with this space'),
+    inheritPeople: z.boolean().optional().describe('Inherit base people from system space'),
+    inheritTags: z.boolean().optional().describe('Inherit base tags from system space'),
+    showInMap: z.boolean().optional().describe('Show system space content on map'),
+    showInMemories: z.boolean().optional().describe('Show system space content in memories'),
   })
   .meta({ id: 'SharedSpaceMemberPreferencesDto' });
 

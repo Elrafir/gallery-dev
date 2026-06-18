@@ -48,6 +48,8 @@ const TimeBucketQueryBaseSchema = z
       .optional()
       .describe('Filter assets with any of these tags (multi-select)'),
     city: z.string().optional().describe('Filter by city name'),
+    state: z.string().optional().describe('Filter by state/province name'),
+    street: z.string().optional().describe('Filter by street name'),
     country: z.string().optional().describe('Filter by country name'),
     make: z.string().optional().describe('Filter by camera make'),
     model: z.string().optional().describe('Filter by camera model'),
