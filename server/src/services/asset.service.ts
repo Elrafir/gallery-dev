@@ -59,6 +59,12 @@ import { asDateString, extractTimeZone } from 'src/utils/date';
 import { formatSecondsToDuration, parseDurationToSeconds } from 'src/utils/duration';
 import { transformOcrBoundingBox } from 'src/utils/transform';
 
+/**
+ * Основной сервис для работы с медиафайлами (Assets).
+ * Реализует бизнес-логику для получения, обновления, удаления, копирования медиафайлов,
+ * а также для работы с метаданными (EXIF), OCR, редактированием (обрезка, поворот и т.д.)
+ * и фоновыми задачами (удаление в корзину, перекодирование видео).
+ */
 @Injectable()
 export class AssetService extends BaseService {
   async getStatistics(auth: AuthDto, dto: AssetStatsDto) {

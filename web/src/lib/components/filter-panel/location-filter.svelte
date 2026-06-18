@@ -8,19 +8,21 @@
   import { t } from 'svelte-i18n';
 
   interface Props {
-    countries: string[];
+    states: string[];
+    selectedState?: string;
     selectedCity?: string;
-    selectedCountry?: string;
+    selectedStreet?: string;
     context?: FilterContext;
-    onCityFetch: (country: string, context?: FilterContext) => Promise<string[]>;
-    onSelectionChange: (country?: string, city?: string) => void;
+    onCityFetch: (state: string, context?: FilterContext) => Promise<string[]>;
+    onSelectionChange: (state?: string, city?: string, street?: string) => void;
     emptyText?: string;
   }
 
   let {
-    countries,
+    states,
+    selectedState,
     selectedCity,
-    selectedCountry,
+    selectedStreet,
     context,
     onCityFetch,
     onSelectionChange,
@@ -29,17 +31,17 @@
 
   let searchQuery = $state('');
   let showAll = $state(false);
-  let expandedCityLists = $state<Record<string, boolean>>({});
-  let cityCache = $state<Record<string, string[]>>({});
-  let loadingCitiesByCountry = $state<Record<string, boolean>>({});
-  let cityFetchErrors = $state<Record<string, boolean>>({});
-  let latestCityFetchIds = $state<Record<string, number>>({});
-  let cityFetchSequence = 0;
-  let cityCacheKey = $state('');
+  let expandedState = $state<string | undefined>(undefined);
+  let expandedCity = $state<string | undefined>(undefined);
 
-  const COUNTRY_SHOW_COUNT = 10;
-  const CITY_SHOW_COUNT = 10;
-  const MIN_CITY_SEARCH_LENGTH = 2;
+  let rawCitiesCache = $state<Record<string, string[]>>({});
+  let loadingStates = $state<Record<string, boolean>>({});
+  let stateFetchErrors = $state<Record<string, boolean>>({});
+  let latestStateFetchIds = $state<Record<string, number>>({});
+  let stateFetchSequence = 0;
+  let cacheKey = $state('');
+
+  const STATE_SHOW_COUNT = 10;
 
   let savedLocations = $state<SavedLocationResponseDto[]>([]);
 
@@ -51,6 +53,36 @@
     }
   });
 
+  let normalizedSearchQuery = $derived(searchQuery.trim().toLowerCase());
+
+  // Saved locations parsing
+  function getStateFromSaved(loc: SavedLocationResponseDto): string | undefined {
+    const parts = loc.name.split(',').map((p) => p.trim());
+    if (parts.length >= 2) {
+      return parts[parts.length - 1]; // State/Region is always the last part since country is removed
+    }
+    return undefined;
+  }
+
+  function getCityFromSaved(loc: SavedLocationResponseDto): string | undefined {
+    const parts = loc.name.split(',').map((p) => p.trim());
+    if (parts.length >= 2) {
+      return parts[parts.length - 2]; // City is second from last
+    }
+    if (parts.length === 1) {
+      return parts[0];
+    }
+    return undefined;
+  }
+
+  function getStreetFromSaved(loc: SavedLocationResponseDto): string | undefined {
+    const parts = loc.name.split(',').map((p) => p.trim());
+    if (parts.length >= 3) {
+      return parts.slice(0, parts.length - 2).join(', '); // Streets are everything before city
+    }
+    return undefined;
+  }
+
   let filteredSavedLocations = $derived(
     savedLocations.filter(
       (loc) =>
@@ -60,175 +92,123 @@
     )
   );
 
-  function getCountryFromSaved(loc: SavedLocationResponseDto): string | undefined {
-    const parts = loc.name.split(',').map((p) => p.trim());
-    return parts.length > 0 ? parts[parts.length - 1] : undefined;
-  }
-
-  function getCityFromSaved(loc: SavedLocationResponseDto): string | undefined {
-    const parts = loc.name.split(',').map((p) => p.trim());
-    return parts.length > 1 ? parts[0] : undefined;
-  }
-
   function handleSavedLocationSelect(loc: SavedLocationResponseDto) {
-    const country = getCountryFromSaved(loc);
+    const state = getStateFromSaved(loc);
     const city = getCityFromSaved(loc);
+    const street = getStreetFromSaved(loc);
 
-    if (selectedCountry === country && selectedCity === city) {
-      onSelectionChange(undefined, undefined);
+    if (selectedState === state && selectedCity === city && selectedStreet === street) {
+      onSelectionChange(undefined, undefined, undefined);
     } else {
-      onSelectionChange(country, city);
+      onSelectionChange(state, city, street);
     }
   }
 
-  let normalizedSearchQuery = $derived(searchQuery.trim().toLowerCase());
-  let shouldFetchCitiesForSearch = $derived(normalizedSearchQuery.length >= MIN_CITY_SEARCH_LENGTH);
-  let hasPendingCitySearchFetches = $derived.by(() => {
-    if (!shouldFetchCitiesForSearch) {
-      return false;
-    }
-
-    return countries.some(
-      (country) => loadingCitiesByCountry[country] || (!(country in cityCache) && !cityFetchErrors[country]),
-    );
-  });
-
-  // Clear search when countries list changes (e.g. temporal filter refetch)
-  let previousCountriesLength = 0;
   $effect(() => {
-    const currentLength = countries.length;
-    if (previousCountriesLength > 0 && currentLength !== previousCountriesLength) {
-      searchQuery = '';
-      showAll = false;
+    const nextKey = JSON.stringify({ states, context });
+    if (cacheKey && nextKey !== cacheKey) {
+      stateFetchSequence += 1;
+      rawCitiesCache = {};
+      loadingStates = {};
+      stateFetchErrors = {};
+      latestStateFetchIds = {};
+      expandedState = undefined;
+      expandedCity = undefined;
     }
-    previousCountriesLength = currentLength;
+    cacheKey = nextKey;
   });
 
-  $effect(() => {
-    const nextKey = JSON.stringify({ countries, context });
-    if (cityCacheKey && nextKey !== cityCacheKey) {
-      cityFetchSequence += 1;
-      cityCache = {};
-      loadingCitiesByCountry = {};
-      cityFetchErrors = {};
-      latestCityFetchIds = {};
-      expandedCityLists = {};
-      cities = [];
-    }
-    cityCacheKey = nextKey;
-  });
-
-  let filteredCountries = $derived.by(() => {
+  // Filter states based on search query
+  let filteredStates = $derived.by(() => {
     if (!normalizedSearchQuery) {
-      return countries;
+      return states;
     }
 
-    return countries.filter((country) => {
-      const countryMatches = country.toLowerCase().includes(normalizedSearchQuery);
-      const cityMatches =
-        shouldFetchCitiesForSearch &&
-        (cityCache[country] ?? []).some((city) => city.toLowerCase().includes(normalizedSearchQuery));
-      return countryMatches || cityMatches || selectedCountry === country;
+    return states.filter((state) => {
+      const stateMatches = state.toLowerCase().includes(normalizedSearchQuery);
+      const cityMatches = (rawCitiesCache[state] ?? []).some((val) =>
+        val.toLowerCase().includes(normalizedSearchQuery)
+      );
+      return stateMatches || cityMatches || selectedState === state;
     });
   });
 
-  let visibleCountries = $derived(
-    searchQuery.trim() || showAll ? filteredCountries : filteredCountries.slice(0, COUNTRY_SHOW_COUNT),
+  let visibleStates = $derived(
+    searchQuery.trim() || showAll ? filteredStates : filteredStates.slice(0, STATE_SHOW_COUNT),
   );
 
-  let remainingCount = $derived(Math.max(0, filteredCountries.length - COUNTRY_SHOW_COUNT));
+  let remainingCount = $derived(Math.max(0, filteredStates.length - STATE_SHOW_COUNT));
 
-  let expandedCountry = $state<string | undefined>(undefined);
-  let cities = $state<string[]>([]);
-
-  // Orphaned country: selected but not in current results
-  let orphanedCountry = $derived(selectedCountry && !countries.includes(selectedCountry) ? selectedCountry : undefined);
-
-  $effect(() => {
-    if (selectedCountry && selectedCity && expandedCountry !== selectedCountry) {
-      expandedCountry = selectedCountry;
-      expandedCityLists = { ...expandedCityLists, [selectedCountry]: false };
-    }
-  });
-
-  function ensureCities(country: string) {
-    if (country in cityCache || loadingCitiesByCountry[country]) {
+  // Fetch raw cities for a state
+  function ensureStateData(state: string) {
+    if (state in rawCitiesCache || loadingStates[state]) {
       return;
     }
 
-    const requestedCountry = country;
+    const requestedState = state;
     const _context = context;
-    const requestId = ++cityFetchSequence;
+    const requestId = ++stateFetchSequence;
 
-    latestCityFetchIds = { ...latestCityFetchIds, [requestedCountry]: requestId };
-    loadingCitiesByCountry = { ...loadingCitiesByCountry, [requestedCountry]: true };
-    cityFetchErrors = { ...cityFetchErrors, [requestedCountry]: false };
-    if (expandedCountry === requestedCountry) {
-      cities = [];
-    }
+    latestStateFetchIds = { ...latestStateFetchIds, [requestedState]: requestId };
+    loadingStates = { ...loadingStates, [requestedState]: true };
+    stateFetchErrors = { ...stateFetchErrors, [requestedState]: false };
 
-    void onCityFetch(requestedCountry, _context)
+    void onCityFetch(requestedState, _context)
       .then((result) => {
-        if (latestCityFetchIds[requestedCountry] !== requestId) {
+        if (latestStateFetchIds[requestedState] !== requestId) {
           return;
         }
 
-        cityCache = { ...cityCache, [requestedCountry]: result };
-        loadingCitiesByCountry = { ...loadingCitiesByCountry, [requestedCountry]: false };
-        cityFetchErrors = { ...cityFetchErrors, [requestedCountry]: false };
+        rawCitiesCache = { ...rawCitiesCache, [requestedState]: result };
+        loadingStates = { ...loadingStates, [requestedState]: false };
+        stateFetchErrors = { ...stateFetchErrors, [requestedState]: false };
 
-        if (expandedCountry === requestedCountry) {
-          cities = result;
-        }
-
-        // Cascade child auto-clear: if selected city is not in new results, clear it
-        if (
-          selectedCountry === requestedCountry &&
-          selectedCity &&
-          result.length > 0 &&
-          !result.includes(selectedCity)
-        ) {
-          onSelectionChange(requestedCountry, undefined);
+        // Cascade auto-clear: if selected city/street no longer matches fetched data
+        if (selectedState === requestedState) {
+          const parsedCities = parseCitiesFromRaw(result);
+          if (selectedCity && !parsedCities.includes(selectedCity)) {
+            onSelectionChange(requestedState, undefined, undefined);
+          } else if (selectedCity && selectedStreet) {
+            const parsedStreets = parseStreetsFromRaw(result, selectedCity);
+            if (!parsedStreets.includes(selectedStreet)) {
+              onSelectionChange(requestedState, selectedCity, undefined);
+            }
+          }
         }
       })
       .catch(() => {
-        if (latestCityFetchIds[requestedCountry] !== requestId) {
+        if (latestStateFetchIds[requestedState] !== requestId) {
           return;
         }
 
-        loadingCitiesByCountry = { ...loadingCitiesByCountry, [requestedCountry]: false };
-        cityFetchErrors = { ...cityFetchErrors, [requestedCountry]: true };
-        if (expandedCountry === requestedCountry) {
-          cities = [];
-        }
+        loadingStates = { ...loadingStates, [requestedState]: false };
+        stateFetchErrors = { ...stateFetchErrors, [requestedState]: true };
       });
   }
 
   $effect(() => {
-    if (expandedCountry) {
-      cities = cityCache[expandedCountry] ?? [];
-      untrack(() => ensureCities(expandedCountry!));
-    } else {
-      cities = [];
+    if (expandedState) {
+      untrack(() => ensureStateData(expandedState!));
     }
   });
 
   $effect(() => {
-    if (selectedCountry) {
-      untrack(() => ensureCities(selectedCountry));
+    if (selectedState) {
+      untrack(() => ensureStateData(selectedState));
     }
   });
 
+  // Pre-fetch search results if search query is entered
   $effect(() => {
-    if (!shouldFetchCitiesForSearch || !cityCacheKey) {
+    if (normalizedSearchQuery.length < 2 || !cacheKey) {
       return;
     }
 
-    const currentCountries = countries;
+    const currentStates = states;
     const timeout = setTimeout(() => {
       untrack(() => {
-        for (const country of currentCountries) {
-          ensureCities(country);
+        for (const state of currentStates) {
+          ensureStateData(state);
         }
       });
     }, 150);
@@ -236,93 +216,116 @@
     return () => clearTimeout(timeout);
   });
 
-  function getFilteredCities(country: string): string[] {
-    const cachedCities = cityCache[country] ?? (expandedCountry === country ? cities : []);
+  // Parsed arrays for rendering
+  function getCitiesForState(state: string): string[] {
+    const raw = rawCitiesCache[state] ?? [];
+    const cities = parseCitiesFromRaw(raw);
     if (!normalizedSearchQuery) {
-      return cachedCities;
+      return cities;
     }
-
-    const countryMatches = country.toLowerCase().includes(normalizedSearchQuery);
-    const filtered =
-      expandedCountry === country && countryMatches
-        ? cachedCities
-        : shouldFetchCitiesForSearch
-          ? cachedCities.filter((city) => city.toLowerCase().includes(normalizedSearchQuery))
-          : [];
-
-    if (selectedCountry === country && selectedCity && !filtered.includes(selectedCity)) {
-      return [...filtered, selectedCity];
-    }
-
-    return filtered;
+    return cities.filter(c => c.toLowerCase().includes(normalizedSearchQuery));
   }
 
-  function getVisibleCities(country: string): string[] {
-    const filtered = getFilteredCities(country);
-    if (expandedCityLists[country]) {
-      return filtered;
+  function getStreetsForCity(state: string, city: string): string[] {
+    const raw = rawCitiesCache[state] ?? [];
+    const streets = parseStreetsFromRaw(raw, city);
+    if (!normalizedSearchQuery) {
+      return streets;
     }
-
-    const visible = filtered.slice(0, CITY_SHOW_COUNT);
-    if (
-      selectedCountry === country &&
-      selectedCity &&
-      filtered.includes(selectedCity) &&
-      !visible.includes(selectedCity)
-    ) {
-      return [...visible.slice(0, CITY_SHOW_COUNT - 1), selectedCity];
-    }
-
-    return visible;
+    return streets.filter(s => s.toLowerCase().includes(normalizedSearchQuery));
   }
 
-  function getRemainingCityCount(country: string): number {
-    return Math.max(0, getFilteredCities(country).length - getVisibleCities(country).length);
-  }
+  function parseCitiesFromRaw(rawValues: string[]): string[] {
+    const citiesCountMap: Record<string, number> = {};
+    for (const val of rawValues) {
+      if (!val) continue;
 
-  let cityOnlySelectionHasVisibleRow = $derived.by(() => {
-    if (!selectedCity || selectedCountry) {
-      return false;
-    }
+      let rawCity = val;
+      let count = 1;
 
-    for (const country of visibleCountries) {
-      const cityRowsVisible =
-        (expandedCountry === country || (normalizedSearchQuery && getVisibleCities(country).length > 0)) &&
-        !loadingCitiesByCountry[country];
-      if (cityRowsVisible && getVisibleCities(country).includes(selectedCity)) {
-        return true;
+      const lastColonIndex = val.lastIndexOf(':');
+      if (lastColonIndex !== -1) {
+        const potentialCount = parseInt(val.slice(lastColonIndex + 1), 10);
+        if (!isNaN(potentialCount)) {
+          rawCity = val.slice(0, lastColonIndex);
+          count = potentialCount;
+        }
+      }
+
+      const parts = rawCity.split(',').map((p) => p.trim());
+      const city = parts[parts.length - 1];
+      if (city) {
+        citiesCountMap[city] = (citiesCountMap[city] || 0) + count;
       }
     }
-
-    return false;
-  });
-
-  function showAllCities(country: string) {
-    expandedCityLists = { ...expandedCityLists, [country]: true };
+    return Object.keys(citiesCountMap).sort((a, b) => {
+      const diff = citiesCountMap[b] - citiesCountMap[a];
+      if (diff !== 0) return diff;
+      return a.localeCompare(b);
+    });
   }
 
-  function handleCountryClick(country: string) {
-    if (selectedCountry === country && !selectedCity) {
-      expandedCountry = undefined;
-      onSelectionChange(undefined, undefined);
+  function parseStreetsFromRaw(rawValues: string[], selectedCityName: string): string[] {
+    const streetsCountMap: Record<string, number> = {};
+    for (const val of rawValues) {
+      if (!val) continue;
+
+      let rawCity = val;
+      let count = 1;
+
+      const lastColonIndex = val.lastIndexOf(':');
+      if (lastColonIndex !== -1) {
+        const potentialCount = parseInt(val.slice(lastColonIndex + 1), 10);
+        if (!isNaN(potentialCount)) {
+          rawCity = val.slice(0, lastColonIndex);
+          count = potentialCount;
+        }
+      }
+
+      const parts = rawCity.split(',').map((p) => p.trim());
+      const city = parts[parts.length - 1];
+      if (city === selectedCityName && parts.length > 1) {
+        const street = parts.slice(0, parts.length - 1).join(', ');
+        if (street) {
+          streetsCountMap[street] = (streetsCountMap[street] || 0) + count;
+        }
+      }
+    }
+    return Object.keys(streetsCountMap).sort((a, b) => {
+      const diff = streetsCountMap[b] - streetsCountMap[a];
+      if (diff !== 0) return diff;
+      return a.localeCompare(b);
+    });
+  }
+
+  // Click Handlers
+  function handleStateClick(state: string) {
+    if (selectedState === state && !selectedCity) {
+      expandedState = undefined;
+      onSelectionChange(undefined, undefined, undefined);
     } else {
-      expandedCountry = country;
-      expandedCityLists = { ...expandedCityLists, [country]: false };
-      onSelectionChange(country, undefined);
+      expandedState = state;
+      expandedCity = undefined;
+      onSelectionChange(state, undefined, undefined);
     }
   }
 
-  function handleCityClick(city: string, country: string) {
-    if (selectedCity === city && !selectedCountry) {
-      // City-only filters can come from typed search syntax. Clicking the selected
-      // city should clear that city filter rather than turning it into country-only.
-      onSelectionChange(undefined, undefined);
-    } else if (selectedCity === city) {
-      // Deselect city, keep country
-      onSelectionChange(country, undefined);
+  function handleCityClick(state: string, city: string) {
+    if (selectedState === state && selectedCity === city && !selectedStreet) {
+      expandedCity = undefined;
+      onSelectionChange(state, undefined, undefined);
     } else {
-      // Select city (auto-fills country)
-      onSelectionChange(country, city);
+      expandedState = state;
+      expandedCity = city;
+      onSelectionChange(state, city, undefined);
+    }
+  }
+
+  function handleStreetClick(state: string, city: string, street: string) {
+    if (selectedState === state && selectedCity === city && selectedStreet === street) {
+      onSelectionChange(state, city, undefined);
+    } else {
+      onSelectionChange(state, city, street);
     }
   }
 </script>
@@ -331,11 +334,14 @@
   <!-- Saved Locations List -->
   {#if filteredSavedLocations.length > 0}
     <div class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 mt-1">
-      Сохранённые места
+      {$t('saved_locations') ?? 'Сохранённые места'}
     </div>
     <div class="max-h-[160px] overflow-y-auto pr-1 flex flex-col gap-0.5 mb-2 border-b border-gray-100 dark:border-zinc-800 pb-2">
       {#each filteredSavedLocations as loc (loc.id)}
-        {@const isSelected = selectedCountry === getCountryFromSaved(loc) && selectedCity === getCityFromSaved(loc)}
+        {@const state = getStateFromSaved(loc)}
+        {@const city = getCityFromSaved(loc)}
+        {@const street = getStreetFromSaved(loc)}
+        {@const isSelected = selectedState === state && selectedCity === city && selectedStreet === street}
         <button
           type="button"
           class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-subtle {isSelected ? 'font-semibold text-primary dark:text-primary-light bg-primary/5' : 'text-gray-600 dark:text-gray-300'}"
@@ -348,7 +354,7 @@
     </div>
   {/if}
 
-  {#if countries.length === 0 && !orphanedCountry}
+  {#if states.length === 0}
     <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-empty">
       {emptyText ?? $t('filter_no_locations_found')}
     </p>
@@ -370,101 +376,59 @@
       />
     </div>
 
-    <!-- Orphaned country (selected but no longer in suggestions) -->
-    {#if orphanedCountry}
-      {@const isCountrySelected = true}
-      <button
-        type="button"
-        class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium opacity-50 hover:bg-subtle"
-        onclick={() => handleCountryClick(orphanedCountry!)}
-        aria-pressed="true"
-        data-testid="location-country-{orphanedCountry}"
-      >
-        <div
-          class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 {isCountrySelected &&
-          !selectedCity
-            ? 'border-immich-primary bg-immich-primary dark:border-immich-dark-primary dark:bg-immich-dark-primary'
-            : 'border-gray-300 dark:border-gray-600'}"
-        >
-          {#if isCountrySelected && !selectedCity}
-            <div class="h-1.5 w-1.5 rounded-full bg-white dark:bg-black"></div>
-          {/if}
-        </div>
-        <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{orphanedCountry}</span>
-      </button>
-    {/if}
-
-    {#if selectedCity && !selectedCountry && !cityOnlySelectionHasVisibleRow}
-      <button
-        type="button"
-        class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-subtle"
-        onclick={() => onSelectionChange(undefined, undefined)}
-        aria-pressed="true"
-        data-testid="location-city-{selectedCity}"
-      >
-        <div
-          class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 border-immich-primary bg-immich-primary dark:border-immich-dark-primary dark:bg-immich-dark-primary"
-        >
-          <div class="h-1.5 w-1.5 rounded-full bg-white dark:bg-black"></div>
-        </div>
-        <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{selectedCity}</span>
-      </button>
-    {/if}
-
     <!-- Empty search results -->
-    {#if filteredCountries.length === 0 && searchQuery.trim() && !hasPendingCitySearchFetches}
+    {#if filteredStates.length === 0 && searchQuery.trim()}
       <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-no-results">
         {$t('filter_no_matching_locations')}
       </p>
     {/if}
 
-    {#each visibleCountries as country (country)}
-      {@const isCountrySelected = selectedCountry === country}
-      {@const visibleCities = getVisibleCities(country)}
-      <!-- Country row -->
+    {#each visibleStates as state (state)}
+      {@const isStateSelected = selectedState === state}
+      <!-- State row -->
       <button
         type="button"
-        class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-subtle {isCountrySelected
+        class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-subtle {isStateSelected
           ? 'font-medium'
           : 'text-gray-500 dark:text-gray-300'}"
-        onclick={() => handleCountryClick(country)}
-        data-testid="location-country-{country}"
+        onclick={() => handleStateClick(state)}
+        data-testid="location-state-{state}"
       >
         <!-- Radio indicator -->
         <div
-          class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 {isCountrySelected &&
+          class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 {isStateSelected &&
           !selectedCity
             ? 'border-immich-primary bg-immich-primary dark:border-immich-dark-primary dark:bg-immich-dark-primary'
             : 'border-gray-300 dark:border-gray-600'}"
         >
-          {#if isCountrySelected && !selectedCity}
+          {#if isStateSelected && !selectedCity}
             <div class="h-1.5 w-1.5 rounded-full bg-white dark:bg-black"></div>
           {/if}
         </div>
 
         <!-- Label -->
-        <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{country}</span>
+        <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{state}</span>
       </button>
 
-      <!-- Cities (indented when country is expanded) -->
-      {#if (expandedCountry === country || (normalizedSearchQuery && visibleCities.length > 0)) && !loadingCitiesByCountry[country]}
-        {#each visibleCities as city (city)}
-          {@const isCitySelected = selectedCity === city && (!selectedCountry || selectedCountry === country)}
+      <!-- Cities (indented when state is expanded) -->
+      {#if (expandedState === state || (normalizedSearchQuery && getCitiesForState(state).length > 0)) && !loadingStates[state]}
+        {#each getCitiesForState(state) as city (city)}
+          {@const isCitySelected = selectedState === state && selectedCity === city}
           <button
             type="button"
             class="-mx-2 ml-5 flex w-[calc(100%-1.25rem+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-subtle {isCitySelected
               ? 'font-medium'
               : 'text-gray-500 dark:text-gray-300'}"
-            onclick={() => handleCityClick(city, country)}
+            onclick={() => handleCityClick(state, city)}
             data-testid="location-city-{city}"
           >
             <!-- Radio indicator -->
             <div
-              class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 {isCitySelected
+              class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 {isCitySelected && !selectedStreet
                 ? 'border-immich-primary bg-immich-primary dark:border-immich-dark-primary dark:bg-immich-dark-primary'
                 : 'border-gray-300 dark:border-gray-600'}"
             >
-              {#if isCitySelected}
+              {#if isCitySelected && !selectedStreet}
                 <div class="h-1.5 w-1.5 rounded-full bg-white dark:bg-black"></div>
               {/if}
             </div>
@@ -472,17 +436,36 @@
             <!-- Label -->
             <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{city}</span>
           </button>
+
+          <!-- Streets (indented when city is expanded) -->
+          {#if (expandedCity === city || (normalizedSearchQuery && getStreetsForCity(state, city).length > 0)) && isCitySelected}
+            {#each getStreetsForCity(state, city) as street (street)}
+              {@const isStreetSelected = selectedState === state && selectedCity === city && selectedStreet === street}
+              <button
+                type="button"
+                class="-mx-2 ml-10 flex w-[calc(100%-2.5rem+1rem)] items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-subtle {isStreetSelected
+                  ? 'font-medium'
+                  : 'text-gray-500 dark:text-gray-300'}"
+                onclick={() => handleStreetClick(state, city, street)}
+                data-testid="location-street-{street}"
+              >
+                <!-- Radio indicator -->
+                <div
+                  class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 {isStreetSelected
+                    ? 'border-immich-primary bg-immich-primary dark:border-immich-dark-primary dark:bg-immich-dark-primary'
+                    : 'border-gray-300 dark:border-gray-600'}"
+                >
+                  {#if isStreetSelected}
+                    <div class="h-1.5 w-1.5 rounded-full bg-white dark:bg-black"></div>
+                  {/if}
+                </div>
+
+                <!-- Label -->
+                <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{street}</span>
+              </button>
+            {/each}
+          {/if}
         {/each}
-        {#if !expandedCityLists[country] && getRemainingCityCount(country) > 0}
-          <button
-            type="button"
-            class="ml-5 py-1 text-xs font-medium text-immich-primary dark:text-immich-dark-primary"
-            onclick={() => showAllCities(country)}
-            data-testid="location-city-show-more-{country}"
-          >
-            {$t('filter_show_more_count', { values: { count: getRemainingCityCount(country) } })}
-          </button>
-        {/if}
       {/if}
     {/each}
 

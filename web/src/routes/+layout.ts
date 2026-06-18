@@ -1,3 +1,9 @@
+/**
+ * Глобальный загрузчик приложения (SvelteKit Root Layout Loader).
+ * Отрабатывает при запуске клиентского приложения (SSR отключен), инициализирует
+ * подключение к API, проверяет состояние технического обслуживания (Maintenance)
+ * и настраивает горячие клавиши (CommandPalette).
+ */
 import { goto } from '$app/navigation';
 import { serverConfigManager } from '$lib/managers/server-config-manager.svelte';
 import { maintenanceCreateUrl, maintenanceReturnUrl, maintenanceShouldRedirect } from '$lib/utils/maintenance';

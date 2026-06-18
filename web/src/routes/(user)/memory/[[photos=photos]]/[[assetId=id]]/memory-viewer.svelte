@@ -665,8 +665,7 @@
               </p>
               <p>
                 {#await currentMemoryAssetFull then asset}
-                  {asset?.exifInfo?.city || ''}
-                  {asset?.exifInfo?.country || ''}
+                  {[asset?.exifInfo?.city, asset?.exifInfo?.state].filter(Boolean).join(', ')}
                 {/await}
               </p>
             </div>

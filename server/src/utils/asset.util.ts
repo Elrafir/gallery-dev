@@ -1,3 +1,9 @@
+/**
+ * Набор утилит для работы с медиафайлами (Assets).
+ * Содержит функции для группового добавления/удаления медиа в альбомы,
+ * извлечения различных типов файлов (миниатюры, оригиналы),
+ * а также хуки для обработки связывания/отвязывания Live Photos.
+ */
 import { BadRequestException } from '@nestjs/common';
 import { StorageCore } from 'src/cores/storage.core';
 import { AssetFile } from 'src/database';

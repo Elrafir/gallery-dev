@@ -40,6 +40,12 @@ const withMetadata = (eb: ExpressionBuilder<DB, 'user'>) => {
   ).as('metadata');
 };
 
+/**
+ * Репозиторий для работы с сущностью пользователя (User).
+ * Инкапсулирует логику доступа к базе данных через Kysely.
+ * Предоставляет методы для поиска, создания, обновления и удаления пользователей,
+ * а также для работы с метаданными и статистикой.
+ */
 @Injectable()
 export class UserRepository {
   constructor(@InjectKysely() private db: Kysely<DB>) {}

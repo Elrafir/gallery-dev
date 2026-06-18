@@ -1,3 +1,8 @@
+/**
+ * Утилиты для работы с датами и временем.
+ * Включают функции парсинга, форматирования диапазонов дат (например, для альбомов)
+ * и работы с часовыми поясами (основаны на библиотеке Luxon).
+ */
 import { dateFormats } from '$lib/constants';
 import { locale } from '$lib/stores/preferences.store';
 import { DateTime, Duration } from 'luxon';

@@ -32,6 +32,7 @@ export interface TagOption {
 
 export interface FilterSuggestionsResponse {
   countries: string[];
+  states?: string[];
   cities?: string[];
   cameraMakes: string[];
   cameraModels?: string[];
@@ -58,7 +59,9 @@ export interface FilterPanelConfig {
 
 export interface FilterState {
   personIds: string[];
+  state?: string;
   city?: string;
+  street?: string;
   country?: string;
   make?: string;
   model?: string;
@@ -89,8 +92,9 @@ export function getActiveFilterCount(state: FilterState): number {
 
   return (
     (state.personIds.length > 0 ? 1 : 0) +
+    (state.state ? 1 : 0) +
     (state.city ? 1 : 0) +
-    (state.country && !state.city ? 1 : 0) +
+    (state.street ? 1 : 0) +
     (state.make ? 1 : 0) +
     (state.tagIds.length > 0 ? 1 : 0) +
     (state.rating === undefined ? 0 : 1) +
@@ -205,7 +209,9 @@ export function clearFilters(state: FilterState): FilterState {
   return {
     ...state,
     personIds: [],
+    state: undefined,
     city: undefined,
+    street: undefined,
     country: undefined,
     make: undefined,
     model: undefined,

@@ -1,4 +1,14 @@
 <script lang="ts">
+  /**
+   * @component DetailPanel
+   * Боковая панель с детальной информацией о фото/видео (Asset Viewer).
+   * Отображает метаданные (EXIF), местоположение (карту), людей на фото,
+   * информацию о владельце, альбомах и тегах.
+   * 
+   * @property {AssetResponseDto} asset - Текущий отображаемый медиафайл.
+   * @property {AlbumResponseDto|null} [currentAlbum] - Текущий альбом (если просмотр из альбома).
+   * @property {string} [spaceId] - Идентификатор пространства (если применимо).
+   */
   import { goto } from '$app/navigation';
   import DetailPanelDate from '$lib/components/asset-viewer/detail-panel-date.svelte';
   import DetailPanelDescription from '$lib/components/asset-viewer/detail-panel-description.svelte';
@@ -114,7 +124,7 @@
     try {
       return await getAllAlbums({ assetId: asset.id });
     } catch (error) {
-      handleError(error, 'Error getting asset album membership');
+      handleError(error, $t('error_getting_asset_album_membership'));
       return [];
     }
   };

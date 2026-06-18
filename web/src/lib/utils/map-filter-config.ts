@@ -30,8 +30,10 @@ export function buildMapFilterConfig(spaceId?: string): FilterPanelConfig {
     const context = buildFilterContext(filters);
     const response = await getFilterSuggestions({
       personIds: filters.personIds.length > 0 ? filters.personIds : undefined,
-      country: filters.country,
+      state: filters.state,
       city: filters.city,
+      street: filters.street,
+      country: filters.country,
       make: filters.make,
       model: filters.model,
       tagIds: filters.tagIds.length > 0 ? filters.tagIds : undefined,
@@ -50,6 +52,7 @@ export function buildMapFilterConfig(spaceId?: string): FilterPanelConfig {
     });
     return {
       countries: response.countries,
+      states: response.states,
       cameraMakes: response.cameraMakes,
       tags: response.tags.map((t: { id: string; value: string }) => ({ id: t.id, name: t.value })),
       people: response.people.map((p: FilterSuggestionsPersonDto) => ({
@@ -69,11 +72,12 @@ export function buildMapFilterConfig(spaceId?: string): FilterPanelConfig {
     sections: [...sections],
     suggestionsProvider,
     providers: {
-      cities: (country: string, context) =>
+      cities: (state: string, context) =>
         getSearchSuggestions({
           $type: SearchSuggestionType.City,
-          country,
+          state: state || undefined,
           ...(spaceId ? { spaceId } : { withSharedSpaces: true }),
+          withCounts: true,
           ...context,
         }),
       cameraModels: (make: string, context) =>

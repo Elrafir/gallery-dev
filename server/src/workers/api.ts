@@ -1,3 +1,8 @@
+/**
+ * Точка входа для основного API сервера (immich-api).
+ * Запускает NestJS приложение, настраивает Express, подключает телеметрию (OpenTelemetry),
+ * и инициализирует конфигурацию, необходимую для обработки HTTP-запросов.
+ */
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { configureExpress, configureTelemetry } from 'src/app.common';

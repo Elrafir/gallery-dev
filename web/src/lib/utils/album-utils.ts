@@ -1,3 +1,8 @@
+/**
+ * Утилиты для работы с альбомами.
+ * Содержит функции для создания альбомов, перенаправления пользователя,
+ * а также логику сортировки и группировки альбомов в интерфейсе.
+ */
 import { goto } from '$app/navigation';
 import { eventManager } from '$lib/managers/event-manager.svelte';
 import { Route } from '$lib/route';

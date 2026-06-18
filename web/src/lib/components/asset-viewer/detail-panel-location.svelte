@@ -1,4 +1,13 @@
 <script lang="ts">
+  /**
+   * @component DetailPanelLocation
+   * Компонент боковой панели, отвечающий за отображение местоположения медиафайла.
+   * Выводит город, регион, страну, а также позволяет владельцу изменять геолокацию
+   * (вызывая модальное окно выбора точки).
+   * 
+   * @property {boolean} isOwner - Флаг, указывающий, является ли текущий пользователь владельцем файла (дает право на редактирование).
+   * @property {AssetResponseDto} asset - Текущий медиафайл.
+   */
   import GeolocationPointPickerModal from '$lib/modals/GeolocationPointPickerModal.svelte';
   import { handleError } from '$lib/utils/handle-error';
   import { updateAsset, type AssetResponseDto } from '@immich/sdk';
@@ -30,7 +39,7 @@
   };
 </script>
 
-{#if asset.exifInfo?.country}
+{#if asset.exifInfo?.city || asset.exifInfo?.state || asset.exifInfo?.country}
   <button
     type="button"
     class="flex w-full text-start justify-between place-items-start gap-4 py-4"
@@ -49,11 +58,6 @@
         {#if asset.exifInfo?.state}
           <div class="flex gap-2 text-sm">
             <p>{asset.exifInfo.state}</p>
-          </div>
-        {/if}
-        {#if asset.exifInfo?.country}
-          <div class="flex gap-2 text-sm">
-            <p>{asset.exifInfo.country}</p>
           </div>
         {/if}
       </div>

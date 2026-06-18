@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component OnboardingPage
+   * Корневой компонент экранов приветствия и начальной настройки.
+   * Отображает цепочку шагов (в зависимости от роли: админ или обычный пользователь),
+   * таких как настройка темы, локализиции, приватности, хранилища и т.д.
+   */
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import OnboardingBackup from './onboarding-backup.svelte';

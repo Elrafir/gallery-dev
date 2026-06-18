@@ -192,11 +192,11 @@
     }
     const reassigned = selectedPersonToReassign[face.id];
     if (reassigned) {
-      return { name: reassigned.name, description: reassigned.description };
+      return { name: reassigned.name, description: reassigned.description ?? undefined };
     }
     if (face.person) {
       const name = $getPersonNameWithHiddenValue(face.person.name, face.person.isHidden);
-      return { name, description: face.person.description };
+      return { name, description: face.person.description ?? undefined };
     }
     return { name: $t('face_unassigned') };
   };

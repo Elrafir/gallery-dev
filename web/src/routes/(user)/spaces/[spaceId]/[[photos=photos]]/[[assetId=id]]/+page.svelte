@@ -224,8 +224,10 @@
     const context = buildFilterContext(nextFilters);
     const response = await getFilterSuggestions({
       personIds: nextFilters.personIds.length > 0 ? nextFilters.personIds : undefined,
-      country: nextFilters.country,
+      state: nextFilters.state,
       city: nextFilters.city,
+      street: nextFilters.street,
+      country: nextFilters.country,
       make: nextFilters.make,
       model: nextFilters.model,
       tagIds: nextFilters.tagIds.length > 0 ? nextFilters.tagIds : undefined,
@@ -255,6 +257,7 @@
     }
     return {
       countries: response.countries,
+      states: response.states,
       cameraMakes: response.cameraMakes,
       tags: response.tags.map((t) => ({ id: t.id, name: t.value })),
       people: mappedPeople,
@@ -316,11 +319,12 @@
   }
 
   const normalProviders: NonNullable<FilterPanelConfig['providers']> = {
-    cities: (country, context) =>
+    cities: (state, context) =>
       getSearchSuggestions({
         $type: SearchSuggestionType.City,
-        country,
+        state: state || undefined,
         spaceId: space.id,
+        withCounts: true,
         ...context,
       }),
     cameraModels: (make, context) =>
@@ -354,9 +358,9 @@
     },
     providers: {
       ...normalProviders,
-      cities: async (country, context) => {
+      cities: async (state, context) => {
         if (!showSearchResults) {
-          return normalProviders.cities?.(country, context) ?? [];
+          return normalProviders.cities?.(state, context) ?? [];
         }
         const query = committedSearchQuery.trim();
         if (!query) {
@@ -365,7 +369,7 @@
         const facets = await searchSmartFacets({
           smartSearchFacetsDto: buildSmartSearchFacetsParams({
             query,
-            filters: { ...filters, country },
+            filters: { ...filters, state },
             spaceId: space.id,
             language: $lang,
           }),

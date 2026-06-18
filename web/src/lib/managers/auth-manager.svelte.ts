@@ -13,6 +13,13 @@ import {
   type UserPreferencesResponseDto,
 } from '@immich/sdk';
 
+/**
+ * @class AuthManager
+ * Глобальный менеджер авторизации. Отвечает за хранение сессии пользователя,
+ * его настроек (preferences) и статуса покупки/лицензии (isPurchased).
+ * Обрабатывает логику логина, выхода (logout), а также проверяет
+ * наличие куки авторизации перед выполнением запросов к API.
+ */
 class AuthManager {
   isPurchased = $state(false);
   isSharedLink = $derived(isSharedLinkRoute(page.route?.id));

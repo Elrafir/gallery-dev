@@ -60,6 +60,11 @@ export type ValidateRequest = {
   };
 };
 
+/**
+ * Сервис аутентификации.
+ * Инкапсулирует бизнес-логику входа, выхода, работы с OAuth, генерации сессий (Session Tokens),
+ * проверки прав доступа (PIN-коды, пароли), а также валидации API-ключей и публичных ссылок.
+ */
 @Injectable()
 export class AuthService extends BaseService {
   async login(dto: LoginCredentialDto, details: LoginDetails) {

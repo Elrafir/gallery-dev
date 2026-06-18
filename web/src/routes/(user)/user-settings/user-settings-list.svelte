@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component UserSettingsList
+   * Компонент, отображающий список аккордеонов (настроек) для пользователя.
+   * Содержит секции для настроек аккаунта, API ключей, авторизованных устройств,
+   * параметров загрузки (скачивания), фичей, уведомлений, OAuth и пароля.
+   */
   import { page } from '$app/stores';
   import GroupSettings from '$lib/components/user-settings-page/group-settings.svelte';
   import { OpenQueryParam, QueryParameter } from '$lib/constants';

@@ -54,6 +54,10 @@ import {
 } from '@mdi/js';
 import type { MessageFormatter } from 'svelte-i18n';
 
+/**
+ * Возвращает список массовых действий для выделенных медиафайлов (Assets),
+ * таких как: добавление в альбом, обновление метаданных, перекодирование видео.
+ */
 export const getAssetBulkActions = ($t: MessageFormatter) => {
   const ownedAssets = assetMultiSelectManager.ownedAssets;
 
@@ -98,6 +102,10 @@ export const getAssetBulkActions = ($t: MessageFormatter) => {
   return { AddToAlbum, RefreshFacesJob, RefreshMetadataJob, RegenerateThumbnailJob, TranscodeVideoJob };
 };
 
+/**
+ * Возвращает список действий для конкретного медиафайла,
+ * включая: поделиться, скачать, добавить в избранное, вращать, изменить дату и др.
+ */
 export const getAssetActions = ($t: MessageFormatter, asset: AssetResponseDto) => {
   const sharedLink = getSharedLink();
   const authUser = authManager.authenticated ? authManager.user : undefined;

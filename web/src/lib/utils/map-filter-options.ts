@@ -34,6 +34,12 @@ function applyCommonMapFilters(base: Record<string, unknown>, filters: FilterSta
   if (filters.country) {
     base.country = filters.country;
   }
+  if (filters.state) {
+    base.state = filters.state;
+  }
+  if (filters.street) {
+    base.street = filters.street;
+  }
 
   const context = buildFilterContext(filters);
   if (context?.takenAfter) {

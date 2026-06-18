@@ -1,14 +1,37 @@
 <script lang="ts" module>
   import mapboxRtlUrl from '@mapbox/mapbox-gl-rtl-text?url';
-  import { addProtocol, setRTLTextPlugin } from 'maplibre-gl';
+  import { addProtocol, getRTLTextPluginStatus, setRTLTextPlugin } from 'maplibre-gl';
   import { Protocol } from 'pmtiles';
 
   let protocol = new Protocol();
-  void addProtocol('pmtiles', protocol.tile);
-  void setRTLTextPlugin(mapboxRtlUrl, true);
+  try {
+    void addProtocol('pmtiles', protocol.tile);
+  } catch {
+    // Already registered during HMR
+  }
+
+  try {
+    if (getRTLTextPluginStatus() === 'unavailable') {
+      void setRTLTextPlugin(mapboxRtlUrl, true);
+    }
+  } catch {
+    // Ignore any other plugin errors
+  }
 </script>
 
 <script lang="ts">
+  /**
+   * @component Map
+   * Основной визуальный компонент карты на базе MapLibre.
+   * Отображает кластеры, маркеры фотографий и сохраненные локации (избранные и обычные).
+   * 
+   * @property {MapMarkerResponseDto[]} mapMarkers - Список маркеров (фотографий/кластеров) для отображения.
+   * @property {boolean} showSettings - Флаг отображения кнопки настроек карты.
+   * @property {number} zoom - Текущий уровень зума карты (реактивная привязка).
+   * @property {LngLatLike} center - Текущий центр карты.
+   * @property {Function} onSelect - Событие, вызываемое при клике на маркер фотографии (возвращает массив ID).
+   * @property {Function} onClusterSelect - Событие, вызываемое при клике на кластер (возвращает список ID и границы BBox).
+   */
   import { afterNavigate } from '$app/navigation';
   import OnEvents from '$lib/components/OnEvents.svelte';
   import { serverConfigManager } from '$lib/managers/server-config-manager.svelte';
@@ -89,7 +112,7 @@
   let {
     mapMarkers = $bindable(),
     showSettings = true,
-    zoom = undefined,
+    zoom = $bindable(undefined),
     center = $bindable(undefined),
     hash = false,
     simplified = false,
@@ -369,11 +392,41 @@
   });
 
   $effect(() => {
-    if (!center || !zoom) {
+    if (!center || !zoom || !map) {
       return;
     }
 
-    untrack(() => map?.jumpTo({ center, zoom }));
+    if (map.isMoving()) {
+      return;
+    }
+
+    const mapCenter = map.getCenter();
+    const mapZoom = map.getZoom();
+
+    let targetLng: number | undefined;
+    let targetLat: number | undefined;
+
+    if (Array.isArray(center)) {
+      targetLng = center[0];
+      targetLat = center[1];
+    } else if (center && 'lng' in center && 'lat' in center) {
+      targetLng = (center as any).lng;
+      targetLat = (center as any).lat;
+    } else if (center && 'lon' in center && 'lat' in center) {
+      targetLng = (center as any).lon;
+      targetLat = (center as any).lat;
+    }
+
+    if (targetLng === undefined || targetLat === undefined) {
+      return;
+    }
+
+    const centerChanged = Math.abs(mapCenter.lng - targetLng) > 0.0001 || Math.abs(mapCenter.lat - targetLat) > 0.0001;
+    const zoomChanged = Math.abs(mapZoom - zoom) > 0.1;
+
+    if (centerChanged || zoomChanged) {
+      untrack(() => map?.jumpTo({ center, zoom }));
+    }
   });
 
   const onAssetsDelete = async () => {
@@ -389,7 +442,7 @@
   style=""
   class="h-full {rounded ? 'rounded-2xl' : 'rounded-none'}"
   bind:zoom={zoom}
-  {center}
+  bind:center={center}
   bounds={initialBounds}
   fitBoundsOptions={{ padding: 50, maxZoom: 15 }}
   attributionControl={false}
@@ -453,7 +506,7 @@
       <ControlGroup>
         <ControlButton
           onclick={() => (showSavedLocations = !showSavedLocations)}
-          title="Показывать сохранённые места"
+          title={$t('show_saved_locations')}
         >
           <Icon
             icon={showSavedLocations ? mdiMapMarkerMultiple : mdiMapMarkerMultipleOutline}
@@ -469,7 +522,7 @@
         <ControlGroup>
           <ControlButton
             onclick={() => (showOnlyFavoriteLocations = !showOnlyFavoriteLocations)}
-            title="Только избранные сохранённые места"
+            title={$t('only_favorite_locations')}
           >
             <Icon
               icon={showOnlyFavoriteLocations ? mdiStar : mdiStarOutline}

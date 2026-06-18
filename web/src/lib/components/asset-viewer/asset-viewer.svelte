@@ -1,4 +1,18 @@
 <script lang="ts">
+  /**
+   * @component AssetViewer
+   * Главный компонент просмотра медиафайлов (фото/видео).
+   * Отвечает за полноэкранный просмотр, слайдшоу, навигацию (свайпы, кнопки),
+   * а также за отображение боковых панелей (детали, активность, редактор).
+   * 
+   * @property {AssetCursor} cursor - Объект с текущим, предыдущим и следующим медиафайлом.
+   * @property {boolean} [showNavigation=true] - Флаг показа элементов управления навигацией.
+   * @property {boolean} [withStacked=false] - Флаг для отображения сгруппированных (stacked) фото.
+   * @property {boolean} [isShared=false] - Указывает, просматривается ли публичная ссылка.
+   * @property {AlbumResponseDto} [album] - Альбом, из которого открыт файл.
+   * @property {PersonResponseDto} [person] - Человек, если просмотр открыт из лиц.
+   * @property {Function} [onClose] - Событие при закрытии просмотрщика.
+   */
   import { browser } from '$app/environment';
   import { focusTrap } from '$lib/actions/focus-trap';
   import type { Action, OnAction, PreAction } from '$lib/components/asset-viewer/actions/action';

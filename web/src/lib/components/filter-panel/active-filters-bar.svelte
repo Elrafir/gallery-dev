@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component ActiveFiltersBar
+   * Верхняя плашка ("чипсы"), отображающая текущие активные фильтры и поисковый запрос.
+   * Позволяет пользователю сбрасывать отдельные фильтры или все сразу, а также
+   * показывает общее количество найденных результатов.
+   */
   import { locale } from '$lib/stores/preferences.store';
   import { get } from 'svelte/store';
   import { t } from 'svelte-i18n';

@@ -23,6 +23,11 @@ import { ParseMeUUIDPipe, UUIDParamDto } from 'src/validation';
 
 @ApiTags(ApiTag.Albums)
 @Controller('albums')
+/**
+ * Контроллер для работы с альбомами.
+ * Отвечает за создание, редактирование и удаление альбомов, добавление/удаление
+ * медиафайлов (Assets) внутри альбома, а также управление правами доступа пользователей к общим альбомам.
+ */
 export class AlbumController {
   constructor(private service: AlbumService) {}
 

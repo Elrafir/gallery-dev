@@ -40,7 +40,7 @@
     RepresentativeFaceSource,
     searchPerson,
     SharedSpaceRole,
-    Type2 as ScopedPersonProfileType,
+    Type3 as ScopedPersonProfileType,
     updateSpacePersonRepresentativeFace,
     updateSpacePerson,
     type PersonFaceResponseDto,

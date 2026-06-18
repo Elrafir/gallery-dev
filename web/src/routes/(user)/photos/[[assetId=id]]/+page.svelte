@@ -1,4 +1,13 @@
 <script lang="ts">
+  /**
+   * @component PhotosPage
+   * Основная страница раздела "Фотографии".
+   * Отвечает за рендеринг ленты (Timeline), панелей фильтров (FilterPanel),
+   * поиска (SmartSearchResults) и меню массовых действий (AssetSelectControlBar).
+   * 
+   * Здесь управляется основное состояние ленты: загрузка данных, фильтрация,
+   * выделение файлов и вызов массовых операций (удаление, скрытие, добавление в альбом).
+   */
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import ActionMenuItem from '$lib/components/ActionMenuItem.svelte';
@@ -145,8 +154,10 @@
     const context = buildFilterContext(nextFilters);
     const response = await getFilterSuggestions({
       personIds: nextFilters.personIds.length > 0 ? nextFilters.personIds : undefined,
-      country: nextFilters.country,
+      state: nextFilters.state,
       city: nextFilters.city,
+      street: nextFilters.street,
+      country: nextFilters.country,
       make: nextFilters.make,
       model: nextFilters.model,
       tagIds: nextFilters.tagIds.length > 0 ? nextFilters.tagIds : undefined,
@@ -176,6 +187,7 @@
     }
     return {
       countries: response.countries,
+      states: response.states,
       cameraMakes: response.cameraMakes,
       tags: response.tags.map((t) => ({ id: t.id, name: t.value })),
       people: mappedPeople,
@@ -238,10 +250,11 @@
   }
 
   const normalProviders: NonNullable<FilterPanelConfig['providers']> = {
-    cities: (country, context) =>
+    cities: (state, context) =>
       getSearchSuggestions({
         $type: SearchSuggestionType.City,
-        country,
+        state: state || undefined,
+        withCounts: true,
         ...context,
         ...(context?.isFavorite === undefined ? { withSharedSpaces: true } : {}),
       }),
@@ -276,9 +289,9 @@
     },
     providers: {
       ...normalProviders,
-      cities: async (country, context) => {
+      cities: async (state, context) => {
         if (!showSearchResults) {
-          return normalProviders.cities?.(country, context) ?? [];
+          return normalProviders.cities?.(state, context) ?? [];
         }
         const query = committedQuery.trim();
         if (!query) {
@@ -287,7 +300,7 @@
         const facets = await searchSmartFacets({
           smartSearchFacetsDto: buildSmartSearchFacetsParams({
             query,
-            filters: { ...filters, country },
+            filters: { ...filters, state },
             withSharedSpaces: filters.isFavorite === undefined,
             language: $lang,
           }),

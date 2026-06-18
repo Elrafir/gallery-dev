@@ -30,6 +30,12 @@ export function buildPhotosTimelineOptions(filters: FilterState): Record<string,
   if (filters.country) {
     base.country = filters.country;
   }
+  if (filters.state) {
+    base.state = filters.state;
+  }
+  if (filters.street) {
+    base.street = filters.street;
+  }
   if (filters.make) {
     base.make = filters.make;
   }
@@ -105,7 +111,7 @@ export function handlePhotosRemoveFilter(filters: FilterState, type: string, id?
       return { ...filters, personIds: filters.personIds.filter((p) => p !== id) };
     }
     case 'location': {
-      return { ...filters, city: undefined, country: undefined };
+      return { ...filters, state: undefined, city: undefined, street: undefined, country: undefined };
     }
     case 'camera': {
       return { ...filters, make: undefined, model: undefined };

@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component Sidebar
+   * Базовый компонент-контейнер для бокового меню приложения.
+   * Управляет скрытием/показом (responsive), обрабатывает клики вне области (clickOutside)
+   * и ловушку фокуса (focusTrap) при мобильном или свернутом виде.
+   */
   import { clickOutside } from '$lib/actions/click-outside';
   import { focusTrap } from '$lib/actions/focus-trap';
   import { menuButtonId } from '$lib/components/shared-components/navigation-bar/navigation-bar.svelte';

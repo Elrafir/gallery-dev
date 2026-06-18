@@ -1,3 +1,9 @@
+/**
+ * Основной файл конфигурации модулей NestJS.
+ * Определяет сборку различных приложений (воркеров): ApiModule,
+ * MaintenanceModule, MicroservicesModule, ImmichAdminModule.
+ * Инициализирует глобальные middleware, пайпы, интерсепторы и телеметрию.
+ */
 import { BullModule } from '@nestjs/bullmq';
 import { Inject, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';

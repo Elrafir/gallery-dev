@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component LoginPage
+   * Страница авторизации (Вход).
+   * Поддерживает как стандартный вход по email/паролю, так и вход через OAuth (OIDC),
+   * а также перенаправляет пользователя на страницы сброса пароля или онбординга при первом входе.
+   */
   import { goto } from '$app/navigation';
   import AuthPageLayout from '$lib/components/layouts/AuthPageLayout.svelte';
   import { eventManager } from '$lib/managers/event-manager.svelte';

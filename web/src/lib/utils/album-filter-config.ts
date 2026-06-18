@@ -11,6 +11,7 @@ const sections = ['timeline', 'people', 'location', 'camera', 'tags', 'rating', 
 function mapSuggestions(response: Awaited<ReturnType<typeof getFilterSuggestions>>) {
   return {
     countries: response.countries,
+    states: response.states,
     cameraMakes: response.cameraMakes,
     tags: response.tags.map((tag) => ({ id: tag.id, name: tag.value })),
     people: response.people.map((person) => ({
@@ -28,8 +29,10 @@ function toSuggestionRequest(filters: FilterState) {
   const context = buildFilterContext(filters);
   return {
     personIds: filters.personIds.length > 0 ? filters.personIds : undefined,
-    country: filters.country,
+    state: filters.state,
     city: filters.city,
+    street: filters.street,
+    country: filters.country,
     make: filters.make,
     model: filters.model,
     tagIds: filters.tagIds.length > 0 ? filters.tagIds : undefined,
@@ -52,8 +55,14 @@ export function buildAlbumDetailFilterConfig(albumId: string): FilterPanelConfig
     suggestionsProvider: async (filters) =>
       mapSuggestions(await getFilterSuggestions({ albumId, ...toSuggestionRequest(filters) })),
     providers: {
-      cities: (country, context) =>
-        getSearchSuggestions({ $type: SearchSuggestionType.City, albumId, country, ...context }),
+      cities: (state, context) =>
+        getSearchSuggestions({
+          $type: SearchSuggestionType.City,
+          albumId,
+          state: state || undefined,
+          withCounts: true,
+          ...context,
+        }),
       cameraModels: (make, context) =>
         getSearchSuggestions({ $type: SearchSuggestionType.CameraModel, albumId, make, ...context }),
     },
@@ -65,7 +74,13 @@ export function buildAlbumAssetPickerFilterConfig(): FilterPanelConfig {
     sections: [...sections],
     suggestionsProvider: async (filters) => mapSuggestions(await getFilterSuggestions(toSuggestionRequest(filters))),
     providers: {
-      cities: (country, context) => getSearchSuggestions({ $type: SearchSuggestionType.City, country, ...context }),
+      cities: (state, context) =>
+        getSearchSuggestions({
+          $type: SearchSuggestionType.City,
+          state: state || undefined,
+          withCounts: true,
+          ...context,
+        }),
       cameraModels: (make, context) =>
         getSearchSuggestions({ $type: SearchSuggestionType.CameraModel, make, ...context }),
     },

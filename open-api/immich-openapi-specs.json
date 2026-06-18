@@ -333,7 +333,7 @@
         ],
         "summary": "Unlink all OAuth accounts",
         "tags": [
-          "Authentication444 (admin)"
+          "Authentication (admin)"
         ],
         "x-immich-admin-only": true,
         "x-immich-history": [
@@ -6433,6 +6433,50 @@
         "x-immich-state": "Stable"
       }
     },
+    "/map/countries": {
+      "get": {
+        "description": "Retrieve list of all unique countries available in database metadata.",
+        "operationId": "getUniqueCountries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get unique countries from geodata",
+        "tags": [
+          "Map"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
+      }
+    },
     "/map/markers": {
       "get": {
         "description": "Retrieve a list of latitude and longitude coordinates for every asset with location data.",
@@ -6628,6 +6672,59 @@
         ],
         "x-immich-permission": "map.search",
         "x-immich-state": "Stable"
+      }
+    },
+    "/map/states": {
+      "get": {
+        "description": "Retrieve list of all unique states/regions available in database metadata, optionally filtered by country.",
+        "operationId": "getUniqueStates",
+        "parameters": [
+          {
+            "name": "country",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get unique states from geodata",
+        "tags": [
+          "Map"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
       }
     },
     "/memories": {
@@ -9599,6 +9696,352 @@
         "x-immich-state": "Alpha"
       }
     },
+    "/primary-library/libraries": {
+      "delete": {
+        "description": "Отвязать библиотеки от базовой библиотеки.",
+        "operationId": "unlinkLibraries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Unlink libraries from Primary Library",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      },
+      "get": {
+        "description": "Получить список привязанных библиотек.",
+        "operationId": "getLinkedLibraries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get linked libraries",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.read"
+      },
+      "put": {
+        "description": "Привязать библиотеки администратора к базовой библиотеке.",
+        "operationId": "linkLibraries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Link libraries to Primary Library",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
+    "/primary-library/members": {
+      "get": {
+        "description": "Получить список участников базовой библиотеки.",
+        "operationId": "getMembers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get Primary Library members",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.read"
+      }
+    },
+    "/primary-library/members/enroll-all": {
+      "put": {
+        "description": "Зачислить всех существующих пользователей в базовую библиотеку.",
+        "operationId": "enrollAllUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Enroll all existing users",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
+    "/primary-library/members/{userId}": {
+      "delete": {
+        "description": "Удалить пользователя из базовой библиотеки.",
+        "operationId": "removeMember",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Remove user from Primary Library",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      },
+      "put": {
+        "description": "Обновить настройки участника базовой библиотеки.",
+        "operationId": "updateMember",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Update Primary Library member settings",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
+    "/primary-library/settings": {
+      "get": {
+        "description": "Получить текущие настройки базовой библиотеки.",
+        "operationId": "getSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get Primary Library settings",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.read"
+      },
+      "put": {
+        "description": "Обновить настройки базовой библиотеки. Создаёт системное пространство при первом включении.",
+        "operationId": "updateSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Update Primary Library settings",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
     "/queues": {
       "get": {
         "description": "Retrieves a list of queues.",
@@ -9895,6 +10338,200 @@
         ],
         "x-immich-permission": "queueJob.read",
         "x-immich-state": "Alpha"
+      }
+    },
+    "/saved-locations": {
+      "get": {
+        "description": "Retrieve all saved locations for the authenticated user.",
+        "operationId": "getAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedLocationResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get all saved locations",
+        "tags": [
+          "Saved Locations"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
+      },
+      "post": {
+        "description": "Create a new saved location for the authenticated user.",
+        "operationId": "create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSavedLocationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Create a saved location",
+        "tags": [
+          "Saved Locations"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
+      }
+    },
+    "/saved-locations/{id}": {
+      "delete": {
+        "description": "Delete a saved location by ID.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Delete a saved location",
+        "tags": [
+          "Saved Locations"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
+      },
+      "put": {
+        "description": "Update an existing saved location by ID.",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedLocationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedLocationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Update a saved location",
+        "tags": [
+          "Saved Locations"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
       }
     },
     "/search/cities": {
@@ -10262,6 +10899,16 @@
             }
           },
           {
+            "name": "street",
+            "required": false,
+            "in": "query",
+            "description": "Filter by street name",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
             "name": "tagIds",
             "required": false,
             "in": "query",
@@ -10587,6 +11234,15 @@
         "description": "Search for places by name.",
         "operationId": "searchPlaces",
         "parameters": [
+          {
+            "name": "featuretype",
+            "required": false,
+            "in": "query",
+            "description": "Feature type to filter (e.g. country, state, city)",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "name",
             "required": true,
@@ -11061,6 +11717,15 @@
             }
           },
           {
+            "name": "withCounts",
+            "required": false,
+            "in": "query",
+            "description": "Include asset counts in the returned suggestions",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "withSharedSpaces",
             "required": false,
             "in": "query",
@@ -11230,6 +11895,24 @@
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "description": "Filter by state/province",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "street",
+            "required": false,
+            "in": "query",
+            "description": "Filter by street",
+            "schema": {
               "type": "string"
             }
           },
@@ -17432,6 +18115,24 @@
             }
           },
           {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "description": "Filter by state/province name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "street",
+            "required": false,
+            "in": "query",
+            "description": "Filter by street name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "tagId",
             "required": false,
             "in": "query",
@@ -17775,6 +18476,24 @@
                 "format": "uuid",
                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
               }
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "description": "Filter by state/province name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "street",
+            "required": false,
+            "in": "query",
+            "description": "Filter by street name",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -19784,6 +20503,10 @@
     {
       "name": "Classification",
       "description": "Endpoints for managing auto-classification categories that automatically tag and archive photos based on CLIP similarity."
+    },
+    {
+      "name": "Saved Locations",
+      "description": "Endpoints for managing saved locations used for quick geotagging."
     }
   ],
   "servers": [
@@ -21841,6 +22564,52 @@
         ],
         "type": "object"
       },
+      "CountrySubstitutionRuleDto": {
+        "properties": {
+          "country": {
+            "description": "Original country name",
+            "minLength": 1,
+            "type": "string"
+          },
+          "endYear": {
+            "description": "End year (inclusive)",
+            "maximum": 3000,
+            "minimum": 1000,
+            "type": "integer"
+          },
+          "replacement": {
+            "description": "Replacement country name (legacy)",
+            "nullable": true,
+            "type": "string"
+          },
+          "replacementCountry": {
+            "description": "Replacement country name",
+            "nullable": true,
+            "type": "string"
+          },
+          "replacementState": {
+            "description": "Replacement state/region name",
+            "nullable": true,
+            "type": "string"
+          },
+          "startYear": {
+            "description": "Start year (inclusive)",
+            "maximum": 3000,
+            "minimum": 1000,
+            "type": "integer"
+          },
+          "state": {
+            "description": "Original state/region/republic name",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "country",
+          "state"
+        ],
+        "type": "object"
+      },
       "CreateAlbumDto": {
         "properties": {
           "albumName": {
@@ -21943,6 +22712,47 @@
           "profileChangedAt",
           "profileImagePath",
           "userId"
+        ],
+        "type": "object"
+      },
+      "CreateSavedLocationDto": {
+        "properties": {
+          "description": {
+            "description": "Optional description",
+            "nullable": true,
+            "type": "string"
+          },
+          "icon": {
+            "description": "Icon identifier",
+            "nullable": true,
+            "type": "string"
+          },
+          "label": {
+            "description": "User signature label",
+            "minLength": 1,
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Latitude (-90 to 90)",
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude (-180 to 180)",
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "description": "Resolved geodata address name",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "latitude",
+          "longitude",
+          "name"
         ],
         "type": "object"
       },
@@ -22610,6 +23420,13 @@
             },
             "type": "array"
           },
+          "states": {
+            "description": "Available states/regions",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "tags": {
             "description": "Available tags",
             "items": {
@@ -22625,6 +23442,7 @@
           "mediaTypes",
           "people",
           "ratings",
+          "states",
           "tags"
         ],
         "type": "object"
@@ -23700,6 +24518,11 @@
             "nullable": true,
             "type": "string"
           },
+          "street": {
+            "description": "Filter by street name",
+            "nullable": true,
+            "type": "string"
+          },
           "tagIds": {
             "description": "Filter by tag IDs",
             "items": {
@@ -24393,6 +25216,20 @@
           "name": {
             "description": "Person name",
             "type": "string"
+          },
+          "species": {
+            "description": "Pet species (e.g. dog, cat); only used when type is pet",
+            "maxLength": 100,
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "description": "Entity type (person or pet)",
+            "enum": [
+              "person",
+              "pet"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -24928,6 +25765,11 @@
             ],
             "x-immich-state": "Stable"
           },
+          "description": {
+            "description": "Extended notes about this person",
+            "nullable": true,
+            "type": "string"
+          },
           "faces": {
             "items": {
               "$ref": "#/components/schemas/AssetFaceWithoutPersonResponseDto"
@@ -25108,6 +25950,10 @@
           },
           "admin2name": {
             "description": "Administrative level 2 name (county/district)",
+            "type": "string"
+          },
+          "country": {
+            "description": "Country name",
             "type": "string"
           },
           "latitude": {
@@ -25941,6 +26787,11 @@
             "nullable": true,
             "type": "string"
           },
+          "street": {
+            "description": "Filter by street name",
+            "nullable": true,
+            "type": "string"
+          },
           "tagIds": {
             "description": "Filter by tag IDs",
             "items": {
@@ -26101,6 +26952,76 @@
         },
         "required": [
           "angle"
+        ],
+        "type": "object"
+      },
+      "SavedLocationResponseDto": {
+        "properties": {
+          "createdAt": {
+            "description": "Creation timestamp",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional description",
+            "nullable": true,
+            "type": "string"
+          },
+          "icon": {
+            "description": "Icon identifier",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Saved location ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "isFavorite": {
+            "description": "Favorite status flag",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "User signature label",
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Latitude",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude",
+            "type": "number"
+          },
+          "name": {
+            "description": "Resolved geodata address name",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Update timestamp",
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "description": "User ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "description",
+          "icon",
+          "id",
+          "isFavorite",
+          "label",
+          "latitude",
+          "longitude",
+          "name",
+          "updatedAt",
+          "userId"
         ],
         "type": "object"
       },
@@ -27428,8 +28349,24 @@
       },
       "SharedSpaceMemberPreferencesDto": {
         "properties": {
+          "inheritPeople": {
+            "description": "Inherit base people from system space",
+            "type": "boolean"
+          },
+          "inheritTags": {
+            "description": "Inherit base tags from system space",
+            "type": "boolean"
+          },
           "sharePersonMetadata": {
             "description": "Share person names and birth dates with this space",
+            "type": "boolean"
+          },
+          "showInMap": {
+            "description": "Show system space content on map",
+            "type": "boolean"
+          },
+          "showInMemories": {
+            "description": "Show system space content in memories",
             "type": "boolean"
           },
           "showInTimeline": {
@@ -27452,6 +28389,14 @@
           "email": {
             "description": "User email",
             "type": "string"
+          },
+          "inheritPeople": {
+            "description": "Inherit base people from system space",
+            "type": "boolean"
+          },
+          "inheritTags": {
+            "description": "Inherit base tags from system space",
+            "type": "boolean"
           },
           "joinedAt": {
             "description": "Join date",
@@ -27485,6 +28430,14 @@
           },
           "sharePersonMetadata": {
             "description": "Share person names and birth dates with this space",
+            "type": "boolean"
+          },
+          "showInMap": {
+            "description": "Show system space content on map",
+            "type": "boolean"
+          },
+          "showInMemories": {
+            "description": "Show system space content in memories",
             "type": "boolean"
           },
           "showInTimeline": {
@@ -28082,6 +29035,11 @@
             "nullable": true,
             "type": "string"
           },
+          "street": {
+            "description": "Filter by street name",
+            "nullable": true,
+            "type": "string"
+          },
           "tagIds": {
             "description": "Filter by tag IDs",
             "items": {
@@ -28583,6 +29541,11 @@
           },
           "state": {
             "description": "Filter by state/province name",
+            "nullable": true,
+            "type": "string"
+          },
+          "street": {
+            "description": "Filter by street name",
             "nullable": true,
             "type": "string"
           },
@@ -31256,6 +32219,20 @@
           "enabled": {
             "description": "Enabled",
             "type": "boolean"
+          },
+          "geocoderUrl": {
+            "default": "http://192.168.100.78:8088",
+            "description": "Geocoder URL",
+            "format": "uri",
+            "type": "string"
+          },
+          "substitutions": {
+            "default": [],
+            "description": "Country substitution rules",
+            "items": {
+              "$ref": "#/components/schemas/CountrySubstitutionRuleDto"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -32110,6 +33087,45 @@
           },
           "name": {
             "description": "Library name",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateSavedLocationDto": {
+        "properties": {
+          "description": {
+            "description": "Optional description",
+            "nullable": true,
+            "type": "string"
+          },
+          "icon": {
+            "description": "Icon identifier",
+            "nullable": true,
+            "type": "string"
+          },
+          "isFavorite": {
+            "description": "Favorite status flag",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "User signature label",
+            "minLength": 1,
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Latitude (-90 to 90)",
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude (-180 to 180)",
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "description": "Resolved geodata address name",
             "minLength": 1,
             "type": "string"
           }

@@ -80,6 +80,13 @@ const withAssets = (eb: ExpressionBuilder<DB, 'album'>) => {
     .as('assets');
 };
 
+/**
+ * Репозиторий для работы с сущностью альбомов (Album).
+ * Инкапсулирует логику доступа к базе данных через Kysely.
+ * Включает сложные запросы с JOIN-ами для извлечения владельцев альбомов,
+ * списка пользователей с доступом к альбому, вложенных медиафайлов и
+ * ссылок для общего доступа.
+ */
 @Injectable()
 export class AlbumRepository {
   constructor(@InjectKysely() private db: Kysely<DB>) {}

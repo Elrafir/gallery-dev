@@ -23,6 +23,12 @@ import { addAssets, getMyPartnerIds, removeAssets } from 'src/utils/asset.util';
 import { asDateString } from 'src/utils/date';
 import { getPreferences } from 'src/utils/preferences';
 
+/**
+ * Сервис для управления альбомами.
+ * Отвечает за логику создания, редактирования, удаления альбомов,
+ * управления содержимым (добавление/удаление Assets) и настройки совместного доступа
+ * (добавление пользователей, изменение ролей).
+ */
 @Injectable()
 export class AlbumService extends BaseService {
   async getStatistics(auth: AuthDto): Promise<AlbumStatisticsResponseDto> {

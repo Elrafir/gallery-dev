@@ -825,6 +825,8 @@ export type PersonWithFacesResponseDto = {
     birthDate: string | null;
     /** Person color (hex) */
     color?: string;
+    /** Extended notes about this person */
+    description?: string | null;
     faces: AssetFaceWithoutPersonResponseDto[];
     /** Scoped identity filter token */
     filterId?: string;
@@ -1527,7 +1529,7 @@ export type PersonCreateDto = {
     /** Pet species (e.g. dog, cat); only used when type is pet */
     species?: string | null;
     /** Entity type (person or pet) */
-    type?: "person" | "pet";
+    "type"?: Type2;
 };
 export type PeopleUpdateItem = {
     /** Person date of birth */
@@ -1546,6 +1548,10 @@ export type PeopleUpdateItem = {
     isHidden?: boolean;
     /** Person name */
     name?: string;
+    /** Pet species (e.g. dog, cat); only used when type is pet */
+    species?: string | null;
+    /** Entity type (person or pet) */
+    "type"?: Type2;
 };
 export type PeopleUpdateDto = {
     /** People to update */
@@ -1557,7 +1563,7 @@ export type ScopedPersonProfileRefDto = {
     /** Space ID for Space Person refs */
     spaceId?: string;
     /** Scoped profile type */
-    "type": Type2;
+    "type": Type3;
 };
 export type DetachScopedPersonDto = {
     /** Scoped profile to detach */
@@ -1607,7 +1613,7 @@ export type PersonUpdateDto = {
     /** Pet species (e.g. dog, cat); only used when type is pet */
     species?: string | null;
     /** Entity type (person or pet) */
-    type?: "person" | "pet";
+    "type"?: Type4;
 };
 export type PersonFaceResponseDto = {
     /** Asset ID containing the face */
@@ -1777,6 +1783,60 @@ export type QueueJobResponseDto = {
     /** Job creation timestamp */
     timestamp: number;
 };
+export type SavedLocationResponseDto = {
+    /** Creation timestamp */
+    createdAt: string;
+    /** Optional description */
+    description: string | null;
+    /** Icon identifier */
+    icon: string | null;
+    /** Saved location ID */
+    id: string;
+    /** Favorite status flag */
+    isFavorite: boolean;
+    /** User signature label */
+    label: string;
+    /** Latitude */
+    latitude: number;
+    /** Longitude */
+    longitude: number;
+    /** Resolved geodata address name */
+    name: string;
+    /** Update timestamp */
+    updatedAt: string;
+    /** User ID */
+    userId: string;
+};
+export type CreateSavedLocationDto = {
+    /** Optional description */
+    description?: string | null;
+    /** Icon identifier */
+    icon?: string | null;
+    /** User signature label */
+    label: string;
+    /** Latitude (-90 to 90) */
+    latitude: number;
+    /** Longitude (-180 to 180) */
+    longitude: number;
+    /** Resolved geodata address name */
+    name: string;
+};
+export type UpdateSavedLocationDto = {
+    /** Optional description */
+    description?: string | null;
+    /** Icon identifier */
+    icon?: string | null;
+    /** Favorite status flag */
+    isFavorite?: boolean;
+    /** User signature label */
+    label?: string;
+    /** Latitude (-90 to 90) */
+    latitude?: number;
+    /** Longitude (-180 to 180) */
+    longitude?: number;
+    /** Resolved geodata address name */
+    name?: string;
+};
 export type SearchExploreItem = {
     data: AssetResponseDto;
     /** Explore value */
@@ -1848,6 +1908,8 @@ export type MetadataSearchDto = {
     spacePersonIds?: string[];
     /** Filter by state/province name */
     state?: string | null;
+    /** Filter by street name */
+    street?: string | null;
     /** Filter by tag IDs */
     tagIds?: string[] | null;
     /** Filter by taken date (after) */
@@ -1915,6 +1977,8 @@ export type PlacesResponseDto = {
     admin1name?: string;
     /** Administrative level 2 name (county/district) */
     admin2name?: string;
+    /** Country name */
+    country?: string;
     /** Latitude coordinate */
     latitude: number;
     /** Longitude coordinate */
@@ -1965,6 +2029,8 @@ export type RandomSearchDto = {
     spacePersonIds?: string[];
     /** Filter by state/province name */
     state?: string | null;
+    /** Filter by street name */
+    street?: string | null;
     /** Filter by tag IDs */
     tagIds?: string[] | null;
     /** Filter by taken date (after) */
@@ -2045,6 +2111,8 @@ export type SmartSearchDto = {
     spacePersonIds?: string[];
     /** Filter by state/province name */
     state?: string | null;
+    /** Filter by street name */
+    street?: string | null;
     /** Filter by tag IDs */
     tagIds?: string[] | null;
     /** Filter by taken date (after) */
@@ -2192,6 +2260,8 @@ export type StatisticsSearchDto = {
     spacePersonIds?: string[];
     /** Filter by state/province name */
     state?: string | null;
+    /** Filter by street name */
+    street?: string | null;
     /** Filter by tag IDs */
     tagIds?: string[] | null;
     /** Filter by taken date (after) */
@@ -2228,6 +2298,8 @@ export type FilterSuggestionsResponseDto = {
     people: FilterSuggestionsPersonDto[];
     /** Available ratings */
     ratings: number[];
+    /** Available states/regions */
+    states: string[];
     /** Available tags */
     tags: FilterSuggestionsTagDto[];
 };
@@ -2727,10 +2799,10 @@ export type SharedSpacePersonResponseDto = {
     assetCount: number;
     /** Person date of birth */
     birthDate?: string | null;
-    /** Extended notes about this person */
-    description?: string | null;
     /** Creation date */
     createdAt: string;
+    /** Extended notes about this person */
+    description?: string | null;
     /** Number of faces assigned to this person */
     faceCount: number;
     /** Person ID */
@@ -3137,9 +3209,29 @@ export type SystemConfigPasswordLoginDto = {
     /** Enabled */
     enabled: boolean;
 };
+export type CountrySubstitutionRuleDto = {
+    /** Original country name */
+    country: string;
+    /** End year (inclusive) */
+    endYear?: number;
+    /** Replacement country name (legacy) */
+    replacement?: string | null;
+    /** Replacement country name */
+    replacementCountry?: string | null;
+    /** Replacement state/region name */
+    replacementState?: string | null;
+    /** Start year (inclusive) */
+    startYear?: number;
+    /** Original state/region/republic name */
+    state: string;
+};
 export type SystemConfigReverseGeocodingDto = {
     /** Enabled */
     enabled: boolean;
+    /** Geocoder URL */
+    geocoderUrl?: string;
+    /** Country substitution rules */
+    substitutions?: CountrySubstitutionRuleDto[];
 };
 export type SystemConfigServerDto = {
     /** External domain */
@@ -5429,6 +5521,17 @@ export function validate({ id, validateLibraryDto }: {
     })));
 }
 /**
+ * Get unique countries from geodata
+ */
+export function getUniqueCountries(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: string[];
+    }>("/map/countries", {
+        ...opts
+    }));
+}
+/**
  * Retrieve map markers
  */
 export function getMapMarkers({ fileCreatedAfter, fileCreatedBefore, isArchived, isFavorite, withPartners, withSharedAlbums, withSharedSpaces }: {
@@ -5468,6 +5571,21 @@ export function reverseGeocode({ lat, lon }: {
     }>(`/map/reverse-geocode${QS.query(QS.explode({
         lat,
         lon
+    }))}`, {
+        ...opts
+    }));
+}
+/**
+ * Get unique states from geodata
+ */
+export function getUniqueStates({ country }: {
+    country: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: string[];
+    }>(`/map/states${QS.query(QS.explode({
+        country
     }))}`, {
         ...opts
     }));
@@ -6234,6 +6352,59 @@ export function getQueueJobs({ name, status }: {
     }));
 }
 /**
+ * Get all saved locations
+ */
+export function getAll(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SavedLocationResponseDto[];
+    }>("/saved-locations", {
+        ...opts
+    }));
+}
+/**
+ * Create a saved location
+ */
+export function create({ createSavedLocationDto }: {
+    createSavedLocationDto: CreateSavedLocationDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: SavedLocationResponseDto;
+    }>("/saved-locations", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: createSavedLocationDto
+    })));
+}
+/**
+ * Delete a saved location
+ */
+export function deleteSavedLocationsById({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/saved-locations/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+/**
+ * Update a saved location
+ */
+export function update({ id, updateSavedLocationDto }: {
+    id: string;
+    updateSavedLocationDto: UpdateSavedLocationDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SavedLocationResponseDto;
+    }>(`/saved-locations/${encodeURIComponent(id)}`, oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: updateSavedLocationDto
+    })));
+}
+/**
  * Retrieve assets by city
  */
 export function getAssetsByCity(opts?: Oazapfts.RequestOpts) {
@@ -6258,7 +6429,7 @@ export function getExploreData(opts?: Oazapfts.RequestOpts) {
 /**
  * Search large assets
  */
-export function searchLargeAssets({ albumIds, city, country, createdAfter, createdBefore, isEncoded, isFavorite, isMotion, isNotInAlbum, isOffline, lensModel, libraryId, make, minFileSize, model, ocr, personIds, rating, size, spaceId, spacePersonIds, state, tagIds, takenAfter, takenBefore, trashedAfter, trashedBefore, $type, updatedAfter, updatedBefore, visibility, withDeleted, withExif, withSharedSpaces }: {
+export function searchLargeAssets({ albumIds, city, country, createdAfter, createdBefore, isEncoded, isFavorite, isMotion, isNotInAlbum, isOffline, lensModel, libraryId, make, minFileSize, model, ocr, personIds, rating, size, spaceId, spacePersonIds, state, street, tagIds, takenAfter, takenBefore, trashedAfter, trashedBefore, $type, updatedAfter, updatedBefore, visibility, withDeleted, withExif, withSharedSpaces }: {
     albumIds?: string[];
     city?: string | null;
     country?: string | null;
@@ -6281,6 +6452,7 @@ export function searchLargeAssets({ albumIds, city, country, createdAfter, creat
     spaceId?: string;
     spacePersonIds?: string[];
     state?: string | null;
+    street?: string | null;
     tagIds?: string[] | null;
     takenAfter?: string;
     takenBefore?: string;
@@ -6320,6 +6492,7 @@ export function searchLargeAssets({ albumIds, city, country, createdAfter, creat
         spaceId,
         spacePersonIds,
         state,
+        street,
         tagIds,
         takenAfter,
         takenBefore,
@@ -6374,13 +6547,15 @@ export function searchPerson({ name, withHidden, withSharedSpaces }: {
 /**
  * Search places
  */
-export function searchPlaces({ name }: {
+export function searchPlaces({ featuretype, name }: {
+    featuretype?: string;
     name: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: PlacesResponseDto[];
     }>(`/search/places${QS.query(QS.explode({
+        featuretype,
         name
     }))}`, {
         ...opts
@@ -6449,7 +6624,7 @@ export function searchAssetStatistics({ statisticsSearchDto }: {
 /**
  * Retrieve search suggestions
  */
-export function getSearchSuggestions({ albumId, country, includeNull, isFavorite, isNotInAlbum, lensModel, make, model, personIds, rating, spaceId, state, tagIds, takenAfter, takenBefore, $type, withSharedSpaces }: {
+export function getSearchSuggestions({ albumId, country, includeNull, isFavorite, isNotInAlbum, lensModel, make, model, personIds, rating, spaceId, state, tagIds, takenAfter, takenBefore, $type, withCounts, withSharedSpaces }: {
     albumId?: string;
     country?: string;
     includeNull?: boolean;
@@ -6466,6 +6641,7 @@ export function getSearchSuggestions({ albumId, country, includeNull, isFavorite
     takenAfter?: string;
     takenBefore?: string;
     $type: SearchSuggestionType;
+    withCounts?: boolean;
     withSharedSpaces?: boolean;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
@@ -6488,6 +6664,7 @@ export function getSearchSuggestions({ albumId, country, includeNull, isFavorite
         takenAfter,
         takenBefore,
         "type": $type,
+        withCounts,
         withSharedSpaces
     }))}`, {
         ...opts
@@ -6496,7 +6673,7 @@ export function getSearchSuggestions({ albumId, country, includeNull, isFavorite
 /**
  * Retrieve dynamic filter suggestions
  */
-export function getFilterSuggestions({ albumId, city, country, isFavorite, isNotInAlbum, make, mediaType, model, personIds, rating, spaceId, tagIds, takenAfter, takenBefore, withSharedSpaces }: {
+export function getFilterSuggestions({ albumId, city, country, isFavorite, isNotInAlbum, make, mediaType, model, personIds, rating, spaceId, state, street, tagIds, takenAfter, takenBefore, withSharedSpaces }: {
     albumId?: string;
     city?: string;
     country?: string;
@@ -6508,6 +6685,8 @@ export function getFilterSuggestions({ albumId, city, country, isFavorite, isNot
     personIds?: string[];
     rating?: number;
     spaceId?: string;
+    state?: string;
+    street?: string;
     tagIds?: string[];
     takenAfter?: string;
     takenBefore?: string;
@@ -6528,6 +6707,8 @@ export function getFilterSuggestions({ albumId, city, country, isFavorite, isNot
         personIds,
         rating,
         spaceId,
+        state,
+        street,
         tagIds,
         takenAfter,
         takenBefore,
@@ -7891,7 +8072,7 @@ export function tagAssets({ id, bulkIdsDto }: {
 /**
  * Get time bucket
  */
-export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, slug, spaceId, spacePersonId, spacePersonIds, tagId, tagIds, takenAfter, takenBefore, timeBucket, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
+export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, slug, spaceId, spacePersonId, spacePersonIds, state, street, tagId, tagIds, takenAfter, takenBefore, timeBucket, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
     albumId?: string;
     bbox?: string;
     city?: string;
@@ -7910,6 +8091,8 @@ export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotI
     spaceId?: string;
     spacePersonId?: string;
     spacePersonIds?: string[];
+    state?: string;
+    street?: string;
     tagId?: string;
     tagIds?: string[];
     takenAfter?: string;
@@ -7945,6 +8128,8 @@ export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotI
         spaceId,
         spacePersonId,
         spacePersonIds,
+        state,
+        street,
         tagId,
         tagIds,
         takenAfter,
@@ -7964,7 +8149,7 @@ export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotI
 /**
  * Get time buckets
  */
-export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, slug, spaceId, spacePersonId, spacePersonIds, tagId, tagIds, takenAfter, takenBefore, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
+export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, slug, spaceId, spacePersonId, spacePersonIds, state, street, tagId, tagIds, takenAfter, takenBefore, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
     albumId?: string;
     bbox?: string;
     city?: string;
@@ -7983,6 +8168,8 @@ export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNot
     spaceId?: string;
     spacePersonId?: string;
     spacePersonIds?: string[];
+    state?: string;
+    street?: string;
     tagId?: string;
     tagIds?: string[];
     takenAfter?: string;
@@ -8017,6 +8204,8 @@ export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNot
         spaceId,
         spacePersonId,
         spacePersonIds,
+        state,
+        street,
         tagId,
         tagIds,
         takenAfter,
@@ -8784,7 +8973,15 @@ export enum PartnerDirection {
 }
 export enum Type2 {
     Person = "person",
+    Pet = "pet"
+}
+export enum Type3 {
+    Person = "person",
     SpacePerson = "space-person"
+}
+export enum Type4 {
+    Person = "person",
+    Pet = "pet"
 }
 export enum PluginJsonSchemaType {
     String = "string",
@@ -9116,94 +9313,3 @@ export enum UserMetadataKey {
     License = "license",
     Onboarding = "onboarding"
 }
-
-export interface CreateSavedLocationDto {
-    name: string;
-    label: string;
-    description?: string | null;
-    latitude: number;
-    longitude: number;
-    icon?: string | null;
-}
-
-export interface UpdateSavedLocationDto {
-    name?: string;
-    label?: string;
-    description?: string | null;
-    latitude?: number;
-    longitude?: number;
-    isFavorite?: boolean;
-    icon?: string | null;
-}
-
-export interface SavedLocationResponseDto {
-    id: string;
-    userId: string;
-    name: string;
-    label: string;
-    description: string | null;
-    latitude: number;
-    longitude: number;
-    isFavorite: boolean;
-    icon: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
-
-/**
- * Create a saved location
- */
-export function createSavedLocation({ createSavedLocationDto }: {
-    createSavedLocationDto: CreateSavedLocationDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 201;
-        data: SavedLocationResponseDto;
-    }>("/saved-locations", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: createSavedLocationDto
-    })));
-}
-
-/**
- * Get all saved locations
- */
-export function getSavedLocations(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: SavedLocationResponseDto[];
-    }>("/saved-locations", {
-        ...opts
-    }));
-}
-
-/**
- * Update a saved location
- */
-export function updateSavedLocation({ id, updateSavedLocationDto }: {
-    id: string;
-    updateSavedLocationDto: UpdateSavedLocationDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: SavedLocationResponseDto;
-    }>(`/saved-locations/${encodeURIComponent(id)}`, oazapfts.json({
-        ...opts,
-        method: "PUT",
-        body: updateSavedLocationDto
-    })));
-}
-
-/**
- * Delete a saved location
- */
-export function deleteSavedLocation({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/saved-locations/${encodeURIComponent(id)}`, {
-        ...opts,
-        method: "DELETE"
-    }));
-}
-

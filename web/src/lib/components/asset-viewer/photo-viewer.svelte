@@ -1,4 +1,18 @@
 <script lang="ts">
+  /**
+   * @component PhotoViewer
+   * Компонент для детального просмотра фотографии.
+   * Отвечает за рендеринг изображения (с адаптацией под экран),
+   * обработку жестов (свайп, зум), отображение рамок лиц (bounding boxes)
+   * и распознанного текста (OCR).
+   * 
+   * @property {AssetCursor} cursor - Объект с текущим медиафайлом (фото).
+   * @property {HTMLDivElement} [element] - Ссылка на DOM-элемент контейнера.
+   * @property {SharedLinkResponseDto} [sharedLink] - Информация о публичной ссылке (если есть).
+   * @property {Function} [onReady] - Событие, вызываемое при готовности изображения.
+   * @property {Function} [onError] - Событие при ошибке загрузки изображения.
+   * @property {Function} [onSwipe] - Обработчик свайп-жестов по экрану.
+   */
   import { shortcuts } from '$lib/actions/shortcut';
   import { zoomImageAction } from '$lib/actions/zoom-image';
   import AdaptiveImage from '$lib/components/AdaptiveImage.svelte';
@@ -145,7 +159,7 @@
     try {
       await castManager.loadMedia(fullUrl.href);
     } catch (error) {
-      handleError(error, 'Unable to cast');
+      handleError(error, $t('error_unable_to_cast'));
       return;
     }
   };

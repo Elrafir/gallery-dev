@@ -52,7 +52,7 @@
     mergePerson,
     mergeScopedPeople,
     searchPerson,
-    Type2 as ScopedPersonProfileType,
+    Type3 as ScopedPersonProfileType,
     updateRepresentativeFace,
     updatePerson,
     type PersonFaceResponseDto,

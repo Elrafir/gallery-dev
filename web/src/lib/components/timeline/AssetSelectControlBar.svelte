@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component AssetSelectControlBar
+   * Верхняя навигационная панель, которая появляется при выделении одной или нескольких фотографий.
+   * Отображает количество выбранных элементов и предоставляет кнопки для массовых действий
+   * (поделиться, добавить в альбом, удалить, скачать и т.д.).
+   */
   import ControlAppBar from '$lib/components/shared-components/control-app-bar.svelte';
   import { assetMultiSelectManager } from '$lib/managers/asset-multi-select-manager.svelte';
   import { mdiClose } from '@mdi/js';

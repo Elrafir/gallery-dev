@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component AlbumsPage
+   * Основная страница раздела "Альбомы".
+   * Отображает списки собственных и общих альбомов, панель поиска по альбомам
+   * и элементы управления для фильтрации/сортировки альбомов.
+   */
   import { scrollMemory } from '$lib/actions/scroll-memory';
   import AlbumsControls from './albums-controls.svelte';
   import Albums from '$lib/components/album-page/albums-list.svelte';

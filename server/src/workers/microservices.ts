@@ -1,3 +1,8 @@
+/**
+ * Точка входа для микросервисов (immich-microservices).
+ * Запускает NestJS приложение для фоновой обработки задач (очереди сообщений, обработка видео/фото,
+ * машинное обучение, метаданные и т.д.), а также поднимает WebSocket адаптер.
+ */
 import { NestFactory } from '@nestjs/core';
 import { isMainThread } from 'node:worker_threads';
 import { MicroservicesModule } from 'src/app.module';

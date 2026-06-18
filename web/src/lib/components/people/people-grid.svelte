@@ -1,4 +1,10 @@
 <script lang="ts" generics="T extends { id: string }">
+  /**
+   * @component PeopleGrid
+   * Обертка-сетка для отображения карточек людей (PersonTile) или элементов лиц.
+   * Реализует бесконечную прокрутку (Infinite Scroll) с помощью IntersectionObserver,
+   * подгружая новые элементы, когда "часовой" (sentinel) появляется в зоне видимости.
+   */
   import type { Snippet } from 'svelte';
   import { onDestroy } from 'svelte';
   import { t } from 'svelte-i18n';

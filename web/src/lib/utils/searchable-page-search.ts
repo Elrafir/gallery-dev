@@ -5,7 +5,9 @@ export type SearchablePageSortOrder = 'relevance' | 'asc' | 'desc';
 export const SEARCHABLE_PAGE_FILTER_PARAMS = [
   'people',
   'tags',
+  'state',
   'city',
+  'street',
   'country',
   'make',
   'model',
@@ -22,7 +24,9 @@ export type SearchablePageFilterState = Partial<
     FilterState,
     | 'personIds'
     | 'tagIds'
+    | 'state'
     | 'city'
+    | 'street'
     | 'country'
     | 'make'
     | 'model'
@@ -161,8 +165,14 @@ export function getSearchablePageFilterState(url: URL): SearchablePageFilterStat
   if (tags.length > 0) {
     result.tagIds = tags;
   }
+  if (url.searchParams.get('state')) {
+    result.state = url.searchParams.get('state') ?? undefined;
+  }
   if (url.searchParams.get('city')) {
     result.city = url.searchParams.get('city') ?? undefined;
+  }
+  if (url.searchParams.get('street')) {
+    result.street = url.searchParams.get('street') ?? undefined;
   }
   if (url.searchParams.get('country')) {
     result.country = url.searchParams.get('country') ?? undefined;
@@ -217,11 +227,14 @@ function appendSearchablePageFilterParams(params: URLSearchParams, filters: Filt
   if (filters.tagIds.length > 0) {
     params.set('tags', filters.tagIds.join(','));
   }
+  if (filters.state) {
+    params.set('state', filters.state);
+  }
   if (filters.city) {
     params.set('city', filters.city);
   }
-  if (filters.country) {
-    params.set('country', filters.country);
+  if (filters.street) {
+    params.set('street', filters.street);
   }
   if (filters.make) {
     params.set('make', filters.make);

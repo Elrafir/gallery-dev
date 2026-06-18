@@ -26,6 +26,12 @@ export type Events = {
   FaceEditModeChange: [boolean];
 };
 
+/**
+ * @class AssetViewerManager
+ * Менеджер состояния полноэкранного просмотратора медиафайлов (Asset Viewer).
+ * Управляет зуммированием изображения (ZoomImageWheelState), открытием панелей
+ * (информация, активность, редактор лиц), а также текущим просматриваемым объектом (asset).
+ */
 class AssetViewerManager extends BaseEventManager<Events> {
   #zoomState = $state(createDefaultZoomState());
   #animationFrameId: number | null = null;

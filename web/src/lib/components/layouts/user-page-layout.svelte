@@ -3,6 +3,12 @@
 </script>
 
 <script lang="ts">
+  /**
+   * @component UserPageLayout
+   * Базовый шаблон (Layout) для страниц авторизованного пользователя.
+   * Рендерит верхнюю навигационную панель, боковое меню (Sidebar) 
+   * и область основного контента с заголовком и кнопками действий (actions).
+   */
   import { useActions, type ActionArray } from '$lib/actions/use-actions';
   import NavigationBar from '$lib/components/shared-components/navigation-bar/navigation-bar.svelte';
   import UserSidebar from '$lib/components/shared-components/side-bar/user-sidebar.svelte';

@@ -1,3 +1,8 @@
+/**
+ * Объекты передачи данных (DTO) для работы с пользователями.
+ * Определяют форматы запросов на создание, обновление профиля,
+ * изменение лицензии, а также структуру ответов сервера, содержащих данные пользователя.
+ */
 import { createZodDto } from 'nestjs-zod';
 import { User, UserAdmin } from 'src/database';
 import { pinCodeRegex } from 'src/dtos/auth.dto';

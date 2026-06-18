@@ -1,4 +1,9 @@
 <script lang="ts">
+  /**
+   * @component SharingPage
+   * Страница "Общие" (Sharing).
+   * Отображает списки партнёров по шарингу (partners) и список общих альбомов (sharedAlbums).
+   */
   import empty2Url from '$lib/assets/empty-2.svg';
   import Albums from '$lib/components/album-page/albums-list.svelte';
   import UserPageLayout from '$lib/components/layouts/user-page-layout.svelte';

@@ -31,6 +31,9 @@ import { modalManager, toastManager, type ActionItem } from '@immich/ui';
 import { mdiLink, mdiPlus, mdiPlusBoxOutline, mdiShareVariantOutline, mdiUpload } from '@mdi/js';
 import { type MessageFormatter } from 'svelte-i18n';
 
+/**
+ * Возвращает базовые действия для раздела альбомов (создание альбома).
+ */
 export const getAlbumsActions = ($t: MessageFormatter) => {
   const Create: ActionItem = {
     title: $t('create_album'),

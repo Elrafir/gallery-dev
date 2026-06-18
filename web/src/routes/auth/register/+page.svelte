@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component RegisterPage
+   * Страница регистрации.
+   * Как правило, используется только один раз при первом запуске сервера
+   * для создания учетной записи главного администратора.
+   */
   import { goto } from '$app/navigation';
   import AuthPageLayout from '$lib/components/layouts/AuthPageLayout.svelte';
   import { serverConfigManager } from '$lib/managers/server-config-manager.svelte';

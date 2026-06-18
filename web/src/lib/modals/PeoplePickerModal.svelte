@@ -72,7 +72,7 @@
           <div class="grid grid-cols-3 gap-4 p-2">
             {#each filteredPeople as person (person.id)}
               {@const isSelected = selectedPeople.some((p) => p.id === person.id)}
-              <PersonTooltip name={person.name} description={person.description} class="w-full inline-block">
+              <PersonTooltip name={person.name} description={person.description ?? undefined} class="w-full inline-block">
                 {#snippet child()}
                   <button
                     type="button"

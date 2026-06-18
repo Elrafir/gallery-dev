@@ -46,26 +46,26 @@
 
     /** Group by year */
     [PlacesGroupBy.Country]: (places): PlacesGroup[] => {
-      const unknownCountry = $t('unknown_country');
+      const unknownState = $t('unknown_state');
 
-      const groupedByCountry = groupBy(places, (place) => {
-        return place.exifInfo?.country ?? unknownCountry;
+      const groupedByState = groupBy(places, (place) => {
+        return place.exifInfo?.state ?? unknownState;
       });
 
-      const sortedByCountryName = Object.entries(groupedByCountry).sort(([a], [b]) => {
+      const sortedByStateName = Object.entries(groupedByState).sort(([a], [b]) => {
         // We make sure empty albums stay at the end of the list
-        if (a === unknownCountry) {
+        if (a === unknownState) {
           return 1;
-        } else if (b === unknownCountry) {
+        } else if (b === unknownState) {
           return -1;
         } else {
           return a.localeCompare(b);
         }
       });
 
-      return sortedByCountryName.map(([country, places]) => ({
-        id: country,
-        name: country,
+      return sortedByStateName.map(([state, places]) => ({
+        id: state,
+        name: state,
         places,
       }));
     },

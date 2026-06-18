@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component FilterPanel
+   * Боковая панель для настройки фильтров (по времени, людям, местоположению, камере, тегам и т.д.).
+   * Управляет состоянием фильтров, загружает доступные опции (suggestions) с дебаунсом
+   * и рендерит отдельные секции (FilterSection) для каждой категории фильтрации.
+   */
   import { browser } from '$app/environment';
   import { Icon } from '@immich/ui';
   import {
@@ -20,7 +26,7 @@
   import AlbumsFilter from './albums-filter.svelte';
   import CameraFilter from './camera-filter.svelte';
   import FavoritesFilter from './favorites-filter.svelte';
-  import type { FilterSection as FilterSectionType, FilterState, PersonOption, TagOption } from './filter-panel';
+  import type { FilterSection as FilterSectionType, FilterState, PersonOption, TagOption, FilterPanelConfig } from './filter-panel';
   import { buildFilterContext, createFilterState } from './filter-panel';
   import FilterSection from './filter-section.svelte';
   import LocationFilter from './location-filter.svelte';
@@ -33,6 +39,7 @@
   import type { ViewportTopMonth } from '$lib/managers/timeline-manager/types';
 
   interface Props {
+    config: FilterPanelConfig;
     timeBuckets: Array<{ timeBucket: string; count: number }>;
     filters?: FilterState;
     personNames?: Map<string, string>;
@@ -81,13 +88,14 @@
   let people = $state<PersonOption[]>([]);
   let hasUnnamedPeople = $state(false);
   let countries = $state<string[]>([]);
+  let states = $state<string[]>([]);
   let cameraMakes = $state<string[]>([]);
   let tags = $state<TagOption[]>([]);
   let availableRatings = $state<number[] | undefined>();
   let availableMediaTypes = $state<string[] | undefined>();
 
   let filterContext = $derived(buildFilterContext(filters));
-  let locationFilterContext = $derived(buildFilterContext(filters, ['country', 'city']));
+  let locationFilterContext = $derived(buildFilterContext(filters, ['state', 'city', 'street', 'country']));
   let cameraFilterContext = $derived(buildFilterContext(filters, ['make', 'model']));
 
   // Unified suggestions re-fetch: replaces mount effects + temporal re-fetch when suggestionsProvider is set
@@ -102,7 +110,9 @@
     // Track all filter fields — reading them registers as dependencies
     const current: FilterState = {
       personIds: filters.personIds,
+      state: filters.state,
       city: filters.city,
+      street: filters.street,
       country: filters.country,
       make: filters.make,
       model: filters.model,
@@ -151,6 +161,7 @@
           }
           people = result.people;
           countries = result.countries;
+          states = result.states ?? [];
           cameraMakes = result.cameraMakes;
           tags = result.tags;
           // Note: availableRatings and availableMediaTypes are intentionally NOT set from
@@ -552,8 +563,8 @@
     updateFilters({ ...filters, personIds: ids });
   }
 
-  function handleLocationChange(country?: string, city?: string) {
-    updateFilters({ ...filters, country, city });
+  function handleLocationChange(state?: string, city?: string, street?: string) {
+    updateFilters({ ...filters, state, city, street, country: undefined });
   }
 
   function handleCameraChange(make?: string, model?: string) {
@@ -602,7 +613,7 @@
         return filters.personIds.length > 0;
       }
       case 'location': {
-        return !!filters.city || !!filters.country;
+        return !!filters.state || !!filters.city || !!filters.street;
       }
       case 'camera': {
         return !!filters.make;
@@ -757,13 +768,14 @@
               />
             {:else if section === 'location'}
               <LocationFilter
-                {countries}
+                {states}
+                selectedState={filters.state}
                 selectedCity={filters.city}
-                selectedCountry={filters.country}
+                selectedStreet={filters.street}
                 context={locationFilterContext}
-                onCityFetch={async (country, ctx) => {
+                onCityFetch={async (state, ctx) => {
                   if (providers.cities) {
-                    return providers.cities(country, ctx);
+                    return providers.cities(state, ctx);
                   }
                   return [];
                 }}

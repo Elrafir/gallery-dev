@@ -3,6 +3,13 @@ import { defaults } from './fetch-client.js';
 export * from './fetch-client.js';
 export * from './fetch-errors.js';
 
+export {
+  getAll as getSavedLocations,
+  create as createSavedLocation,
+  update as updateSavedLocation,
+  deleteSavedLocationsById as deleteSavedLocation
+} from './fetch-client.js';
+
 export interface InitOptions {
   baseUrl: string;
   apiKey: string;

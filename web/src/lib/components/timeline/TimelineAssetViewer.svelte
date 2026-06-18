@@ -1,4 +1,19 @@
 <script lang="ts">
+  /**
+   * @component TimelineAssetViewer
+   * Связующий компонент (обертка), интегрирующий `AssetViewer` с таймлайном (`TimelineManager`).
+   * Обрабатывает логику загрузки соседних элементов таймлайна (предыдущего и следующего),
+   * а также реакции на удаление, архивацию, добавление в стек и обновление списка.
+   * 
+   * @property {TimelineManager} timelineManager - Менеджер состояния таймлайна.
+   * @property {boolean} invisible - Флаг скрытия просмотра.
+   * @property {boolean} [withStacked=false] - Показывать ли фото в стеке.
+   * @property {boolean} [isShared=false] - Флаг публичной ссылки/альбома.
+   * @property {AlbumResponseDto} [album] - Текущий альбом.
+   * @property {PersonResponseDto} [person] - Текущий человек.
+   * @property {AssetAction} [removeAction] - Действие, приводящее к удалению из просмотра.
+   * @property {string} [spaceId] - Идентификатор пространства.
+   */
   import type { Action } from '$lib/components/asset-viewer/actions/action';
   import type { AssetCursor } from '$lib/components/asset-viewer/asset-viewer.svelte';
   import { AssetAction } from '$lib/constants';

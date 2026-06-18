@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component AdminPageLayout
+   * Базовый шаблон (Layout) для страниц панели администратора.
+   * Рендерит специфичное для админки боковое меню (управление пользователями,
+   * очереди, библиотеки, настройки сервера) и основную область с хлебными крошками (breadcrumbs).
+   */
   import BreadcrumbActionPage from '$lib/components/BreadcrumbActionPage.svelte';
   import NavigationBar from '$lib/components/shared-components/navigation-bar/navigation-bar.svelte';
   import BottomInfo from '$lib/components/shared-components/side-bar/bottom-info.svelte';

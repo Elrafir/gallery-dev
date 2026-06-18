@@ -50,6 +50,14 @@ type ViewportTopMonthIntersection = {
   // Where month bottom is in viewport (0 = viewport top, 1 = viewport bottom)
   monthBottomViewportRatio: number;
 };
+/**
+ * @class TimelineManager
+ * Глобальный менеджер главной ленты медиафайлов (Timeline).
+ * Наследуется от VirtualScrollManager для обеспечения бесконечной прокрутки
+ * и виртуализации элементов (отрисовка только видимых фото/видео).
+ * Управляет загрузкой "корзин" времени (time buckets), обработкой сокетов
+ * (WebsocketSupport) для обновлений в реальном времени, а также навигацией по датам.
+ */
 export class TimelineManager extends VirtualScrollManager {
   override bottomSectionHeight = $state(60);
 

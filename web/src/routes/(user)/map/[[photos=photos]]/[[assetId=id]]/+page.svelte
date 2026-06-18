@@ -1,4 +1,16 @@
 <script lang="ts">
+  /**
+   * @component MapPage
+   * Основной маршрут-контейнер для карты фотографий.
+   * Отвечает за логику получения данных маркеров (кластеров), работу с поиском
+   * по сохранённым локациям и API поиска мест (searchPlaces).
+   * 
+   * @property {PageData} data - Данные страницы, полученные из load-функции
+   * 
+   * @remarks
+   * Включает панель фильтров (FilterPanel), слой самой карты (Map) и
+   * панель таймлайна (MapTimelinePanel) для просмотра содержимого кластера.
+   */
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import ActiveFiltersBar from '$lib/components/filter-panel/active-filters-bar.svelte';
@@ -92,14 +104,16 @@
     }, 100);
   };
 
-  onMount(async () => {
+  onMount(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    try {
-      savedLocations = await getSavedLocations();
-    } catch {
-      // ignore
-    }
+    getSavedLocations()
+      .then((data) => {
+        savedLocations = data;
+      })
+      .catch(() => {
+        // ignore
+      });
     return () => window.removeEventListener('resize', checkMobile);
   });
 
@@ -452,7 +466,7 @@
                   type="button"
                   class="w-[29px] h-[29px] flex items-center justify-center cursor-pointer focus:outline-none"
                   onclick={() => (isSearchExpanded = true)}
-                  title="Поиск мест"
+                  title={$t('search_places')}
                 >
                   <Icon icon={mdiMagnify} size="20" class="text-black" />
                 </button>
@@ -522,7 +536,7 @@
               <div
                 class="pointer-events-auto rounded-lg bg-white/90 px-4 py-3 text-sm text-gray-600 shadow dark:bg-gray-800/90 dark:text-gray-300"
               >
-                No matching photos
+                {$t('no_results')}
               </div>
             </div>
           {/if}

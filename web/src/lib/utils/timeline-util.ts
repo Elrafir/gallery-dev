@@ -1,3 +1,9 @@
+/**
+ * Утилиты для работы с лентой медиафайлов (Timeline).
+ * Содержит функции для преобразования формата дат, парсинга часовых поясов,
+ * а также конвертации объектов, получаемых от API (AssetResponseDto), в 
+ * внутренние легковесные объекты (TimelineAsset) для бесконечной прокрутки.
+ */
 import type { AssetDescriptor, TimelineAsset, ViewportTopMonth } from '$lib/managers/timeline-manager/types';
 import { locale } from '$lib/stores/preferences.store';
 import { getAssetRatio } from '$lib/utils/asset-utils';

@@ -1,3 +1,8 @@
+/**
+ * Объекты передачи данных (DTO) для работы с альбомами.
+ * Определяют форматы запросов на создание, обновление альбомов, добавление пользователей
+ * и медиафайлов, а также структуру ответов сервера.
+ */
 import { ShallowDehydrateObject } from 'kysely';
 import _ from 'lodash';
 import { createZodDto } from 'nestjs-zod';

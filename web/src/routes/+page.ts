@@ -1,3 +1,11 @@
+/**
+ * Главный загрузчик базовой страницы SvelteKit.
+ * Отрабатывает при открытии корневого URL. Управляет редиректами:
+ * - Если включен режим тех. обслуживания -> на страницу /maintenance
+ * - Если пользователь авторизован -> на страницу /photos
+ * - Если сервер инициализирован (админ создан) -> на страницу /auth/login
+ * Иначе показывает приветственную страницу (Onboarding).
+ */
 import { authManager } from '$lib/managers/auth-manager.svelte';
 import { serverConfigManager } from '$lib/managers/server-config-manager.svelte';
 import { Route } from '$lib/route';

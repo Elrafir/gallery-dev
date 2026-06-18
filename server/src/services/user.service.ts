@@ -24,6 +24,12 @@ import { mimeTypes } from 'src/utils/mime-types';
 import { getPreferences, getPreferencesPartial, mergePreferences } from 'src/utils/preferences';
 import { generateProfileImage } from 'src/utils/profile-image';
 
+/**
+ * Сервис для управления пользователями.
+ * Инкапсулирует бизнес-логику для получения, обновления и удаления пользователей,
+ * а также работу с пользовательскими настройками (Preferences), лицензиями (License) и процессом онбординга.
+ * Содержит фоновые задачи (Jobs) для проверки и полного физического удаления пользователей.
+ */
 @Injectable()
 export class UserService extends BaseService {
   async search(auth: AuthDto): Promise<UserResponseDto[]> {

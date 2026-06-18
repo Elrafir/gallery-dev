@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component MapModal
+   * Модальное окно для отображения карты с геолокациями медиафайлов.
+   * Загружает тяжелый компонент карты асинхронно, показывая индикатор загрузки,
+   * если инициализация занимает много времени.
+   */
   import { timeToLoadTheMap } from '$lib/constants';
   import { delay } from '$lib/utils/asset-utils';
   import type { MapMarkerResponseDto } from '@immich/sdk';

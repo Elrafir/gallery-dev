@@ -1,3 +1,8 @@
+/**
+ * Главный входной файл сервера Immich.
+ * Управляет жизненным циклом воркеров (API, Microservices, Maintenance).
+ * Также используется для запуска командной строки администратора (immich-admin).
+ */
 import { Kysely, sql } from 'kysely';
 import { CommandFactory } from 'nest-commander';
 import { ChildProcess, fork } from 'node:child_process';

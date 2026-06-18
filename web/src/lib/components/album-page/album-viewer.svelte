@@ -1,4 +1,11 @@
 <script lang="ts">
+  /**
+   * @component AlbumViewer
+   * Компонент просмотра альбома по публичной ссылке (Shared Link).
+   * Отрисовывает заголовок, описание и сетку фотографий альбома,
+   * а также предоставляет верхнюю панель для скачивания, загрузки новых фото (если разрешено),
+   * просмотра слайд-шоу и карты.
+   */
   import { shortcut } from '$lib/actions/shortcut';
   import AlbumMap from '$lib/components/album-page/album-map.svelte';
   import DownloadAction from '$lib/components/timeline/actions/DownloadAction.svelte';

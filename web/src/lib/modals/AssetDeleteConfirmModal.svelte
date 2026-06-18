@@ -1,4 +1,9 @@
 <script lang="ts">
+  /**
+   * @component AssetDeleteConfirmModal
+   * Всплывающее окно (модалка) для подтверждения необратимого удаления медиафайлов.
+   * Содержит флажок "Больше не показывать", который сохраняется в настройки (preferences).
+   */
   import FormatMessage from '$lib/elements/FormatMessage.svelte';
   import { showDeleteModal } from '$lib/stores/preferences.store';
   import { Checkbox, ConfirmModal, Label } from '@immich/ui';

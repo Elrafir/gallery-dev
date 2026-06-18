@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component SystemSettingsPage
+   * Страница системных (административных) настроек.
+   * Отображает массив вложенных панелей для конфигурации бекапов, транскодирования,
+   * машинного обучения, внешних библиотек и других серверных опций.
+   */
   import ClassificationSettings from './ClassificationSettings.svelte';
   import AuthSettings from './AuthSettings.svelte';
   import BackupSettings from './BackupSettings.svelte';

@@ -24,6 +24,11 @@ import { respondWithCookie, respondWithoutCookie } from 'src/utils/response';
 
 @ApiTags(ApiTag.Authentication)
 @Controller('auth')
+/**
+ * Контроллер аутентификации.
+ * Обрабатывает все эндпоинты, связанные с входом в систему, регистрацией (в т.ч. первого администратора),
+ * валидацией токенов, изменением пароля/PIN-кода и выходом из системы.
+ */
 export class AuthController {
   constructor(private service: AuthService) {}
 

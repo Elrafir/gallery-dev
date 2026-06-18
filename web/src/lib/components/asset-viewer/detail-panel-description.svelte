@@ -1,4 +1,12 @@
 <script lang="ts">
+  /**
+   * @component DetailPanelDescription
+   * Компонент боковой панели для отображения и редактирования описания (description) медиафайла.
+   * Позволяет владельцу добавлять или изменять описание через текстовое поле.
+   * 
+   * @property {AssetResponseDto} asset - Текущий медиафайл.
+   * @property {boolean} isOwner - Является ли текущий пользователь владельцем файла.
+   */
   import { shortcut } from '$lib/actions/shortcut';
   import { handleError } from '$lib/utils/handle-error';
   import { updateAsset, type AssetResponseDto } from '@immich/sdk';

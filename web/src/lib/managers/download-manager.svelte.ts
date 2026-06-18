@@ -5,6 +5,12 @@ export interface DownloadProgress {
   abort: AbortController | null;
 }
 
+/**
+ * @class DownloadManager
+ * Менеджер управления загрузками (скачиванием файлов из приложения).
+ * Отслеживает прогресс скачивания по ключам (например, ID архива или файла),
+ * позволяет отменять загрузки (AbortController) и вычисляет общий процент.
+ */
 class DownloadManager {
   assets = $state<Record<string, DownloadProgress>>({});
 

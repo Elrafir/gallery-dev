@@ -34,7 +34,7 @@
 
   let isFromExternalLibrary = $derived(!!asset.libraryId);
 
-  let locationParts = $derived([asset.exifInfo?.city, asset.exifInfo?.state, asset.exifInfo?.country].filter(Boolean));
+  let locationParts = $derived([asset.exifInfo?.city, asset.exifInfo?.state].filter(Boolean));
 
   let timeZone = $derived(asset.exifInfo?.timeZone);
   let dateTime = $derived(
@@ -77,7 +77,7 @@
       );
     }),
     location: isDifferent(
-      (a) => [a.exifInfo?.city, a.exifInfo?.state, a.exifInfo?.country].filter(Boolean).join(', ') || 'unknown',
+      (a) => [a.exifInfo?.city, a.exifInfo?.state].filter(Boolean).join(', ') || 'unknown',
     ),
   });
 

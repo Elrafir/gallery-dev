@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component ChangePasswordPage
+   * Страница принудительной смены пароля.
+   * Отображается, если администратор сбросил пароль пользователя или
+   * задал его при создании аккаунта (флаг shouldChangePassword).
+   */
   import { goto } from '$app/navigation';
   import AuthPageLayout from '$lib/components/layouts/AuthPageLayout.svelte';
   import { authManager } from '$lib/managers/auth-manager.svelte';

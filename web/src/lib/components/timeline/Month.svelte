@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component Month
+   * Вспомогательный компонент ленты, отвечающий за рендер группы фотографий в рамках одного месяца.
+   * Отрисовывает заголовки дней (TimelineDay), позволяет выделять все фото за день
+   * и делегирует рендер самой сетки фотографий компоненту AssetLayout.
+   */
   import AssetLayout from '$lib/components/timeline/AssetLayout.svelte';
   import type { AssetMultiSelectManager } from '$lib/managers/asset-multi-select-manager.svelte';
   import { TimelineDay } from '$lib/managers/timeline-manager/timeline-day.svelte';

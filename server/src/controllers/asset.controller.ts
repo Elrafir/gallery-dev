@@ -27,6 +27,11 @@ import { UUIDParamDto } from 'src/validation';
 
 @ApiTags(ApiTag.Assets)
 @Controller(RouteKey.Asset)
+/**
+ * Контроллер для работы с медиафайлами (Assets).
+ * Обеспечивает эндпоинты для массового удаления, обновления, получения статистики,
+ * извлечения метаданных (EXIF) и OCR (распознанного текста), а также запуска фоновых задач по медиа.
+ */
 export class AssetController {
   constructor(private service: AssetService) {}
 

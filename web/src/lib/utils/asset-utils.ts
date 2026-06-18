@@ -1,3 +1,8 @@
+/**
+ * Набор утилит для работы с медиафайлами (Assets).
+ * Содержит функции для тегирования, архивирования, скачивания файлов (одиночных и архивами ZIP),
+ * а также вспомогательные функции получения размеров файлов, разрешений и MIME-типов.
+ */
 import type { AssetMultiSelectManager } from '$lib/managers/asset-multi-select-manager.svelte';
 import { authManager } from '$lib/managers/auth-manager.svelte';
 import { downloadManager } from '$lib/managers/download-manager.svelte';

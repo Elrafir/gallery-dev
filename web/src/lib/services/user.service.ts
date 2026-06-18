@@ -12,6 +12,9 @@ import { toastManager, type ActionItem } from '@immich/ui';
 import { mdiLockOutline } from '@mdi/js';
 import type { MessageFormatter } from 'svelte-i18n';
 
+/**
+ * Возвращает базовые действия пользователя (например, блокировка сессии).
+ */
 export const getUserActions = ($t: MessageFormatter) => {
   const LockSession: ActionItem = {
     title: $t('lock'),

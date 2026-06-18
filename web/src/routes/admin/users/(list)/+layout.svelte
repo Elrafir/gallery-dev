@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component AdminUserListLayout
+   * Панель администратора: Управление пользователями.
+   * Отображает таблицу всех пользователей в системе, их квоты и статус,
+   * а также предоставляет контекстное меню для редактирования, удаления и изменения пароля.
+   */
   import AdminPageLayout from '$lib/components/layouts/AdminPageLayout.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';
   import { Route } from '$lib/route';

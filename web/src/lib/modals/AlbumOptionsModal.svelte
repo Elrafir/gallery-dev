@@ -1,4 +1,11 @@
 <script lang="ts">
+  /**
+   * @component AlbumOptionsModal
+   * Модальное окно "Настройки альбома".
+   * Позволяет владельцу/редактору изменять параметры сортировки,
+   * включать/отключать комментарии, управлять доступом пользователей (роли)
+   * и управлять списком созданных ссылок для шаринга.
+   */
   import AlbumSharedLink from '$lib/components/album-page/album-shared-link.svelte';
   import HeaderActionButton from '$lib/components/HeaderActionButton.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';

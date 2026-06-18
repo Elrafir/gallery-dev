@@ -18,17 +18,17 @@ export const WelcomeEmail = ({ baseUrl, displayName, username, password, customT
   ) : (
     <>
       <Text className="m-0">
-        Hey <strong>{displayName}</strong>!
+        Привет, <strong>{displayName}</strong>!
       </Text>
 
-      <Text>A new account has been created for you.</Text>
+      <Text>Для вас была создана новая учетная запись.</Text>
 
       <Text>
-        <strong>Username</strong>: {username}
+        <strong>Имя пользователя (Логин)</strong>: {username}
         {password && (
           <>
             <br />
-            <strong>Password</strong>: {password}
+            <strong>Пароль</strong>: {password}
           </>
         )}
       </Text>
@@ -37,7 +37,7 @@ export const WelcomeEmail = ({ baseUrl, displayName, username, password, customT
 
   return (
     <ImmichLayout
-      preview={customTemplate ? emailContent.toString() : 'You have been invited to a new Immich instance.'}
+      preview={customTemplate ? emailContent.toString() : 'Вас пригласили на новый сервер Immich.'}
     >
       {customTemplate && (
         <Text className="m-0">
@@ -48,11 +48,11 @@ export const WelcomeEmail = ({ baseUrl, displayName, username, password, customT
       {!customTemplate && emailContent}
 
       <Section className="flex justify-center my-6">
-        <ImmichButton href={`${baseUrl}/auth/login`}>Login</ImmichButton>
+        <ImmichButton href={`${baseUrl}/auth/login`}>Войти в систему</ImmichButton>
       </Section>
 
       <Text className="text-xs">
-        If you cannot click the button use the link below to proceed with first login.
+        Если кнопка не работает, используйте ссылку ниже для первого входа.
         <br />
         <Link href={baseUrl}>{baseUrl}</Link>
       </Text>

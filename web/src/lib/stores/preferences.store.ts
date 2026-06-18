@@ -1,3 +1,8 @@
+/**
+ * Хранилище пользовательских настроек интерфейса (Preferences Store).
+ * Все эти настройки сохраняются в LocalStorage браузера (с помощью svelte-persisted-store).
+ * Включает настройки: язык, опции карты, сортировка альбомов, громкость видео, автовоспроизведение и т.д.
+ */
 import { browser } from '$app/environment';
 import { defaultLang } from '$lib/constants';
 import { getPreferredLocale } from '$lib/utils/i18n';

@@ -70,7 +70,7 @@
 >
   <div class="flex items-center justify-center gap-2 py-4 md:h-36">
     {#if !choosePersonToMerge}
-      <PersonTooltip name={personToMerge.name} description={personToMerge.description}>
+      <PersonTooltip name={personToMerge.name} description={personToMerge.description ?? undefined}>
         {#snippet child()}
           <div class="flex h-20 w-20 items-center px-1 md:h-24 md:w-24 md:px-2">
             <ImageThumbnail
@@ -103,7 +103,7 @@
         </div>
       </div>
 
-      <PersonTooltip name={personToBeMergedInto.name} description={personToBeMergedInto.description}>
+      <PersonTooltip name={personToBeMergedInto.name} description={personToBeMergedInto.description ?? undefined}>
         {#snippet child()}
           <button
             type="button"
@@ -135,7 +135,7 @@
           <div class="flex flex-wrap justify-center md:grid md:grid-cols-{potentialMergePeople.length}">
             {#each potentialMergePeople as person (person.id)}
               <div class="h-24 w-24 md:h-28 md:w-28">
-                <PersonTooltip name={person.name} description={person.description}>
+                <PersonTooltip name={person.name} description={person.description ?? undefined}>
                   {#snippet child()}
                     <button type="button" class="p-2 w-full" onclick={() => changePersonToMerge(person)}>
                       <ImageThumbnail

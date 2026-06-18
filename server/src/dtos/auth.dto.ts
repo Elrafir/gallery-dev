@@ -1,3 +1,8 @@
+/**
+ * Объекты передачи данных (DTO) для модуля аутентификации.
+ * Описывают структуры данных для входа, регистрации, изменения пароля/PIN-кода,
+ * а также для настройки и работы с OAuth.
+ */
 import { createZodDto } from 'nestjs-zod';
 import { AuthApiKey, AuthSession, AuthSharedLink, AuthUser, UserAdmin } from 'src/database';
 import { ImmichCookie, UserMetadataKey } from 'src/enum';

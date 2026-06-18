@@ -15,6 +15,11 @@ import { UpdatedAtTrigger, UpdateIdColumn } from 'src/decorators';
 import { UserAvatarColor, UserStatus } from 'src/enum';
 import { user_delete_audit } from 'src/schema/functions';
 
+/**
+ * Схема таблицы пользователей (User) базы данных.
+ * Определяет структуру столбцов (email, пароль, квоты, статус и т.д.),
+ * индексы и триггеры, используемые Kysely / TypeORM для генерации схемы.
+ */
 @Table('user')
 @UpdatedAtTrigger('user_updatedAt')
 @AfterDeleteTrigger({

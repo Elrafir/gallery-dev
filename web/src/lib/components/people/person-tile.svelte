@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component PersonTile
+   * Компонент для отображения миниатюры лица (человека или питомца).
+   * Включает в себя отложенную загрузку изображения (DeferredPersonThumbnail),
+   * иконки "Избранное" и "Питомец", а также контекстное меню действий при наведении.
+   */
   import { focusOutside } from '$lib/actions/focus-outside';
   import DeferredPersonThumbnail from '$lib/components/people/deferred-person-thumbnail.svelte';
   import ImageThumbnail from '$lib/components/assets/thumbnail/image-thumbnail.svelte';

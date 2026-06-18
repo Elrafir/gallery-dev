@@ -20,6 +20,12 @@ import { StackTable } from 'src/schema/tables/stack.table';
 import { UserTable } from 'src/schema/tables/user.table';
 import { ASSET_CHECKSUM_CONSTRAINT } from 'src/utils/database';
 
+/**
+ * Схема таблицы медиафайлов (Asset) базы данных.
+ * Определяет структуру столбцов (оригинальный путь, дата создания, хэш, статус и т.д.),
+ * внешние ключи (на пользователя, библиотеку, стек), а также индексы и триггеры
+ * для оптимизации поиска и аудита удалений.
+ */
 @Table('asset')
 @UpdatedAtTrigger('asset_updatedAt')
 @AfterDeleteTrigger({

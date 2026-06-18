@@ -25,18 +25,18 @@ export const AlbumUpdateEmail = ({
   ) : (
     <>
       <Text className="m-0">
-        Hey <strong>{recipientName}</strong>!
+        Привет, <strong>{recipientName}</strong>!
       </Text>
 
       <Text>
-        New media has been added to <strong>{albumName}</strong>.
-        <br /> Check it out!
+        В альбом <strong>{albumName}</strong> были добавлены новые медиафайлы.
+        <br /> Посмотрите скорее!
       </Text>
     </>
   );
 
   return (
-    <ImmichLayout preview={customTemplate ? emailContent.toString() : 'New media has been added to a shared album.'}>
+    <ImmichLayout preview={customTemplate ? emailContent.toString() : 'В общем альбоме появились новые фото/видео.'}>
       {customTemplate && (
         <Text className="m-0">
           <div dangerouslySetInnerHTML={{ __html: emailContent }}></div>
@@ -58,11 +58,11 @@ export const AlbumUpdateEmail = ({
       )}
 
       <Section className="flex justify-center my-6">
-        <ImmichButton href={`${baseUrl}/albums/${albumId}`}>View Album</ImmichButton>
+        <ImmichButton href={`${baseUrl}/albums/${albumId}`}>Посмотреть альбом</ImmichButton>
       </Section>
 
       <Text className="text-xs">
-        If you cannot click the button use the link below to view the album.
+        Если кнопка не работает, используйте ссылку ниже для просмотра альбома.
         <br />
         <Link href={`${baseUrl}/albums/${albumId}`}>{`${baseUrl}/albums/${albumId}`}</Link>
       </Text>

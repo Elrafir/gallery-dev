@@ -1,3 +1,8 @@
+/**
+ * Объекты передачи данных (DTO) для работы с медиафайлами (Assets).
+ * Включают схемы валидации для загрузки, обновления (в том числе массового), удаления медиафайлов,
+ * а также для запуска фоновых задач и работы с метаданными.
+ */
 import { createZodDto } from 'nestjs-zod';
 import { HistoryBuilder } from 'src/decorators';
 import { BulkIdsSchema } from 'src/dtos/asset-ids.response.dto';

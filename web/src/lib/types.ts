@@ -1,3 +1,8 @@
+/**
+ * Глобальные типы данных (Models) для фронтенда.
+ * Описывают структуры данных, используемые в приложении: 
+ * состояние загрузки (UploadAsset), фильтры поиска (SearchFilter), контексты и прочее.
+ */
 import { MediaType } from '$lib/constants';
 import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
 import type { QueueResponseDto, ServerVersionResponseDto } from '@immich/sdk';

@@ -1,4 +1,13 @@
 <script lang="ts">
+  /**
+   * @component GeolocationPointPickerModal
+   * Модальное окно для выбора или изменения координат (геолокации) объекта.
+   * Позволяет выбрать точку на карте кликом, ввести координаты вручную или найти место через поиск.
+   * 
+   * @property {AssetResponseDto} [asset] - Медиафайл, для которого меняется геопозиция.
+   * @property {LatLng} [point] - Начальные координаты (широта и долгота).
+   * @property {Function} onClose - Функция, вызываемая при закрытии окна (передает новые координаты или undefined).
+   */
   import { isDefined } from '$lib';
   import { clickOutside } from '$lib/actions/click-outside';
   import { listNavigation } from '$lib/actions/list-navigation';
@@ -10,9 +19,9 @@
   import type { LatLng } from '$lib/types';
   import { delay } from '$lib/utils/asset-utils';
   import { handleError } from '$lib/utils/handle-error';
-  import { searchPlaces, getSavedLocations, type AssetResponseDto, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
-  import { ConfirmModal, LoadingSpinner } from '@immich/ui';
-  import { mdiMapMarkerMultipleOutline } from '@mdi/js';
+  import { searchPlaces, getSavedLocations, reverseGeocode, type AssetResponseDto, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
+  import { ConfirmModal, Icon, LoadingSpinner, Tooltip } from '@immich/ui';
+  import { mdiMapMarkerMultipleOutline, mdiMapMarker, mdiCrosshairsGps } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
 
@@ -50,6 +59,29 @@
   let zoom = $state(point ? 12.5 : 1);
   let center = $state(point ?? geolocationManager.lastPoint);
   let savedLocations = $state<SavedLocationResponseDto[]>([]);
+  let locationAddress = $state<string>('');
+
+  $effect(() => {
+    if (!point) {
+      locationAddress = '';
+      return;
+    }
+
+    const currentPoint = point;
+    void (async () => {
+      try {
+        const res = await reverseGeocode({ lat: currentPoint.lat, lon: currentPoint.lng });
+        if (res && res.length > 0) {
+          const parts = [res[0].city, res[0].state].filter(Boolean);
+          locationAddress = parts.join(', ');
+        } else {
+          locationAddress = `${currentPoint.lat.toFixed(6)}, ${currentPoint.lng.toFixed(6)}`;
+        }
+      } catch {
+        locationAddress = `${currentPoint.lat.toFixed(6)}, ${currentPoint.lng.toFixed(6)}`;
+      }
+    })();
+  });
 
   onMount(async () => {
     try {
@@ -75,7 +107,8 @@
   };
 
   const getLocation = (name: string, admin1Name?: string, admin2Name?: string): string => {
-    return [name, admin1Name, admin2Name].filter(Boolean).join(', ');
+    const parts = [name, admin1Name, admin2Name !== name ? admin2Name : undefined].filter(Boolean);
+    return parts.join(', ');
   };
 
   const handleSearchPlaces = () => {
@@ -219,8 +252,8 @@
         </div>
       </div>
 
-      <span>{$t('pick_a_location')}</span>
-      <div class="h-125 min-h-75 w-full z-0">
+      <span>{locationAddress || $t('pick_a_location')}</span>
+      <div class="relative h-125 min-h-75 w-full z-0">
         {#await import('$lib/components/shared-components/map/map.svelte')}
           {#await delay(timeToLoadTheMap) then}
             <!-- show the loading spinner only if loading the map takes too much time -->
@@ -243,14 +276,40 @@
                   },
                 ]
               : []}
-            {zoom}
-            {center}
+            bind:zoom={zoom}
+            bind:center={center}
             simplified={true}
             clickable={true}
             onClickPoint={(selected) => (point = selected)}
             showSettings={false}
             rounded
           />
+
+          {#if point}
+            <div class="absolute bottom-4 right-4 z-10">
+              <Tooltip text={$t('map_recenter_to_marked')}>
+                {#snippet child({ props })}
+                  <button
+                    {...props}
+                    type="button"
+                    class="w-[29px] h-[29px] flex items-center justify-center bg-white dark:bg-zinc-800 text-immich-primary dark:text-immich-dark-primary rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none transition-all cursor-pointer"
+                    onclick={() => {
+                      if (point) {
+                        center = { lat: point.lat, lng: point.lng };
+                        zoom = 15;
+                        mapElement?.addClipMapMarker(point.lng, point.lat);
+                      }
+                    }}
+                  >
+                    <div class="relative w-6 h-6 flex items-center justify-center">
+                      <Icon icon={mdiCrosshairsGps} size="20" class="absolute text-gray-500 dark:text-gray-400" />
+                      <Icon icon={mdiMapMarker} size="10" class="absolute text-immich-primary dark:text-immich-dark-primary -translate-y-[1px]" />
+                    </div>
+                  </button>
+                {/snippet}
+              </Tooltip>
+            </div>
+          {/if}
         {/await}
       </div>
 

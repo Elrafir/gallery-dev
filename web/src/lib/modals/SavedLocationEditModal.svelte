@@ -1,4 +1,16 @@
 <script lang="ts">
+  /**
+   * @component SavedLocationEditModal
+   * Модальное окно для создания и редактирования сохранённых мест (избранных локаций).
+   * Позволяет задать имя, подпись, описание, выбрать иконку и указать координаты.
+   * 
+   * @property {Function} onClose - Функция закрытия модального окна.
+   * @property {Function} onSubmit - Функция сохранения данных (принимает name, label, description, latitude, longitude, icon).
+   * @property {SavedLocationResponseDto} [initialData] - Исходные данные при редактировании (опционально).
+   * @property {number} [latitude] - Предустановленная широта.
+   * @property {number} [longitude] - Предустановленная долгота.
+   * @property {string} [defaultName] - Имя по умолчанию (если нет initialData).
+   */
   import type { SavedLocationResponseDto } from '@immich/sdk';
   import { reverseGeocode } from '@immich/sdk';
   import { Field, FormModal, Input, Text, modalManager, Icon } from '@immich/ui';
@@ -58,15 +70,15 @@
 
   const getIconTitle = (key: string) => {
     switch (key) {
-      case 'star': return 'Звезда';
-      case 'home': return 'Дом';
-      case 'work': return 'Работа';
-      case 'school': return 'Учебное заведение';
-      case 'food': return 'Место где поесть';
-      case 'car': return 'Машина';
-      case 'beach': return 'Пляж';
-      case 'culture': return 'Культурное место';
-      case 'person': return 'Человечек';
+      case 'star': return $t('icon_star');
+      case 'home': return $t('icon_home');
+      case 'work': return $t('icon_work');
+      case 'school': return $t('icon_school');
+      case 'food': return $t('icon_food');
+      case 'car': return $t('icon_car');
+      case 'beach': return $t('icon_beach');
+      case 'culture': return $t('icon_culture');
+      case 'person': return $t('icon_person');
       default: return '';
     }
   };
@@ -85,7 +97,7 @@
     try {
       const res = await reverseGeocode({ lat: point.lat, lon: point.lng });
       if (res && res.length > 0) {
-        const parts = [res[0].city, res[0].state, res[0].country].filter(Boolean);
+        const parts = [res[0].city, res[0].state].filter(Boolean);
         name = parts.join(', ');
       }
     } catch {
@@ -126,15 +138,15 @@
     <Input bind:value={name} placeholder={$t('name')} />
   </Field>
 
-  <Field label="Подпись (Краткое название)" required>
-    <Input autofocus bind:value={label} placeholder="Например: Дом, Дача, Работа" />
+  <Field label={$t('saved_location_label')} required>
+    <Input autofocus bind:value={label} placeholder={$t('saved_location_label_placeholder')} />
   </Field>
 
-  <Field label="Описание">
-    <Input bind:value={description} placeholder="Опциональное описание или адрес" />
+  <Field label={$t('saved_location_description')}>
+    <Input bind:value={description} placeholder={$t('saved_location_description_placeholder')} />
   </Field>
 
-  <Field label="Иконка места">
+  <Field label={$t('saved_location_icon')}>
     <div class="flex flex-wrap gap-2 pt-1 pb-2">
       {#each Object.keys(iconMap) as key}
         <button
@@ -155,12 +167,12 @@
     onclick={handlePickCoordinates}
     onkeydown={(e) => e.key === 'Enter' && handlePickCoordinates()}
     class="grid grid-cols-2 gap-4 cursor-pointer group focus:outline-none"
-    title="Нажмите, чтобы изменить координаты на карте"
+    title={$t('saved_location_click_to_change')}
   >
     <Field label={$t('latitude')}>
       <Input
         type="number"
-        value={lat}
+        value={String(lat)}
         readonly
         class="bg-gray-100 group-hover:bg-gray-200/80 dark:bg-zinc-800 dark:group-hover:bg-zinc-700/60 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 cursor-pointer transition-colors"
       />
@@ -168,7 +180,7 @@
     <Field label={$t('longitude')}>
       <Input
         type="number"
-        value={lng}
+        value={String(lng)}
         readonly
         class="bg-gray-100 group-hover:bg-gray-200/80 dark:bg-zinc-800 dark:group-hover:bg-zinc-700/60 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 cursor-pointer transition-colors"
       />

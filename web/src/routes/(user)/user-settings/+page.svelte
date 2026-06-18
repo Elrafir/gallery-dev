@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component UserSettingsPage
+   * Страница пользовательских настроек.
+   * Является контейнером для `UserSettingsList`, где отображаются все доступные
+   * для изменения параметры профиля текущего пользователя.
+   */
   import UserPageLayout from '$lib/components/layouts/user-page-layout.svelte';
   import UserSettingsList from './user-settings-list.svelte';
   import { getKeyboardActions } from '$lib/services/keyboard.service';

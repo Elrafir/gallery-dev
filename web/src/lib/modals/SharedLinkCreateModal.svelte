@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component SharedLinkCreateModal
+   * Модальное окно для создания публичной ссылки ("Поделиться").
+   * Позволяет расшарить как отдельный список файлов (Individual), так и целый альбом (Album).
+   * Содержит настройки срока действия ссылки, пароля и прав на скачивание/загрузку.
+   */
   import SharedLinkFormFields from '$lib/components/SharedLinkFormFields.svelte';
   import { handleCreateSharedLink } from '$lib/services/shared-link.service';
   import { SharedLinkType } from '@immich/sdk';

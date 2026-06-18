@@ -1,4 +1,10 @@
 <script lang="ts">
+  /**
+   * @component SmartSearchResults
+   * Компонент, отвечающий за выполнение запросов "умного" поиска с учетом фильтров.
+   * Делает запросы к API с использованием дебаунса, обрабатывает пагинацию
+   * и делегирует рендер результатов компоненту SpaceSearchResults.
+   */
   import SpaceSearchResults from '$lib/components/spaces/space-search-results.svelte';
   import type { FilterState } from '$lib/components/filter-panel/filter-panel';
   import { dedupeAppend } from '$lib/utils/search-dedup';

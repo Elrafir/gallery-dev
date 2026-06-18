@@ -1,3 +1,8 @@
+/**
+ * Interceptor для обработки загрузки файлов (File Upload).
+ * Интегрирует Multer для перехвата multipart/form-data запросов,
+ * сохраняет загружаемые файлы на диск и вычисляет их хэш-суммы (SHA-1) на лету.
+ */
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';

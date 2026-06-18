@@ -7,6 +7,13 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 export type AssetMultiSelectOptions = {
   resetOnNavigate?: boolean;
 };
+/**
+ * @class AssetMultiSelectManager
+ * Менеджер состояния массового выделения медиафайлов (Assets).
+ * Хранит выбранные файлы, выбранные группы (дни/месяцы) и 
+ * элементы-кандидаты (например, при выделении с зажатой клавишей Shift).
+ * Вычисляет общие статусы выбранных файлов: все ли они в архиве, корзине или в избранном.
+ */
 export class AssetMultiSelectManager {
   #selectedMap = new SvelteMap<string, TimelineAsset>();
 

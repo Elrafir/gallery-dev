@@ -1,4 +1,13 @@
 <script lang="ts">
+  /**
+   * @component Timeline
+   * Главный компонент рендера сетки фотографий (таймлайна).
+   * Отвечает за:
+   * - Виртуализацию (отображение только видимых элементов)
+   * - Скроллинг, включая скраббер
+   * - Логику выделения фото (поштучно, с Shift, целыми днями)
+   * - Обработку клавиатурных сокращений ленты
+   */
   import { afterNavigate, beforeNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import Thumbnail from '$lib/components/assets/thumbnail/thumbnail.svelte';

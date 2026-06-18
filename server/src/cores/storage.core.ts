@@ -40,6 +40,12 @@ let instance: StorageCore | null;
 
 let mediaLocation: string | undefined;
 
+/**
+ * Ядро управления файловым хранилищем (Storage Core).
+ * Отвечает за логику путей хранения (генерация путей для оригиналов, миниатюр, видео),
+ * перемещение файлов (например, после загрузки или при переименовании),
+ * а также проверку целостности (хэш, размер) при перемещении.
+ */
 export class StorageCore {
   private constructor(
     private assetRepository: AssetRepository,

@@ -27,17 +27,17 @@ export const AlbumInviteEmail = ({
   ) : (
     <>
       <Text className="m-0">
-        Hey <strong>{recipientName}</strong>!
+        Привет, <strong>{recipientName}</strong>!
       </Text>
 
       <Text>
-        {senderName} has added you to the album <strong>{albumName}</strong>.
+        {senderName} добавил(а) вас в альбом <strong>{albumName}</strong>.
       </Text>
     </>
   );
 
   return (
-    <ImmichLayout preview={customTemplate ? emailContent.toString() : 'You have been added to a shared album.'}>
+    <ImmichLayout preview={customTemplate ? emailContent.toString() : 'Вас добавили в общий альбом.'}>
       {customTemplate && (
         <Text className="m-0">
           <div dangerouslySetInnerHTML={{ __html: emailContent }}></div>
@@ -59,11 +59,11 @@ export const AlbumInviteEmail = ({
       )}
 
       <Section className="flex justify-center my-6">
-        <ImmichButton href={`${baseUrl}/albums/${albumId}`}>View Album</ImmichButton>
+        <ImmichButton href={`${baseUrl}/albums/${albumId}`}>Посмотреть альбом</ImmichButton>
       </Section>
 
       <Text className="text-xs">
-        If you cannot click the button use the link below to view the album.
+        Если кнопка не работает, используйте ссылку ниже для просмотра альбома.
         <br />
         <Link href={`${baseUrl}/albums/${albumId}`}>{`${baseUrl}/albums/${albumId}`}</Link>
       </Text>

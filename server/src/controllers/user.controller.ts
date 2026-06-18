@@ -32,6 +32,11 @@ import { UUIDParamDto } from 'src/validation';
 
 @ApiTags(ApiTag.Users)
 @Controller(RouteKey.User)
+/**
+ * Контроллер управления пользователями.
+ * Предоставляет эндпоинты для получения списка пользователей, управления собственным профилем,
+ * настройками, лицензией, онбордингом и аватаром профиля.
+ */
 export class UserController {
   constructor(
     private service: UserService,

@@ -159,7 +159,7 @@
         {#each showPeople as person (person.id)}
           {#if !editedFace.person || person.id !== editedFace.person.id}
             <div class="w-fit">
-              <PersonTooltip name={$getPersonNameWithHiddenValue(person.name, person.isHidden)} description={person.description}>
+              <PersonTooltip name={$getPersonNameWithHiddenValue(person.name, person.isHidden)} description={person.description ?? undefined}>
                 {#snippet child()}
                   <button type="button" class="w-22.5" onclick={() => onReassign(person)}>
                     <div class="relative">
