@@ -104,9 +104,6 @@ export class UserAssetOverrideRepository {
     return new Set(rows.map((r) => r.assetId));
   }
 
-  /**
-   * Получить количество скрытых медиафайлов.
-   */
   @GenerateSql({ params: [DummyValue.UUID] })
   async getHiddenCount(userId: string): Promise<number> {
     const result = await this.db
@@ -118,4 +115,38 @@ export class UserAssetOverrideRepository {
 
     return result.count;
   }
+
+  /**
+   * Получить пагинированный список ID скрытых медиафайлов с общим количеством.
+   * Возвращает только ID для дальнейшей загрузки полных данных через assetRepository.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, { size: 100, page: 1 }] })
+  async getHiddenAssets(
+    userId: string,
+    options: { size: number; page: number },
+  ): Promise<{ assetIds: string[]; total: number }> {
+    const { size, page } = options;
+    const offset = (page - 1) * size;
+
+    const [rows, total] = await Promise.all([
+      this.db
+        .selectFrom('user_asset_override')
+        .innerJoin('asset', 'asset.id', 'user_asset_override.assetId')
+        .select('user_asset_override.assetId')
+        .where('user_asset_override.userId', '=', userId)
+        .where('user_asset_override.isHidden', '=', true)
+        .where('asset.deletedAt', 'is', null)
+        .orderBy('user_asset_override.createdAt', 'desc')
+        .limit(size)
+        .offset(offset)
+        .execute(),
+      this.getHiddenCount(userId),
+    ]);
+
+    return {
+      assetIds: rows.map((r) => r.assetId),
+      total,
+    };
+  }
 }
+

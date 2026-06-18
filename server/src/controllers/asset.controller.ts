@@ -6,6 +6,7 @@ import {
   AssetBulkDeleteDto,
   AssetBulkUpdateDto,
   AssetCopyDto,
+  AssetHideBulkDto,
   AssetJobsDto,
   AssetMetadataBulkDeleteDto,
   AssetMetadataBulkResponseDto,
@@ -15,6 +16,8 @@ import {
   AssetMetadataUpsertDto,
   AssetStatsDto,
   AssetStatsResponseDto,
+  HiddenAssetsQueryDto,
+  HiddenAssetsResponseDto,
   UpdateAssetDto,
 } from 'src/dtos/asset.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
@@ -81,6 +84,45 @@ export class AssetController {
   deleteAssets(@Auth() auth: AuthDto, @Body() dto: AssetBulkDeleteDto): Promise<void> {
     return this.service.deleteAll(auth, dto);
   }
+
+  // ─── Phase 3.2: Hide/Unhide ───────────────────────────────────────────
+
+  @Get('hidden')
+  @Authenticated({ permission: Permission.AssetRead })
+  @Endpoint({
+    summary: 'Get hidden assets',
+    description: 'Retrieve a paginated list of assets hidden by the authenticated user.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  getHiddenAssets(@Auth() auth: AuthDto, @Query() dto: HiddenAssetsQueryDto): Promise<HiddenAssetsResponseDto> {
+    return this.service.getHiddenAssets(auth, dto);
+  }
+
+  @Put('hide')
+  @Authenticated({ permission: Permission.AssetRead })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Bulk hide assets',
+    description: 'Hide multiple assets from the timeline of the authenticated user.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  hideAssets(@Auth() auth: AuthDto, @Body() dto: AssetHideBulkDto): Promise<void> {
+    return this.service.hideAssets(auth, dto.assetIds);
+  }
+
+  @Delete('hide')
+  @Authenticated({ permission: Permission.AssetRead })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Bulk unhide assets',
+    description: 'Remove the hide override for multiple assets.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  unhideAssets(@Auth() auth: AuthDto, @Body() dto: AssetHideBulkDto): Promise<void> {
+    return this.service.unhideAssets(auth, dto.assetIds);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
 
   @Get(':id')
   @Authenticated({ permission: Permission.AssetRead, sharedLink: true })
@@ -149,6 +191,30 @@ export class AssetController {
     @Body() dto: UpdateAssetDto,
   ): Promise<AssetResponseDto> {
     return this.service.update(auth, id, dto);
+  }
+
+  @Put(':id/hide')
+  @Authenticated({ permission: Permission.AssetRead })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Hide an asset',
+    description: 'Hide a specific asset from the timeline of the authenticated user.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  hideAsset(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<void> {
+    return this.service.hideAsset(auth, id);
+  }
+
+  @Delete(':id/hide')
+  @Authenticated({ permission: Permission.AssetRead })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Endpoint({
+    summary: 'Unhide an asset',
+    description: 'Remove the hide override for a specific asset.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  unhideAsset(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<void> {
+    return this.service.unhideAsset(auth, id);
   }
 
   @Get(':id/metadata')

@@ -809,4 +809,66 @@ export class AssetService extends BaseService {
     await this.assetEditRepository.replaceAll(id, []);
     await this.jobRepository.queue({ name: JobName.AssetEditThumbnailGeneration, data: { id } });
   }
+
+  // ─── Phase 3.2: Hide/Unhide ───────────────────────────────────────────
+
+  /**
+   * Скрыть медиафайл из таймлайна текущего пользователя.
+   * Создаёт personal override — не модифицирует сам ассет.
+   */
+  async hideAsset(auth: AuthDto, id: string): Promise<void> {
+    await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [id] });
+    await this.userAssetOverrideRepository.hideAsset(auth.user.id, id);
+  }
+
+  /**
+   * Убрать скрытие медиафайла для текущего пользователя.
+   * Удаляет personal override — безопасно, т.к. запись привязана к userId.
+   */
+  async unhideAsset(auth: AuthDto, id: string): Promise<void> {
+    await this.userAssetOverrideRepository.unhideAsset(auth.user.id, id);
+  }
+
+  /**
+   * Скрыть несколько медиафайлов из таймлайна пользователя.
+   */
+  async hideAssets(auth: AuthDto, assetIds: string[]): Promise<void> {
+    if (assetIds.length === 0) {
+      return;
+    }
+    await this.requireAccess({ auth, permission: Permission.AssetRead, ids: assetIds });
+    await this.userAssetOverrideRepository.hideAssets(auth.user.id, assetIds);
+  }
+
+  /**
+   * Убрать скрытие для нескольких медиафайлов.
+   */
+  async unhideAssets(auth: AuthDto, assetIds: string[]): Promise<void> {
+    if (assetIds.length === 0) {
+      return;
+    }
+    await this.userAssetOverrideRepository.unhideAssets(auth.user.id, assetIds);
+  }
+
+  /**
+   * Получить пагинированный список скрытых медиафайлов пользователя.
+   */
+  async getHiddenAssets(auth: AuthDto, dto: { size: number; page: number }) {
+    const { size, page } = dto;
+    const { assetIds, total } = await this.userAssetOverrideRepository.getHiddenAssets(auth.user.id, { size, page });
+
+    let assets: AssetResponseDto[] = [];
+    if (assetIds.length > 0) {
+      const assetEntities = await this.assetRepository.getByIds(assetIds);
+      assets = assetEntities.map((entity) => mapAsset(entity, { auth }));
+    }
+
+    return {
+      assets,
+      total,
+      page,
+      size,
+      hasNextPage: page * size < total,
+    };
+  }
 }

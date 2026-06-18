@@ -195,5 +195,34 @@ export class AssetMetadataBulkUpsertDto extends createZodDto(AssetMetadataBulkUp
 export class AssetMetadataBulkDeleteDto extends createZodDto(AssetMetadataBulkDeleteSchema) {}
 export class AssetMetadataResponseDto extends createZodDto(AssetMetadataResponseSchema) {}
 export class AssetMetadataBulkResponseDto extends createZodDto(AssetMetadataBulkResponseSchema) {}
+/** Запрос списка скрытых медиафайлов (query params) */
+const HiddenAssetsQuerySchema = z
+  .object({
+    size: z.number().int().min(1).max(1000).default(100).describe('Количество элементов на странице'),
+    page: z.number().int().min(1).default(1).describe('Номер страницы'),
+  })
+  .meta({ id: 'HiddenAssetsQueryDto' });
+
+/** Ответ со списком скрытых медиафайлов */
+const HiddenAssetsResponseSchema = z
+  .object({
+    assets: z.array(z.any()).describe('Список скрытых медиафайлов'),
+    total: z.number().describe('Общее количество скрытых'),
+    page: z.number().describe('Текущая страница'),
+    size: z.number().describe('Размер страницы'),
+    hasNextPage: z.boolean().describe('Есть ли следующая страница'),
+  })
+  .meta({ id: 'HiddenAssetsResponseDto' });
+
+/** Bulk hide/unhide запрос */
+const AssetHideBulkSchema = z
+  .object({
+    assetIds: z.array(z.uuidv4()).describe('ID медиафайлов для скрытия/показа'),
+  })
+  .meta({ id: 'AssetHideBulkDto' });
+
 export class AssetCopyDto extends createZodDto(AssetCopySchema) {}
 export class AssetDownloadOriginalDto extends createZodDto(AssetDownloadOriginalSchema) {}
+export class HiddenAssetsQueryDto extends createZodDto(HiddenAssetsQuerySchema) {}
+export class HiddenAssetsResponseDto extends createZodDto(HiddenAssetsResponseSchema) {}
+export class AssetHideBulkDto extends createZodDto(AssetHideBulkSchema) {}
