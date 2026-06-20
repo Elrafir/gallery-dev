@@ -3,20 +3,18 @@
    * @component PrimaryLibraryPage
    * Страница управления базовой библиотекой (Primary Library).
    * Позволяет админу: включить/выключить PL, настроить auto-enrollment,
-   * управлять участниками, привязать библиотеки и теги.
+   * управлять расшаренными пользователями и участниками.
    */
   import AdminPageLayout from '$lib/components/layouts/AdminPageLayout.svelte';
-  import { Container, Alert, Button } from '@immich/ui';
+  import { Container, Alert, Icon } from '@immich/ui';
   import {
+    mdiAccountMultiplePlus,
     mdiAccountPlus,
     mdiAccountRemove,
-    mdiBookshelf,
     mdiCheck,
-    mdiLink,
-    mdiLinkOff,
     mdiRefresh,
-    mdiTagPlus,
-    mdiTagRemove,
+    mdiShareVariant,
+    mdiShareOff,
   } from '@mdi/js';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
@@ -33,6 +31,7 @@
 
   type PLSettings = {
     enabled: boolean;
+    sharedUserIds: string[];
     autoEnrollNewUsers: boolean;
     sharePeople: boolean;
     shareTags: boolean;
@@ -43,9 +42,9 @@
     adminUserId?: string;
   };
 
-  type Member = { userId: string; email?: string; role: string; showInTimeline: boolean };
-  type Library = { id: string; name: string; ownerId: string; importPaths: string[]; assetCount?: number };
-  type Tag = { id: string; value: string; color?: string };
+  type Member = { userId: string; email?: string; name?: string; role: string; showInTimeline: boolean };
+  type SharedUser = { ownerId: string; name: string; email: string };
+  type SystemUser = { id: string; name: string; email: string; isAdmin: boolean };
 
   // =====================
   // Состояние
@@ -53,10 +52,8 @@
 
   let settings = $state<PLSettings | null>(null);
   let members = $state<Member[]>([]);
-  let linkedLibraries = $state<Library[]>([]);
-  let allLibraries = $state<Library[]>([]);
-  let linkedTags = $state<Tag[]>([]);
-  let allTags = $state<Tag[]>([]);
+  let sharedUsers = $state<SharedUser[]>([]);
+  let allUsers = $state<SystemUser[]>([]);
 
   let loading = $state(true);
   let saving = $state(false);
@@ -64,11 +61,10 @@
   let error = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
 
-  // Computed: доступные для привязки (ещё не привязанные)
-  let availableLibraries = $derived(
-    allLibraries.filter((lib) => !linkedLibraries.some((linked) => linked.id === lib.id)),
+  // Computed: пользователи, доступные для расшаривания
+  let availableUsersToShare = $derived(
+    allUsers.filter((u) => !sharedUsers.some((su) => su.ownerId === u.id)),
   );
-  let availableTags = $derived(allTags.filter((tag) => !linkedTags.some((linked) => linked.id === tag.id)));
 
   // =====================
   // API helpers
@@ -112,12 +108,10 @@
     try {
       settings = await apiGet('/primary-library/settings');
       if (settings?.enabled) {
-        [members, linkedLibraries, allLibraries, linkedTags, allTags] = await Promise.all([
+        [members, sharedUsers, allUsers] = await Promise.all([
           apiGet<Member[]>('/primary-library/members'),
-          apiGet<Library[]>('/primary-library/libraries'),
-          apiGet<Library[]>('/libraries'),
-          apiGet<Tag[]>('/primary-library/tags'),
-          apiGet<Tag[]>('/tags'),
+          apiGet<SharedUser[]>('/primary-library/shared-users'),
+          apiGet<SystemUser[]>('/admin/users'),
         ]);
       }
     } catch (e: any) {
@@ -156,12 +150,35 @@
         defaultShowInMemories: settings.defaultShowInMemories,
       });
       showSuccess('Настройки сохранены');
-      // Перезагрузить всё при включении/выключении
       await loadData();
     } catch (e: any) {
       error = `Ошибка сохранения: ${e.message}`;
     } finally {
       saving = false;
+    }
+  }
+
+  // =====================
+  // Действия: Расшаренные пользователи
+  // =====================
+
+  async function addSharedUser(userId: string) {
+    try {
+      await apiPut(`/primary-library/shared-users/${userId}`);
+      sharedUsers = await apiGet('/primary-library/shared-users');
+      showSuccess('Пользователь добавлен как источник фото');
+    } catch (e: any) {
+      error = `Ошибка: ${e.message}`;
+    }
+  }
+
+  async function removeSharedUser(userId: string) {
+    try {
+      await apiDelete(`/primary-library/shared-users/${userId}`);
+      sharedUsers = sharedUsers.filter((su) => su.ownerId !== userId);
+      showSuccess('Пользователь убран из источников');
+    } catch (e: any) {
+      error = `Ошибка: ${e.message}`;
     }
   }
 
@@ -173,8 +190,8 @@
     enrollingAll = true;
     error = null;
     try {
-      const result = await apiPut<{ enrolled: number }>('/primary-library/members/enroll-all');
-      showSuccess(`Зачислено пользователей: ${result.enrolled ?? 0}`);
+      const result = await apiPut<number>('/primary-library/members/enroll-all');
+      showSuccess(`Зачислено пользователей: ${result ?? 0}`);
       members = await apiGet('/primary-library/members');
     } catch (e: any) {
       error = `Ошибка зачисления: ${e.message}`;
@@ -188,54 +205,6 @@
       await apiDelete(`/primary-library/members/${userId}`);
       members = members.filter((m) => m.userId !== userId);
       showSuccess('Участник удалён');
-    } catch (e: any) {
-      error = `Ошибка: ${e.message}`;
-    }
-  }
-
-  // =====================
-  // Действия: Библиотеки
-  // =====================
-
-  async function linkLibrary(libraryId: string) {
-    try {
-      await apiPut('/primary-library/libraries', { libraryIds: [libraryId] });
-      linkedLibraries = await apiGet('/primary-library/libraries');
-      showSuccess('Библиотека привязана');
-    } catch (e: any) {
-      error = `Ошибка: ${e.message}`;
-    }
-  }
-
-  async function unlinkLibrary(libraryId: string) {
-    try {
-      await apiDelete('/primary-library/libraries', { libraryIds: [libraryId] });
-      linkedLibraries = linkedLibraries.filter((l) => l.id !== libraryId);
-      showSuccess('Библиотека отвязана');
-    } catch (e: any) {
-      error = `Ошибка: ${e.message}`;
-    }
-  }
-
-  // =====================
-  // Действия: Теги
-  // =====================
-
-  async function linkTag(tagId: string) {
-    try {
-      await apiPut('/primary-library/tags', { tagIds: [tagId] });
-      linkedTags = await apiGet('/primary-library/tags');
-      showSuccess('Тег привязан');
-    } catch (e: any) {
-      error = `Ошибка: ${e.message}`;
-    }
-  }
-
-  async function unlinkTag(tagId: string) {
-    try {
-      await apiDelete('/primary-library/tags', { tagIds: [tagId] });
-      linkedTags = linkedTags.filter((t) => t.id !== tagId);
-      showSuccess('Тег отвязан');
     } catch (e: any) {
       error = `Ошибка: ${e.message}`;
     }
@@ -265,7 +234,7 @@
           <label class="flex items-center justify-between cursor-pointer">
             <div>
               <p class="font-medium">Включить базовую библиотеку</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Расшарить библиотеки админа всем пользователям</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Расшарить фото выбранных пользователей всем участникам</p>
             </div>
             <input type="checkbox" bind:checked={settings.enabled} class="w-5 h-5 accent-indigo-600" />
           </label>
@@ -284,7 +253,7 @@
             <label class="flex items-center justify-between cursor-pointer">
               <div>
                 <p class="font-medium">Показывать в таймлайне по умолчанию</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Фото админа появятся в ленте пользователей</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Расшаренные фото появятся в ленте пользователей</p>
               </div>
               <input type="checkbox" bind:checked={settings.defaultShowInTimeline} class="w-5 h-5 accent-indigo-600" />
             </label>
@@ -320,104 +289,77 @@
         </div>
 
         <div class="mt-6 flex gap-3">
-          <Button color="primary" size="small" icon={mdiCheck} disabled={saving} onclick={saveSettings}>
+          <button
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+              bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            disabled={saving}
+            onclick={saveSettings}
+          >
+            <Icon icon={mdiCheck} size="18" />
             {saving ? 'Сохранение...' : 'Сохранить'}
-          </Button>
+          </button>
         </div>
       </div>
 
       {#if settings.enabled}
-        <!-- ===== БИБЛИОТЕКИ ===== -->
+        <!-- ===== РАСШАРЕННЫЕ ПОЛЬЗОВАТЕЛИ (Multi-Admin) ===== -->
         <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 mb-6">
-          <h2 class="text-lg font-semibold mb-4">Привязанные библиотеки ({linkedLibraries.length})</h2>
+          <h2 class="text-lg font-semibold mb-2">Источники фото ({sharedUsers.length})</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Все фото этих пользователей будут видны участникам базовой библиотеки.
+          </p>
 
-          {#if linkedLibraries.length > 0}
+          {#if sharedUsers.length > 0}
             <div class="space-y-2 mb-4">
-              {#each linkedLibraries as lib (lib.id)}
+              {#each sharedUsers as user (user.ownerId)}
                 <div
                   class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700"
                 >
-                  <div>
-                    <p class="font-medium">{lib.name}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {lib.importPaths?.join(', ') ?? 'Загрузка'}
-                      {#if lib.assetCount != null}
-                        · {lib.assetCount} фото
-                      {/if}
-                    </p>
+                  <div class="flex items-center gap-3">
+                    <Icon icon={mdiShareVariant} size="20" class="text-indigo-500" />
+                    <div>
+                      <p class="font-medium">{user.name}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    </div>
                   </div>
-                  <Button color="danger" size="tiny" icon={mdiLinkOff} onclick={() => unlinkLibrary(lib.id)}>
-                    Отвязать
-                  </Button>
+                  <button
+                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium
+                      bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 transition-colors"
+                    onclick={() => removeSharedUser(user.ownerId)}
+                  >
+                    <Icon icon={mdiShareOff} size="14" />
+                    Убрать
+                  </button>
                 </div>
               {/each}
             </div>
           {:else}
             <p class="text-gray-500 dark:text-gray-400 text-center py-4 mb-4">
-              Нет привязанных библиотек. Привяжите библиотеки, чтобы фото стали доступны пользователям.
+              Нет расшаренных пользователей. Добавьте пользователей, чьи фото будут видны участникам.
             </p>
           {/if}
 
-          {#if availableLibraries.length > 0}
+          {#if availableUsersToShare.length > 0}
             <div>
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Доступные для привязки:</h3>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Добавить пользователя:</h3>
               <div class="space-y-1">
-                {#each availableLibraries as lib (lib.id)}
+                {#each availableUsersToShare as user (user.id)}
                   <div
-                    class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                    class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                   >
                     <div>
-                      <p class="text-sm">{lib.name}</p>
-                      <p class="text-xs text-gray-400">{lib.importPaths?.join(', ') ?? ''}</p>
+                      <p class="text-sm font-medium">{user.name}</p>
+                      <p class="text-xs text-gray-400">{user.email}</p>
                     </div>
-                    <Button color="primary" size="tiny" icon={mdiLink} onclick={() => linkLibrary(lib.id)}>
-                      Привязать
-                    </Button>
+                    <button
+                      class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium
+                        bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 transition-colors"
+                      onclick={() => addSharedUser(user.id)}
+                    >
+                      <Icon icon={mdiAccountPlus} size="14" />
+                      Расшарить
+                    </button>
                   </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-
-        <!-- ===== ТЕГИ ===== -->
-        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 mb-6">
-          <h2 class="text-lg font-semibold mb-4">Привязанные теги ({linkedTags.length})</h2>
-
-          {#if linkedTags.length > 0}
-            <div class="flex flex-wrap gap-2 mb-4">
-              {#each linkedTags as tag (tag.id)}
-                <span
-                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                >
-                  {tag.value}
-                  <button
-                    class="ml-1 hover:text-red-500 transition-colors"
-                    title="Отвязать тег"
-                    onclick={() => unlinkTag(tag.id)}
-                  >
-                    ✕
-                  </button>
-                </span>
-              {/each}
-            </div>
-          {:else}
-            <p class="text-gray-500 dark:text-gray-400 text-center py-4 mb-4">
-              Нет привязанных тегов.
-            </p>
-          {/if}
-
-          {#if availableTags.length > 0}
-            <div>
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Доступные теги:</h3>
-              <div class="flex flex-wrap gap-1">
-                {#each availableTags as tag (tag.id)}
-                  <button
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors cursor-pointer"
-                    onclick={() => linkTag(tag.id)}
-                  >
-                    + {tag.value}
-                  </button>
                 {/each}
               </div>
             </div>
@@ -429,10 +371,23 @@
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold">Участники ({members.length})</h2>
             <div class="flex gap-2">
-              <Button color="secondary" size="small" icon={mdiRefresh} onclick={loadData}>Обновить</Button>
-              <Button color="primary" size="small" icon={mdiAccountPlus} disabled={enrollingAll} onclick={enrollAll}>
+              <button
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
+                  bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+                onclick={loadData}
+              >
+                <Icon icon={mdiRefresh} size="16" />
+                Обновить
+              </button>
+              <button
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
+                  bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                disabled={enrollingAll}
+                onclick={enrollAll}
+              >
+                <Icon icon={mdiAccountMultiplePlus} size="16" />
                 {enrollingAll ? 'Зачисление...' : 'Зачислить всех'}
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -456,7 +411,7 @@
                     <tr
                       class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                     >
-                      <td class="py-2 px-3">{member.email ?? member.userId}</td>
+                      <td class="py-2 px-3">{member.name ?? member.email ?? member.userId}</td>
                       <td class="py-2 px-3">
                         <span
                           class="inline-block px-2 py-0.5 rounded text-xs font-medium
@@ -474,14 +429,14 @@
                       </td>
                       <td class="py-2 px-3 text-right">
                         {#if member.role !== 'owner'}
-                          <Button
-                            color="danger"
-                            size="tiny"
-                            icon={mdiAccountRemove}
+                          <button
+                            class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium
+                              bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 transition-colors"
                             onclick={() => removeMember(member.userId)}
                           >
+                            <Icon icon={mdiAccountRemove} size="14" />
                             Удалить
-                          </Button>
+                          </button>
                         {/if}
                       </td>
                     </tr>
