@@ -61,4 +61,24 @@ export class SavedLocationService {
     }
     await this.repository.delete(id, userId);
   }
+
+  /**
+   * Найти все saved locations пользователя, в радиусе которых находится точка.
+   * Используется для отображения совпадений в detail panel ассета.
+   */
+  async findByProximity(userId: string, latitude: number, longitude: number): Promise<SavedLocation[]> {
+    return this.repository.findByProximity(userId, latitude, longitude);
+  }
+
+  /**
+   * Получить ID ассетов, попадающих в радиус saved location.
+   * Заготовка для будущей фильтрации timeline по сохранённому месту.
+   */
+  async getAssetIdsInRadius(savedLocationId: string, userId: string): Promise<string[]> {
+    const existing = await this.repository.getById(savedLocationId, userId);
+    if (!existing) {
+      throw new NotFoundException('Сохраненное место не найдено.');
+    }
+    return this.repository.getAssetIdsInRadius(savedLocationId, userId);
+  }
 }

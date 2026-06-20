@@ -7,7 +7,8 @@ export {
   getAll as getSavedLocations,
   create as createSavedLocation,
   update as updateSavedLocation,
-  deleteSavedLocationsById as deleteSavedLocation
+  deleteSavedLocationsById as deleteSavedLocation,
+  findSavedLocationsByProximity,
 } from './fetch-client.js';
 
 export interface InitOptions {

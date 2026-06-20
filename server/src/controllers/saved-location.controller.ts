@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Endpoint, HistoryBuilder } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
   CreateSavedLocationDto,
   mapSavedLocation,
+  ProximityQueryDto,
   SavedLocationResponseDto,
   UpdateSavedLocationDto,
 } from 'src/dtos/saved-location.dto';
@@ -39,6 +40,21 @@ export class SavedLocationController {
   })
   async getAll(@Auth() auth: AuthDto): Promise<SavedLocationResponseDto[]> {
     const list = await this.service.getAll(auth.user.id);
+    return list.map(mapSavedLocation);
+  }
+
+  @Get('proximity')
+  @Authenticated()
+  @Endpoint({
+    summary: 'Find saved locations by proximity',
+    description: 'Find all saved locations whose radius covers the given GPS point.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  async findByProximity(
+    @Auth() auth: AuthDto,
+    @Query() dto: ProximityQueryDto,
+  ): Promise<SavedLocationResponseDto[]> {
+    const list = await this.service.findByProximity(auth.user.id, dto.latitude, dto.longitude);
     return list.map(mapSavedLocation);
   }
 

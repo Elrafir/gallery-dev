@@ -1802,6 +1802,8 @@ export type SavedLocationResponseDto = {
     longitude: number;
     /** Resolved geodata address name */
     name: string;
+    /** Radius in meters */
+    radius: number;
     /** Update timestamp */
     updatedAt: string;
     /** User ID */
@@ -1820,6 +1822,8 @@ export type CreateSavedLocationDto = {
     longitude: number;
     /** Resolved geodata address name */
     name: string;
+    /** Radius in meters (10-5000, default 50) */
+    radius?: number;
 };
 export type UpdateSavedLocationDto = {
     /** Optional description */
@@ -1836,6 +1840,8 @@ export type UpdateSavedLocationDto = {
     longitude?: number;
     /** Resolved geodata address name */
     name?: string;
+    /** Radius in meters (10-5000) */
+    radius?: number;
 };
 export type SearchExploreItem = {
     data: AssetResponseDto;
@@ -2851,6 +2857,18 @@ export type SharedSpacePersonAliasDto = {
 export type SharedSpacePersonMergeDto = {
     /** Person IDs to merge into target */
     ids: string[];
+};
+export type SharedSpacePersonResetDto = {
+    /** Remove per-user alias overrides */
+    alias?: boolean;
+    /** Reset birth date to inherited value */
+    birthDate?: boolean;
+    /** Reset description to default */
+    description?: boolean;
+    /** Reset name to inherited value */
+    name?: boolean;
+    /** Reset thumbnail to auto-selected */
+    thumbnail?: boolean;
 };
 export type SpaceRepresentativeFaceUpdateDto = {
     /** Asset face ID used as the space representative face */
@@ -6405,6 +6423,23 @@ export function update({ id, updateSavedLocationDto }: {
     })));
 }
 /**
+ * Find saved locations by proximity
+ */
+export function findSavedLocationsByProximity({ latitude, longitude }: {
+    latitude: number;
+    longitude: number;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SavedLocationResponseDto[];
+    }>(`/saved-locations/proximity${QS.query(QS.explode({
+        latitude,
+        longitude
+    }))}`, {
+        ...opts
+    }));
+}
+/**
  * Retrieve assets by city
  */
 export function getAssetsByCity(opts?: Oazapfts.RequestOpts) {
@@ -7606,6 +7641,23 @@ export function mergeSpacePeople({ id, personId, sharedSpacePersonMergeDto }: {
         ...opts,
         method: "POST",
         body: sharedSpacePersonMergeDto
+    })));
+}
+/**
+ * Reset person fields to defaults
+ */
+export function resetSpacePersonToDefaults({ id, personId, sharedSpacePersonResetDto }: {
+    id: string;
+    personId: string;
+    sharedSpacePersonResetDto: SharedSpacePersonResetDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SharedSpacePersonResponseDto;
+    }>(`/shared-spaces/${encodeURIComponent(id)}/people/${encodeURIComponent(personId)}/reset-defaults`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: sharedSpacePersonResetDto
     })));
 }
 /**
