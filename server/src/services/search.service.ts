@@ -126,10 +126,12 @@ export class SearchService extends BaseService {
     const userIds = await this.getUserIdsToSearch(auth);
     const timelineSpaceIds = await this.getTimelineSpaceIds(auth, dto.withSharedSpaces || !!dto.albumIds?.length);
     const resolvedDto = await this.resolveScopedPersonFilters(auth, { ...dto, timelineSpaceIds });
+    const proximityOptions = await this.resolveProximityFilter(auth, dto);
     const { hasNextPage, items } = await this.searchRepository.searchMetadata(
       { page, size },
       {
         ...resolvedDto,
+        ...proximityOptions,
         checksum,
         userIds,
         orderDirection: dto.order ?? AssetOrder.Desc,
@@ -155,9 +157,11 @@ export class SearchService extends BaseService {
     const userIds = await this.getUserIdsToSearch(auth);
     const timelineSpaceIds = await this.getTimelineSpaceIds(auth, dto.withSharedSpaces || !!dto.albumIds?.length);
     const resolvedDto = await this.resolveScopedPersonFilters(auth, { ...dto, timelineSpaceIds });
+    const proximityOptions = await this.resolveProximityFilter(auth, dto);
 
     return await this.searchRepository.searchStatistics({
       ...resolvedDto,
+      ...proximityOptions,
       userIds,
     });
   }
@@ -182,7 +186,8 @@ export class SearchService extends BaseService {
     const userIds = await this.getUserIdsToSearch(auth);
     const timelineSpaceIds = await this.getTimelineSpaceIds(auth, dto.withSharedSpaces || !!dto.albumIds?.length);
     const resolvedDto = await this.resolveScopedPersonFilters(auth, { ...dto, timelineSpaceIds });
-    const items = await this.searchRepository.searchRandom(dto.size || 250, { ...resolvedDto, userIds });
+    const proximityOptions = await this.resolveProximityFilter(auth, dto);
+    const items = await this.searchRepository.searchRandom(dto.size || 250, { ...resolvedDto, ...proximityOptions, userIds });
     return items.map((item) => mapAsset(item, { auth }));
   }
 
@@ -206,7 +211,8 @@ export class SearchService extends BaseService {
     const userIds = await this.getUserIdsToSearch(auth);
     const timelineSpaceIds = await this.getTimelineSpaceIds(auth, dto.withSharedSpaces || !!dto.albumIds?.length);
     const resolvedDto = await this.resolveScopedPersonFilters(auth, { ...dto, timelineSpaceIds });
-    const items = await this.searchRepository.searchLargeAssets(dto.size || 250, { ...resolvedDto, userIds });
+    const proximityOptions = await this.resolveProximityFilter(auth, dto);
+    const items = await this.searchRepository.searchLargeAssets(dto.size || 250, { ...resolvedDto, ...proximityOptions, userIds });
     return items.map((item) => mapAsset(item, { auth }));
   }
 
@@ -513,6 +519,31 @@ export class SearchService extends BaseService {
       timelineEnabled: true,
     });
     return [auth.user.id, ...partnerIds];
+  }
+
+  /**
+   * Разрешить savedLocationId в параметры proximity-фильтрации.
+   * Если savedLocationId указан, находит saved location пользователя и возвращает
+   * координаты и радиус для фильтрации через earth_distance.
+   */
+  private async resolveProximityFilter(
+    auth: AuthDto,
+    dto: { savedLocationId?: string },
+  ): Promise<{ proximityLatitude?: number; proximityLongitude?: number; proximityRadius?: number }> {
+    if (!dto.savedLocationId) {
+      return {};
+    }
+
+    const savedLoc = await this.savedLocationRepository.getById(dto.savedLocationId, auth.user.id);
+    if (!savedLoc) {
+      return {};
+    }
+
+    return {
+      proximityLatitude: savedLoc.latitude,
+      proximityLongitude: savedLoc.longitude,
+      proximityRadius: savedLoc.radius,
+    };
   }
 
   private async getTimelineSpaceIds(auth: AuthDto, withSharedSpaces?: boolean): Promise<string[] | undefined> {

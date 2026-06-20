@@ -701,6 +701,26 @@ export function searchAssetBuilder(kysely: Kysely<DB>, options: AssetSearchBuild
     .$if(!!options.withExif, withExifInner)
     .$if(!!(options.withFaces || options.withPeople), (qb) => qb.select(withFacesAndPeople))
     .$if(!options.withDeleted, (qb) => qb.where('asset.deletedAt', 'is', null))
+    .$if(
+      options.proximityLatitude !== undefined &&
+        options.proximityLongitude !== undefined &&
+        options.proximityRadius !== undefined,
+      (qb) =>
+        qb
+          .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
+          .where('asset_exif.latitude', 'is not', null)
+          .where('asset_exif.longitude', 'is not', null)
+          .where(
+            sql`earth_box(ll_to_earth_public(${options.proximityLatitude!}, ${options.proximityLongitude!}), ${options.proximityRadius!})`,
+            '@>',
+            sql`ll_to_earth_public(asset_exif.latitude, asset_exif.longitude)`,
+          )
+          .where(
+            sql`earth_distance(ll_to_earth_public(${options.proximityLatitude!}, ${options.proximityLongitude!}), ll_to_earth_public(asset_exif.latitude, asset_exif.longitude))`,
+            '<=',
+            sql.lit(options.proximityRadius!),
+          ),
+    )
     .$if(!!options.excludeHiddenForUserId, (qb) =>
       qb.where((eb) =>
         eb.not(

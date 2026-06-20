@@ -86,6 +86,10 @@ export interface SearchExifOptions {
   description?: string | null;
   rating?: number | null;
   ratingIsMinimum?: boolean;
+  /** Фильтрация по близости к сохранённой локации */
+  proximityLatitude?: number;
+  proximityLongitude?: number;
+  proximityRadius?: number;
 }
 
 export interface SearchEmbeddingOptions {

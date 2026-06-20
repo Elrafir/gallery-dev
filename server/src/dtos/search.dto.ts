@@ -59,6 +59,7 @@ const BaseSearchSchema = z.object({
   spaceId: z.uuidv4().optional().describe('Shared space ID to filter by'),
   spacePersonIds: z.array(z.uuidv4()).optional().describe('Shared space person IDs to filter by'),
   withSharedSpaces: z.boolean().optional().describe('Include shared spaces the user is a member of'),
+  savedLocationId: z.uuidv4().optional().describe('Filter by saved location proximity'),
 });
 
 const BaseSearchWithResultsSchema = BaseSearchSchema.extend({
