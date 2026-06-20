@@ -18,6 +18,7 @@
     mdiArchiveArrowDown,
     mdiArchiveArrowDownOutline,
     mdiDatabaseImportOutline,
+    mdiEyeOff,
     mdiFolderOutline,
     mdiHeart,
     mdiHeartOutline,
@@ -120,6 +121,8 @@
     icon={mdiArchiveArrowDownOutline}
     activeIcon={mdiArchiveArrowDown}
   />
+
+  <NavbarItem title="Скрытые" href={Route.hidden()} icon={mdiEyeOff} />
 
   <NavbarItem title={$t('locked_folder')} href={Route.locked()} icon={mdiLockOutline} activeIcon={mdiLock} />
 

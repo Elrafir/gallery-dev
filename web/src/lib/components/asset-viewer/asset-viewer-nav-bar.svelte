@@ -43,6 +43,7 @@
     mdiArrowRight,
     mdiCompare,
     mdiDotsVertical,
+    mdiEyeOff,
     mdiImageSearch,
     mdiPencilOutline,
     mdiPresentationPlay,
@@ -206,6 +207,17 @@
                 text={$t('view_in_timeline')}
               />
             {/if}
+          {:else}
+            <MenuOption
+              icon={mdiEyeOff}
+              text="Скрыть из библиотеки"
+              onClick={async () => {
+                try {
+                  await fetch(`/api/assets/${asset.id}/hide`, { method: 'PUT', credentials: 'include' });
+                  onClose?.();
+                } catch {}
+              }}
+            />
           {/if}
           {#if !asset.isArchived && !asset.isTrashed && smartSearchEnabled}
             <MenuOption

@@ -49,6 +49,7 @@
       <NavbarItem title={$t('settings')} href={Route.systemSettings()} icon={mdiCog} />
       <NavbarItem title={$t('admin.maintenance_settings')} href={Route.systemMaintenance()} icon={mdiWrench} />
       <NavbarItem title="Редактор геоданных" href={Route.geodata()} icon={mdiMapMarkerOutline} />
+      <NavbarItem title="Базовая библиотека" href={Route.primaryLibrary()} icon={mdiBookshelf} />
       <NavbarItem title="Storage Migration" href={Route.storageMigration()} icon={mdiCloudSyncOutline} />
       <NavbarItem title={$t('server_stats')} href={Route.systemStatistics()} icon={mdiServer} />
     </div>

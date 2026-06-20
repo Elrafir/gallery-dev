@@ -110,6 +110,7 @@ export const Route = {
   favorites: () => '/favorites',
   locked: () => '/locked',
   trash: () => '/trash',
+  hidden: () => '/hidden',
   viewTrashedAsset: ({ id }: { id: string }) => `/trash/photos/${id}`,
 
   // search
@@ -140,6 +141,7 @@ export const Route = {
   systemMaintenance: (params?: { continue?: string }) => '/admin/maintenance' + asQueryString(params),
   storageMigration: () => '/admin/storage-migration',
   geodata: () => '/admin/geodata',
+  primaryLibrary: () => '/admin/primary-library',
 
   // tags
   tags: (params?: { path?: string }) => '/tags' + asQueryString(params),
