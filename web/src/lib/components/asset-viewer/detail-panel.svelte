@@ -77,6 +77,38 @@
   let people = $derived(asset.people || []);
   let unassignedFaces = $derived(asset.unassignedFaces || []);
   let showingHiddenPeople = $state(false);
+  let canOverridePeople = $derived(isSpaceMember && !isOwner);
+
+  // Person alias editing state
+  let editingPersonId = $state<string | null>(null);
+  let editingPersonAlias = $state('');
+
+  async function savePersonAlias(personId: string, spacePersonId?: string) {
+    if (!effectiveSpaceId || !spacePersonId) return;
+    try {
+      await fetch(`/api/shared-spaces/${effectiveSpaceId}/people/${spacePersonId}/alias`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alias: editingPersonAlias }),
+      });
+      asset = await getAssetInfo({ id: asset.id, spaceId: effectiveSpaceId });
+    } catch { /* ignore */ }
+    editingPersonId = null;
+  }
+
+  async function hidePersonFromSpace(spacePersonId?: string) {
+    if (!effectiveSpaceId || !spacePersonId) return;
+    try {
+      await fetch(`/api/shared-spaces/${effectiveSpaceId}/people/${spacePersonId}/alias`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isHidden: true }),
+      });
+      asset = await getAssetInfo({ id: asset.id, spaceId: effectiveSpaceId });
+    } catch { /* ignore */ }
+  }
   let latlng = $derived(
     (() => {
       const lat = asset.exifInfo?.latitude;
@@ -284,7 +316,39 @@
                         class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
                       />
                     </div>
-                    <p class="mt-1 truncate font-medium">{person.name}</p>
+                    {#if editingPersonId === person.id}
+                      <div class="mt-1 flex flex-col items-center gap-1">
+                        <input
+                          type="text"
+                          bind:value={editingPersonAlias}
+                          class="w-20 text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5 text-center border-none outline-none"
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter') void savePersonAlias(person.id, person.spacePersonId);
+                            if (e.key === 'Escape') (editingPersonId = null);
+                          }}
+                        />
+                        <div class="flex gap-1">
+                          <button class="text-xs text-green-600" onclick={() => void savePersonAlias(person.id, person.spacePersonId)}>✓</button>
+                          <button class="text-xs text-gray-400" onclick={() => (editingPersonId = null)}>✕</button>
+                        </div>
+                      </div>
+                    {:else}
+                      <p class="mt-1 truncate font-medium">{person.name}</p>
+                      {#if canOverridePeople && person.spacePersonId}
+                        <div class="flex gap-0.5 justify-center mt-0.5">
+                          <button
+                            class="text-xs text-gray-400 hover:text-indigo-500 transition-colors"
+                            title="Переименовать"
+                            onclick={(e) => { e.preventDefault(); e.stopPropagation(); editingPersonId = person.id; editingPersonAlias = person.name; }}
+                          >✎</button>
+                          <button
+                            class="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                            title="Скрыть"
+                            onclick={(e) => { e.preventDefault(); e.stopPropagation(); void hidePersonFromSpace(person.spacePersonId); }}
+                          >👁</button>
+                        </div>
+                      {/if}
+                    {/if}
                     {#if person.birthDate}
                       {@const personBirthDate = DateTime.fromISO(person.birthDate)}
                       {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
