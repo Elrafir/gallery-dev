@@ -37,6 +37,7 @@
       description: string | null;
       latitude: number;
       longitude: number;
+      radius: number;
       icon: string | null;
     }) => Promise<void>;
     initialData?: SavedLocationResponseDto;
@@ -53,6 +54,7 @@
   let lat = $state(initialData?.latitude ?? latitude ?? 0);
   let lng = $state(initialData?.longitude ?? longitude ?? 0);
   let icon = $state(initialData?.icon ?? 'star');
+  let radius = $state(initialData?.radius ?? 50);
 
   let isSubmitting = $state(false);
 
@@ -114,6 +116,7 @@
         description: description.trim() || null,
         latitude: lat,
         longitude: lng,
+        radius,
         icon,
       });
       onClose();
@@ -158,6 +161,29 @@
           <Icon icon={iconMap[key]} size="20" />
         </button>
       {/each}
+    </div>
+  </Field>
+
+  <Field label={$t('saved_location_radius')}>
+    <div class="flex items-center gap-3 pt-1 pb-2">
+      <input
+        type="range"
+        min="10"
+        max="5000"
+        step="10"
+        bind:value={radius}
+        class="flex-grow accent-primary h-2 rounded-full cursor-pointer"
+      />
+      <div class="flex items-center gap-1 shrink-0 min-w-[4.5rem]">
+        <input
+          type="number"
+          min="10"
+          max="5000"
+          bind:value={radius}
+          class="w-16 px-2 py-1 text-sm text-center border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <span class="text-xs text-gray-500 dark:text-zinc-400">м</span>
+      </div>
     </div>
   </Field>
 

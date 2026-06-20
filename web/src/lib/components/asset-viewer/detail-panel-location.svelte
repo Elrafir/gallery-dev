@@ -2,17 +2,30 @@
   /**
    * @component DetailPanelLocation
    * Компонент боковой панели, отвечающий за отображение местоположения медиафайла.
-   * Выводит город, регион, страну, а также позволяет владельцу изменять геолокацию
-   * (вызывая модальное окно выбора точки).
+   * Выводит город, регион, страну, показывает привязку к сохранённым местам
+   * (по GPS-proximity), а также позволяет владельцу изменять геолокацию.
    * 
-   * @property {boolean} isOwner - Флаг, указывающий, является ли текущий пользователь владельцем файла (дает право на редактирование).
+   * @property {boolean} isOwner - Флаг, является ли текущий пользователь владельцем файла.
    * @property {AssetResponseDto} asset - Текущий медиафайл.
    */
   import GeolocationPointPickerModal from '$lib/modals/GeolocationPointPickerModal.svelte';
   import { handleError } from '$lib/utils/handle-error';
-  import { updateAsset, type AssetResponseDto } from '@immich/sdk';
+  import { updateAsset, findSavedLocationsByProximity, type AssetResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { Icon, modalManager } from '@immich/ui';
-  import { mdiMapMarkerOutline, mdiPencil } from '@mdi/js';
+  import {
+    mdiMapMarkerOutline,
+    mdiPencil,
+    mdiStar,
+    mdiHome,
+    mdiBriefcase,
+    mdiSchool,
+    mdiFoodForkDrink,
+    mdiCar,
+    mdiUmbrellaBeach,
+    mdiBank,
+    mdiAccount,
+    mdiMapMarkerRadius,
+  } from '@mdi/js';
   import { t } from 'svelte-i18n';
 
   type Props = {
@@ -21,6 +34,40 @@
   };
 
   let { isOwner, asset = $bindable() }: Props = $props();
+
+  let matchedLocations = $state<SavedLocationResponseDto[]>([]);
+
+  const getIconSvg = (key: string | null | undefined): string => {
+    switch (key) {
+      case 'star': return mdiStar;
+      case 'home': return mdiHome;
+      case 'work': return mdiBriefcase;
+      case 'school': return mdiSchool;
+      case 'food': return mdiFoodForkDrink;
+      case 'car': return mdiCar;
+      case 'beach': return mdiUmbrellaBeach;
+      case 'culture': return mdiBank;
+      case 'person': return mdiAccount;
+      default: return mdiMapMarkerRadius;
+    }
+  };
+
+  // Загружаем saved locations по proximity при изменении asset
+  $effect(() => {
+    const lat = asset.exifInfo?.latitude;
+    const lng = asset.exifInfo?.longitude;
+    if (lat && lng) {
+      findSavedLocationsByProximity({ latitude: lat, longitude: lng })
+        .then((locations) => {
+          matchedLocations = locations;
+        })
+        .catch(() => {
+          matchedLocations = [];
+        });
+    } else {
+      matchedLocations = [];
+    }
+  });
 
   const onAction = async () => {
     const point = await modalManager.show(GeolocationPointPickerModal, { asset });
@@ -85,4 +132,25 @@
       <Icon icon={mdiPencil} size="20" />
     </div>
   </button>
+{/if}
+
+{#if matchedLocations.length > 0}
+  <div class="flex flex-col gap-1.5 py-2">
+    {#each matchedLocations as loc (loc.id)}
+      <div
+        class="flex items-center gap-2.5 px-1 py-1.5 rounded-lg bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 transition-colors"
+        title="{loc.name} — радиус {loc.radius}м"
+      >
+        <div class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 dark:bg-primary/20 shrink-0">
+          <Icon icon={getIconSvg(loc.icon)} size="16" class="text-primary dark:text-primary" />
+        </div>
+        <span class="text-sm font-medium text-primary dark:text-immich-dark-primary truncate">
+          {loc.label}
+        </span>
+        <span class="text-[10px] text-gray-400 dark:text-zinc-500 ml-auto shrink-0 tabular-nums">
+          {loc.radius}м
+        </span>
+      </div>
+    {/each}
+  </div>
 {/if}

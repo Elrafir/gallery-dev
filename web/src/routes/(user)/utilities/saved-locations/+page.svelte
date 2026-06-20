@@ -102,7 +102,7 @@
       defaultName,
       onSubmit: async (values) => {
         try {
-          await createSavedLocation({ createSavedLocationDto: values });
+          await createSavedLocation({ createSavedLocationDto: { ...values, radius: values.radius } });
           toastManager.success('Место успешно сохранено');
           await loadLocations();
         } catch (err: any) {
@@ -119,7 +119,7 @@
       initialData: loc,
       onSubmit: async (values) => {
         try {
-          await updateSavedLocation({ id: loc.id, updateSavedLocationDto: values });
+          await updateSavedLocation({ id: loc.id, updateSavedLocationDto: { ...values, radius: values.radius } });
           toastManager.success('Место успешно обновлено');
           await loadLocations();
         } catch (err: any) {
@@ -321,6 +321,11 @@
                 <Text size="small" color="muted" class="text-gray-500 dark:text-zinc-400 max-w-xl truncate">
                   {loc.name}
                 </Text>
+
+                <!-- Radius Badge -->
+                <span class="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full max-w-max">
+                  📍 {loc.radius}м
+                </span>
 
                 <!-- Optional Description -->
                 {#if loc.description}
