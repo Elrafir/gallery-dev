@@ -39,6 +39,7 @@ import {
   getAllSpaces,
   getAllTags,
   getMlHealth,
+  getSavedLocations,
   getSpace,
   searchAssets,
   searchPerson,
@@ -47,6 +48,7 @@ import {
   type AlbumNameDto,
   type MetadataSearchDto,
   type PersonResponseDto,
+  type SavedLocationResponseDto,
   type SharedSpaceResponseDto,
   type TagResponseDto,
 } from '@immich/sdk';
@@ -399,9 +401,11 @@ export class GlobalSearchManager {
   albumsCache: AlbumNameDto[] | undefined = $state(undefined);
   spacesCache: SharedSpaceResponseDto[] | undefined = $state(undefined);
   peopleSuggestionsCache: PersonResponseDto[] | undefined = $state(undefined);
+  savedLocationsCache: SavedLocationResponseDto[] | undefined = $state(undefined);
   private albumsPromise: Promise<void> | undefined;
   private spacesPromise: Promise<void> | undefined;
   private peoplePromise: Promise<void> | undefined;
+  private savedLocationsPromise: Promise<void> | undefined;
 
   /**
    * Locale-keyed memo cache for navigation item search strings.
@@ -780,6 +784,32 @@ export class GlobalSearchManager {
       }
       this.sections.spaces = { status: 'error', message: error instanceof Error ? error.message : 'unknown error' };
       throw error;
+    }
+  }
+
+  /**
+   * Fetch (and memoize) saved locations for the current open session.
+   * Mirrors `ensureAlbumsCache()` — callers join a shared in-flight promise.
+   */
+  async ensureSavedLocationsCache(): Promise<void> {
+    if (this.savedLocationsCache !== undefined) {
+      return;
+    }
+    if (this.savedLocationsPromise === undefined) {
+      this.savedLocationsPromise = this.fetchSavedLocationsCatalog();
+    }
+    return this.savedLocationsPromise;
+  }
+
+  private async fetchSavedLocationsCatalog(): Promise<void> {
+    try {
+      this.savedLocationsCache = await getSavedLocations({ signal: this.closeSignal });
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
+      // Не блокируем places section — просто оставляем пустой кэш
+      this.savedLocationsCache = [];
     }
   }
 
@@ -1638,8 +1668,9 @@ export class GlobalSearchManager {
     void goto(destination);
   }
 
-  activate(kind: 'photo' | 'person' | 'place' | 'tag' | 'nav' | 'command', item: unknown) {
+  activate(kind: 'photo' | 'person' | 'place' | 'tag' | 'nav' | 'command', item: unknown, options?: { shiftKey?: boolean }) {
     const now = Date.now();
+    const shiftKey = options?.shiftKey ?? false;
     switch (kind) {
       case 'photo': {
         const p = item as { id: string; originalFileName?: string };
@@ -1669,16 +1700,43 @@ export class GlobalSearchManager {
         break;
       }
       case 'place': {
-        const p = item as { name?: string; latitude: number; longitude: number };
-        addEntry({
-          kind: 'place',
-          id: makePlaceId(p.latitude, p.longitude),
-          latitude: p.latitude,
-          longitude: p.longitude,
-          label: p.name ?? '',
-          lastUsed: now,
-        });
-        void goto(Route.map({ zoom: 12, lat: p.latitude, lng: p.longitude }));
+        const p = item as { name?: string; latitude: number; longitude: number; savedLocationId?: string };
+
+        if (p.savedLocationId) {
+          // Saved location: обычный клик → timeline с фильтром, shift+click → карта
+          addEntry({
+            kind: 'place',
+            id: makePlaceId(p.latitude, p.longitude),
+            latitude: p.latitude,
+            longitude: p.longitude,
+            label: p.name ?? '',
+            lastUsed: now,
+          });
+          if (shiftKey) {
+            void goto(Route.map({ zoom: 15, lat: p.latitude, lng: p.longitude }));
+          } else {
+            const url = buildSearchablePageUrl(
+              page.url.pathname.startsWith('/photos') ? page.url : new URL('/photos', page.url.origin),
+              '',
+              'desc',
+              { personIds: [], tagIds: [], mediaType: 'all', sortOrder: 'desc', savedLocationId: p.savedLocationId },
+            );
+            if (url) {
+              void goto(url);
+            }
+          }
+        } else {
+          // Обычное место — на карту
+          addEntry({
+            kind: 'place',
+            id: makePlaceId(p.latitude, p.longitude),
+            latitude: p.latitude,
+            longitude: p.longitude,
+            label: p.name ?? '',
+            lastUsed: now,
+          });
+          void goto(Route.map({ zoom: 12, lat: p.latitude, lng: p.longitude }));
+        }
         break;
       }
       case 'tag': {
@@ -2614,14 +2672,39 @@ export class GlobalSearchManager {
 
     const places: Provider = {
       key: 'places',
-      topN: 3,
+      topN: 5,
       minQueryLength: 2,
       run: async (query, _mode, signal) => {
         try {
-          const results = await searchPlaces({ name: query }, { signal });
-          return results.length === 0
+          // Загрузить saved locations кэш при первом запросе
+          await this.ensureSavedLocationsCache();
+          const savedLocs = this.savedLocationsCache ?? [];
+          const lowerQuery = query.toLowerCase();
+
+          // Локальный fuzzy-поиск по saved locations
+          const matchedSavedLocs = savedLocs
+            .filter(
+              (loc) =>
+                loc.label.toLowerCase().includes(lowerQuery) ||
+                loc.name.toLowerCase().includes(lowerQuery)
+            )
+            .slice(0, 3)
+            .map((loc) => ({
+              name: `⭐ ${loc.label}`,
+              admin1name: loc.name,
+              admin2name: '',
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              savedLocationId: loc.id,
+              radius: loc.radius,
+            }));
+
+          const apiResults = await searchPlaces({ name: query }, { signal });
+          const combined = [...matchedSavedLocs, ...apiResults];
+
+          return combined.length === 0
             ? { status: 'empty' }
-            : { status: 'ok', items: results.slice(0, 3), total: results.length };
+            : { status: 'ok', items: combined.slice(0, 5), total: combined.length };
         } catch (error: unknown) {
           if (error instanceof Error && error.name === 'AbortError') {
             throw error;
