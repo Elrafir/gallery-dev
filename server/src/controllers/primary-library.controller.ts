@@ -29,8 +29,17 @@ export class PrimaryLibraryController {
     description: 'Получить текущие настройки базовой библиотеки.',
     history: new HistoryBuilder().added('v1'),
   })
-  getSettings() {
-    return this.service.getSettings();
+  async getSettings() {
+    const settings = await this.service.getSettings();
+    return settings ?? {
+      enabled: false,
+      autoEnrollNewUsers: true,
+      sharePeople: true,
+      shareTags: true,
+      defaultShowInTimeline: true,
+      defaultShowInMap: true,
+      defaultShowInMemories: true,
+    };
   }
 
   @Put('settings')
