@@ -1906,6 +1906,8 @@ export type MetadataSearchDto = {
     previewPath?: string;
     /** Filter by rating [1-5], or null for unrated */
     rating?: number | null;
+    /** Filter by saved location proximity */
+    savedLocationId?: string;
     /** Number of results to return */
     size?: number;
     /** Shared space ID to filter by */
@@ -8124,7 +8126,7 @@ export function tagAssets({ id, bulkIdsDto }: {
 /**
  * Get time bucket
  */
-export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, slug, spaceId, spacePersonId, spacePersonIds, state, street, tagId, tagIds, takenAfter, takenBefore, timeBucket, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
+export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, savedLocationId, slug, spaceId, spacePersonId, spacePersonIds, state, street, tagId, tagIds, takenAfter, takenBefore, timeBucket, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
     albumId?: string;
     bbox?: string;
     city?: string;
@@ -8139,6 +8141,7 @@ export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotI
     personId?: string;
     personIds?: string[];
     rating?: number;
+    savedLocationId?: string;
     slug?: string;
     spaceId?: string;
     spacePersonId?: string;
@@ -8176,6 +8179,7 @@ export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotI
         personId,
         personIds,
         rating,
+        savedLocationId,
         slug,
         spaceId,
         spacePersonId,
@@ -8201,7 +8205,7 @@ export function getTimeBucket({ albumId, bbox, city, country, isFavorite, isNotI
 /**
  * Get time buckets
  */
-export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, slug, spaceId, spacePersonId, spacePersonIds, state, street, tagId, tagIds, takenAfter, takenBefore, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
+export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNotInAlbum, isTrashed, key, make, model, order, personId, personIds, rating, savedLocationId, slug, spaceId, spacePersonId, spacePersonIds, state, street, tagId, tagIds, takenAfter, takenBefore, $type, userId, visibility, withCoordinates, withPartners, withSharedSpaces, withStacked }: {
     albumId?: string;
     bbox?: string;
     city?: string;
@@ -8216,6 +8220,7 @@ export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNot
     personId?: string;
     personIds?: string[];
     rating?: number;
+    savedLocationId?: string;
     slug?: string;
     spaceId?: string;
     spacePersonId?: string;
@@ -8252,6 +8257,7 @@ export function getTimeBuckets({ albumId, bbox, city, country, isFavorite, isNot
         personId,
         personIds,
         rating,
+        savedLocationId,
         slug,
         spaceId,
         spacePersonId,
