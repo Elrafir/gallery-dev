@@ -1,8 +1,6 @@
-import { Column, CreateDateColumn, ForeignKeyColumn, Table } from 'src/sql-tools';
+import { CreateDateColumn, ForeignKeyColumn, Generated, Table, Timestamp } from '@immich/sql-tools';
 import { SharedSpaceTable } from 'src/schema/tables/shared-space.table';
 import { UserTable } from 'src/schema/tables/user.table';
-import type { Timestamp } from 'src/types';
-import type { Generated } from 'kysely';
 
 /**
  * Связь пространства с владельцами ассетов.

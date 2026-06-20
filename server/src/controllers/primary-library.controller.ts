@@ -6,7 +6,8 @@
  */
 import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Auth, Authenticated, Endpoint, HistoryBuilder } from 'src/decorators';
+import { Endpoint, HistoryBuilder } from 'src/decorators';
+import { Auth, Authenticated } from 'src/middleware/auth.guard';
 import type { AuthDto } from 'src/dtos/auth.dto';
 import {
   PrimaryLibraryLinkLibraryDto,
