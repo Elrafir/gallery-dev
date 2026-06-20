@@ -10200,6 +10200,50 @@
         "x-immich-permission": "systemConfig.update"
       }
     },
+    "/primary-library/members/{userId}/enroll": {
+      "put": {
+        "description": "Вручную зачислить конкретного пользователя в базовую библиотеку.",
+        "operationId": "enrollUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Enroll a single user",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
     "/primary-library/settings": {
       "get": {
         "description": "Получить текущие настройки базовой библиотеки.",

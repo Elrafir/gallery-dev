@@ -77,6 +77,17 @@ export class PrimaryLibraryController {
     return this.service.removeUser(userId);
   }
 
+  @Put('members/:userId/enroll')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Enroll a single user',
+    description: 'Вручную зачислить конкретного пользователя в базовую библиотеку.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  enrollUser(@Param('userId') userId: string) {
+    return this.service.enrollUser(userId);
+  }
+
   @Put('members/enroll-all')
   @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
   @Endpoint({

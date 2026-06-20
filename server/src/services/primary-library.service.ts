@@ -5,6 +5,7 @@
  */
 import { OnEvent } from 'src/decorators';
 import { SharedSpaceRole, SystemMetadataKey } from 'src/enum';
+import { ArgOf } from 'src/repositories/event.repository';
 import { BaseService } from 'src/services/base.service';
 import { PrimaryLibrarySettings } from 'src/types';
 
@@ -317,29 +318,36 @@ export class PrimaryLibraryService extends BaseService {
    * Автоматически зачисляет нового пользователя, если autoEnrollNewUsers = true.
    */
   @OnEvent({ name: 'UserCreate' })
-  async onUserCreate() {
+  async onUserCreate(user: ArgOf<'UserCreate'>) {
     const settings = await this.getSettings();
     if (!settings?.enabled || !settings.autoEnrollNewUsers || !settings.spaceId) {
       return;
     }
 
-    // Получаем последнего созданного пользователя
-    // UserCreate event не передаёт данные, поэтому берём из БД
-    const users = await this.userRepository.getList({ withDeleted: false });
-    if (users.length === 0) {
+    if (user.id === settings.adminUserId) {
       return;
     }
 
-    // Зачисляем всех незачисленных пользователей (безопасный подход)
-    for (const user of users) {
-      if (user.id === settings.adminUserId) {
-        continue;
-      }
+    await this.enrollUser(user.id);
+    this.logger.log(`Auto-enrolled new user ${user.email} into Primary Library`);
+  }
 
-      const existing = await this.sharedSpaceRepository.getMember(settings.spaceId, user.id);
-      if (!existing) {
-        await this.enrollUser(user.id);
-      }
+  /**
+   * Обработчик события восстановления пользователя из корзины.
+   * Ре-enrollит пользователя, если autoEnrollNewUsers = true.
+   */
+  @OnEvent({ name: 'UserRestore' })
+  async onUserRestore(user: ArgOf<'UserRestore'>) {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.autoEnrollNewUsers || !settings.spaceId) {
+      return;
     }
+
+    if (user.id === settings.adminUserId) {
+      return;
+    }
+
+    await this.enrollUser(user.id);
+    this.logger.log(`Re-enrolled restored user ${user.email} into Primary Library`);
   }
 }
