@@ -465,7 +465,7 @@
         class="flex w-full items-center justify-between py-2 text-sm font-medium text-immich-fg dark:text-immich-dark-fg hover:text-primary dark:hover:text-immich-dark-primary transition-colors"
         onclick={() => (showExtendedInfo = !showExtendedInfo)}
       >
-        <Text size="small" color="muted">Расширенная информация</Text>
+        <Text size="small" color="muted">{$t('extended_info') ?? 'Расширенная информация'}</Text>
         <Icon icon={mdiChevronDown} size="24" class="transition-transform duration-200 {showExtendedInfo ? 'rotate-180' : ''}" />
       </button>
 

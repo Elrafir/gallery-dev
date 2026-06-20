@@ -33,6 +33,7 @@
 
   let searchQuery = $state('');
   let showAll = $state(false);
+  let showAllSavedLocations = $state(false);
   let expandedState = $state<string | undefined>(undefined);
   let expandedCity = $state<string | undefined>(undefined);
 
@@ -44,6 +45,7 @@
   let cacheKey = $state('');
 
   const STATE_SHOW_COUNT = 10;
+  const SAVED_LOCATIONS_SHOW_COUNT = 5;
 
   let savedLocations = $state<SavedLocationResponseDto[]>([]);
 
@@ -330,26 +332,60 @@
 </script>
 
 <div data-testid="location-filter">
+  <!-- Search input (always visible) -->
+  <div class="relative mb-2">
+    <div class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+      <Icon icon={mdiMagnify} size="14" />
+    </div>
+    <input
+      type="text"
+      class="immich-form-input h-8 w-full rounded-lg pl-7 pr-2 text-sm"
+      placeholder={$t('filter_search_locations_placeholder')}
+      bind:value={searchQuery}
+      oninput={() => {
+        showAll = false;
+        showAllSavedLocations = false;
+      }}
+      data-testid="location-search-input"
+    />
+  </div>
+
   <!-- Saved Locations List -->
   {#if filteredSavedLocations.length > 0}
     <div class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 mt-1">
       {$t('saved_locations') ?? 'Сохранённые места'}
     </div>
+    {@const visibleSavedLocations = showAllSavedLocations ? filteredSavedLocations : filteredSavedLocations.slice(0, SAVED_LOCATIONS_SHOW_COUNT)}
     <div class="flex flex-col gap-0.5 mb-2 border-b border-gray-100 dark:border-zinc-800 pb-2">
-      {#each filteredSavedLocations as loc (loc.id)}
-        {@const isSelected = selectedSavedLocationId === loc.id}
+      <div class={showAllSavedLocations && filteredSavedLocations.length > SAVED_LOCATIONS_SHOW_COUNT ? 'max-h-[200px] overflow-y-auto scrollbar-thin' : ''}>
+        {#each visibleSavedLocations as loc (loc.id)}
+          {@const isSelected = selectedSavedLocationId === loc.id}
+          <button
+            type="button"
+            class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-subtle {isSelected ? 'font-semibold text-primary dark:text-primary-light bg-primary/5' : 'text-gray-600 dark:text-gray-300'}"
+            onclick={() => handleSavedLocationSelect(loc)}
+          >
+            <Icon icon={mdiStar} class="text-amber-500 shrink-0" size="14" />
+            <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{loc.label}</span>
+            {#if loc.radius}
+              <span class="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{loc.radius}м</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+      {#if filteredSavedLocations.length > SAVED_LOCATIONS_SHOW_COUNT}
         <button
           type="button"
-          class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-subtle {isSelected ? 'font-semibold text-primary dark:text-primary-light bg-primary/5' : 'text-gray-600 dark:text-gray-300'}"
-          onclick={() => handleSavedLocationSelect(loc)}
+          class="py-0.5 text-[11px] font-medium text-immich-primary dark:text-immich-dark-primary text-left"
+          onclick={() => (showAllSavedLocations = !showAllSavedLocations)}
         >
-          <Icon icon={mdiStar} class="text-amber-500 shrink-0" size="14" />
-          <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{loc.label}</span>
-          {#if loc.radius}
-            <span class="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{loc.radius}м</span>
+          {#if showAllSavedLocations}
+            {$t('filter_collapse') ?? 'Свернуть'}
+          {:else}
+            {$t('filter_show_all_count', { values: { count: filteredSavedLocations.length } }) ?? `Показать все (${filteredSavedLocations.length})`}
           {/if}
         </button>
-      {/each}
+      {/if}
     </div>
   {/if}
 
@@ -358,23 +394,6 @@
       {emptyText ?? $t('filter_no_locations_found')}
     </p>
   {:else}
-    <!-- Search input -->
-    <div class="relative mb-2">
-      <div class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-        <Icon icon={mdiMagnify} size="14" />
-      </div>
-      <input
-        type="text"
-        class="immich-form-input h-8 w-full rounded-lg pl-7 pr-2 text-sm"
-        placeholder={$t('filter_search_locations_placeholder')}
-        bind:value={searchQuery}
-        oninput={() => {
-          showAll = false;
-        }}
-        data-testid="location-search-input"
-      />
-    </div>
-
     <!-- Empty search results -->
     {#if filteredStates.length === 0 && searchQuery.trim()}
       <p class="text-sm text-gray-400 dark:text-gray-500" data-testid="location-no-results">
