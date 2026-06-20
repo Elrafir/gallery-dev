@@ -19,9 +19,9 @@
   import type { LatLng } from '$lib/types';
   import { delay } from '$lib/utils/asset-utils';
   import { handleError } from '$lib/utils/handle-error';
-  import { searchPlaces, getSavedLocations, reverseGeocode, type AssetResponseDto, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
+  import { searchPlaces, getSavedLocations, findSavedLocationsByProximity, reverseGeocode, type AssetResponseDto, type PlacesResponseDto, type SavedLocationResponseDto } from '@immich/sdk';
   import { ConfirmModal, Icon, LoadingSpinner, Tooltip } from '@immich/ui';
-  import { mdiMapMarkerMultipleOutline, mdiMapMarker, mdiCrosshairsGps } from '@mdi/js';
+  import { mdiMapMarkerMultipleOutline, mdiMapMarker, mdiCrosshairsGps, mdiMapMarkerRadius } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
 
@@ -60,10 +60,12 @@
   let center = $state(point ?? geolocationManager.lastPoint);
   let savedLocations = $state<SavedLocationResponseDto[]>([]);
   let locationAddress = $state<string>('');
+  let matchedLocations = $state<SavedLocationResponseDto[]>([]);
 
   $effect(() => {
     if (!point) {
       locationAddress = '';
+      matchedLocations = [];
       return;
     }
 
@@ -80,8 +82,25 @@
       } catch {
         locationAddress = `${currentPoint.lat.toFixed(6)}, ${currentPoint.lng.toFixed(6)}`;
       }
+
+      // Проверяем попадание в saved locations по proximity
+      try {
+        matchedLocations = await findSavedLocationsByProximity({
+          latitude: currentPoint.lat,
+          longitude: currentPoint.lng,
+        });
+      } catch {
+        matchedLocations = [];
+      }
     })();
   });
+
+  const snapToLocation = (loc: SavedLocationResponseDto) => {
+    point = { lat: loc.latitude, lng: loc.longitude };
+    mapElement?.addClipMapMarker(loc.longitude, loc.latitude);
+    center = { lat: loc.latitude, lng: loc.longitude };
+    zoom = 15;
+  };
 
   onMount(async () => {
     try {
@@ -252,7 +271,25 @@
         </div>
       </div>
 
-      <span>{locationAddress || $t('pick_a_location')}</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span>{locationAddress || $t('pick_a_location')}</span>
+        {#each matchedLocations as loc (loc.id)}
+          <button
+            type="button"
+            onclick={() => snapToLocation(loc)}
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full
+              bg-primary/10 dark:bg-primary/20 text-primary dark:text-immich-dark-primary
+              border border-primary/20 dark:border-primary/30
+              hover:bg-primary/20 dark:hover:bg-primary/30 hover:scale-105
+              active:scale-95 transition-all cursor-pointer"
+            title="Привязать к точным координатам: {loc.latitude.toFixed(6)}, {loc.longitude.toFixed(6)} (радиус {loc.radius}м)"
+          >
+            <Icon icon={mdiMapMarkerRadius} size="14" />
+            {loc.label}
+            <span class="text-[10px] opacity-60">{loc.radius}м</span>
+          </button>
+        {/each}
+      </div>
       <div class="relative h-125 min-h-75 w-full z-0">
         {#await import('$lib/components/shared-components/map/map.svelte')}
           {#await delay(timeToLoadTheMap) then}
