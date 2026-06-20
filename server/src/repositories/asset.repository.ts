@@ -105,6 +105,10 @@ interface AssetBuilderOptions {
   make?: string;
   model?: string;
   rating?: number;
+  /** Фильтрация по близости к сохранённой локации */
+  proximityLatitude?: number;
+  proximityLongitude?: number;
+  proximityRadius?: number;
   takenAfter?: string;
   takenBefore?: string;
   /** Исключить ассеты, скрытые пользователем через user_asset_override */
@@ -895,7 +899,10 @@ export class AssetRepository {
               !!options.country ||
               !!options.make ||
               !!options.model ||
-              options.rating !== undefined,
+              options.rating !== undefined ||
+              (options.proximityLatitude !== undefined &&
+                options.proximityLongitude !== undefined &&
+                options.proximityRadius !== undefined),
             (qb) => {
               let q = qb.innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId');
 
@@ -936,6 +943,27 @@ export class AssetRepository {
               }
               if (options.rating !== undefined) {
                 q = q.where('asset_exif.rating', '>=', options.rating) as any;
+              }
+
+              // Фильтрация по близости к сохранённой локации (earth_distance)
+              if (
+                options.proximityLatitude !== undefined &&
+                options.proximityLongitude !== undefined &&
+                options.proximityRadius !== undefined
+              ) {
+                q = q
+                  .where('asset_exif.latitude', 'is not', null)
+                  .where('asset_exif.longitude', 'is not', null)
+                  .where(
+                    sql`earth_box(ll_to_earth_public(${options.proximityLatitude!}, ${options.proximityLongitude!}), ${options.proximityRadius!})`,
+                    '@>',
+                    sql`ll_to_earth_public(asset_exif.latitude, asset_exif.longitude)`,
+                  )
+                  .where(
+                    sql`earth_distance(ll_to_earth_public(${options.proximityLatitude!}, ${options.proximityLongitude!}), ll_to_earth_public(asset_exif.latitude, asset_exif.longitude))`,
+                    '<=',
+                    sql.lit(options.proximityRadius!),
+                  ) as any;
               }
 
               return q;
@@ -1161,6 +1189,25 @@ export class AssetRepository {
           .$if(!!options.make, (qb) => qb.where('asset_exif.make', '=', options.make!))
           .$if(!!options.model, (qb) => qb.where('asset_exif.model', '=', options.model!))
           .$if(options.rating !== undefined, (qb) => qb.where('asset_exif.rating', '>=', options.rating!))
+          .$if(
+            options.proximityLatitude !== undefined &&
+              options.proximityLongitude !== undefined &&
+              options.proximityRadius !== undefined,
+            (qb) =>
+              qb
+                .where('asset_exif.latitude', 'is not', null)
+                .where('asset_exif.longitude', 'is not', null)
+                .where(
+                  sql`earth_box(ll_to_earth_public(${options.proximityLatitude!}, ${options.proximityLongitude!}), ${options.proximityRadius!})`,
+                  '@>',
+                  sql`ll_to_earth_public(asset_exif.latitude, asset_exif.longitude)`,
+                )
+                .where(
+                  sql`earth_distance(ll_to_earth_public(${options.proximityLatitude!}, ${options.proximityLongitude!}), ll_to_earth_public(asset_exif.latitude, asset_exif.longitude))`,
+                  '<=',
+                  sql.lit(options.proximityRadius!),
+                ),
+          )
           .$if(!!options.userIds && !options.timelineSpaceIds, (qb) =>
             qb.where('asset.ownerId', '=', anyUuid(options.userIds!)),
           )

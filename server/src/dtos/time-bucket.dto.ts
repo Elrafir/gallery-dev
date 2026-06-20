@@ -54,6 +54,7 @@ const TimeBucketQueryBaseSchema = z
     make: z.string().optional().describe('Filter by camera make'),
     model: z.string().optional().describe('Filter by camera model'),
     rating: z.coerce.number().int().min(1).max(5).optional().describe('Minimum star rating (>=)'),
+    savedLocationId: z.uuidv4().optional().describe('Filter by saved location proximity'),
     type: AssetTypeSchema.optional().describe('Filter by asset type (IMAGE or VIDEO)'),
     takenAfter: z.string().optional().describe('Only include assets taken on or after this date (ISO 8601)'),
     takenBefore: z.string().optional().describe('Only include assets taken on or before this date (ISO 8601)'),

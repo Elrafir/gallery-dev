@@ -26,7 +26,7 @@ export class TimelineService extends BaseService {
   }
 
   private async buildTimeBucketOptions(auth: AuthDto, dto: TimeBucketDto): Promise<TimeBucketOptions> {
-    const { userId, personId, spacePersonId, tagId, type, ...options } = dto;
+    const { userId, personId, spacePersonId, tagId, type, savedLocationId, ...options } = dto;
 
     // Normalize deprecated single-value fields to arrays
     if (personId && !options.personIds?.length) {
@@ -42,6 +42,9 @@ export class TimelineService extends BaseService {
     if (type) {
       (options as any).assetType = type;
     }
+
+    // Разрешить savedLocationId в параметры proximity-фильтрации
+    const proximityOptions = await this.resolveProximityFilter(auth, savedLocationId);
 
     let userIds: string[] | undefined = undefined;
     let timelineSpaceIds: string[] | undefined = undefined;
@@ -69,8 +72,34 @@ export class TimelineService extends BaseService {
 
     return {
       ...scopedOptions,
+      ...proximityOptions,
       userIds,
       excludeHiddenForUserId: timelineSpaceIds ? auth.user.id : undefined,
+    };
+  }
+
+  /**
+   * Разрешить savedLocationId в параметры proximity-фильтрации.
+   * Если savedLocationId указан, находит saved location пользователя и возвращает
+   * координаты и радиус для фильтрации через earth_distance.
+   */
+  private async resolveProximityFilter(
+    auth: AuthDto,
+    savedLocationId?: string,
+  ): Promise<{ proximityLatitude?: number; proximityLongitude?: number; proximityRadius?: number }> {
+    if (!savedLocationId) {
+      return {};
+    }
+
+    const savedLoc = await this.savedLocationRepository.getById(savedLocationId, auth.user.id);
+    if (!savedLoc) {
+      return {};
+    }
+
+    return {
+      proximityLatitude: savedLoc.latitude,
+      proximityLongitude: savedLoc.longitude,
+      proximityRadius: savedLoc.radius,
     };
   }
 
