@@ -110,6 +110,7 @@ export type SavedLocation = {
   description: string | null;
   latitude: number;
   longitude: number;
+  radius: number;
   isFavorite: boolean;
   icon: string | null;
   createdAt: Date;

@@ -39,6 +39,9 @@ export class SavedLocationTable {
   @Column({ type: 'double precision' })
   longitude!: number;
 
+  @Column({ type: 'integer', default: 50 })
+  radius!: Generated<number>;
+
   @Column({ type: 'boolean', default: false })
   isFavorite!: boolean;
 

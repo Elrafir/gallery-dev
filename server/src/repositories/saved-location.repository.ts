@@ -19,6 +19,7 @@ export class SavedLocationRepository {
         description: dto.description ?? null,
         latitude: dto.latitude,
         longitude: dto.longitude,
+        radius: dto.radius ?? 50,
         isFavorite: false,
         icon: dto.icon ?? null,
       })
@@ -57,6 +58,7 @@ export class SavedLocationRepository {
         description: dto.description !== undefined ? dto.description : undefined,
         latitude: dto.latitude,
         longitude: dto.longitude,
+        radius: dto.radius,
         isFavorite: dto.isFavorite,
         icon: dto.icon !== undefined ? dto.icon : undefined,
         updatedAt: sql`now()`,
@@ -106,5 +108,68 @@ export class SavedLocationRepository {
 
     const res = await query.executeTakeFirst();
     return res ? (res as any) : null;
+  }
+
+  /**
+   * Найти все saved locations, в радиусе которых находится заданная точка.
+   * Использует GiST-индекс через earth_box для быстрой pre-фильтрации,
+   * затем точная проверка earth_distance <= radius.
+   */
+  async findByProximity(userId: string, latitude: number, longitude: number): Promise<SavedLocation[]> {
+    const res = await this.db
+      .selectFrom('saved_location')
+      .selectAll()
+      .where('userId', '=', userId)
+      .where(
+        sql`earth_box(ll_to_earth_public(saved_location.latitude, saved_location.longitude), saved_location.radius)`,
+        '@>',
+        sql`ll_to_earth_public(${latitude}, ${longitude})`,
+      )
+      .where(
+        sql`earth_distance(ll_to_earth_public(saved_location.latitude, saved_location.longitude), ll_to_earth_public(${latitude}, ${longitude}))`,
+        '<=',
+        sql`saved_location.radius`,
+      )
+      .orderBy('isFavorite', 'desc')
+      .orderBy('label', 'asc')
+      .execute();
+    return res as any[];
+  }
+
+  /**
+   * Получить ID ассетов пользователя, которые попадают в радиус заданного saved location.
+   * Использует GiST-индекс на asset_exif для быстрой фильтрации.
+   */
+  async getAssetIdsInRadius(
+    savedLocationId: string,
+    userId: string,
+    limit = 1000,
+  ): Promise<string[]> {
+    const location = await this.getById(savedLocationId, userId);
+    if (!location) {
+      return [];
+    }
+
+    const res = await this.db
+      .selectFrom('asset')
+      .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
+      .select('asset.id')
+      .where('asset.ownerId', '=', userId)
+      .where('asset.deletedAt', 'is', null)
+      .where('asset_exif.latitude', 'is not', null)
+      .where('asset_exif.longitude', 'is not', null)
+      .where(
+        sql`earth_box(ll_to_earth_public(${location.latitude}, ${location.longitude}), ${location.radius})`,
+        '@>',
+        sql`ll_to_earth_public(asset_exif.latitude, asset_exif.longitude)`,
+      )
+      .where(
+        sql`earth_distance(ll_to_earth_public(${location.latitude}, ${location.longitude}), ll_to_earth_public(asset_exif.latitude, asset_exif.longitude))`,
+        '<=',
+        sql.lit(location.radius),
+      )
+      .limit(limit)
+      .execute();
+    return res.map((r) => r.id);
   }
 }

@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import { SavedLocation } from 'src/database';
 import { asDateString } from 'src/utils/date';
 import { latitudeSchema, longitudeSchema } from 'src/validation';
+import { ApiProperty } from '@nestjs/swagger';
 import z from 'zod';
 
 export const CreateSavedLocationSchema = z
@@ -11,6 +12,7 @@ export const CreateSavedLocationSchema = z
     description: z.string().nullable().optional().describe('Optional description'),
     latitude: z.coerce.number().meta({ format: 'double' }).pipe(latitudeSchema).describe('Latitude (-90 to 90)'),
     longitude: z.coerce.number().meta({ format: 'double' }).pipe(longitudeSchema).describe('Longitude (-180 to 180)'),
+    radius: z.coerce.number().int().min(10).max(5000).optional().describe('Radius in meters (10-5000, default 50)'),
     icon: z.string().nullable().optional().describe('Icon identifier'),
   })
   .meta({ id: 'CreateSavedLocationDto' });
@@ -23,6 +25,7 @@ export const UpdateSavedLocationSchema = z
     latitude: z.coerce.number().meta({ format: 'double' }).pipe(latitudeSchema).optional().describe('Latitude (-90 to 90)'),
     longitude: z.coerce.number().meta({ format: 'double' }).pipe(longitudeSchema).optional().describe('Longitude (-180 to 180)'),
     isFavorite: z.boolean().optional().describe('Favorite status flag'),
+    radius: z.coerce.number().int().min(10).max(5000).optional().describe('Radius in meters (10-5000)'),
     icon: z.string().nullable().optional().describe('Icon identifier'),
   })
   .meta({ id: 'UpdateSavedLocationDto' });
@@ -36,6 +39,7 @@ export const SavedLocationResponseSchema = z
     description: z.string().nullable().describe('Optional description'),
     latitude: z.number().describe('Latitude'),
     longitude: z.number().describe('Longitude'),
+    radius: z.number().int().describe('Radius in meters'),
     isFavorite: z.boolean().describe('Favorite status flag'),
     icon: z.string().nullable().describe('Icon identifier'),
     createdAt: z.string().meta({ format: 'date-time' }).describe('Creation timestamp'),
@@ -56,10 +60,20 @@ export function mapSavedLocation(entity: SavedLocation): SavedLocationResponseDt
     description: entity.description,
     latitude: Number(entity.latitude),
     longitude: Number(entity.longitude),
+    radius: entity.radius,
     isFavorite: entity.isFavorite,
     icon: entity.icon,
     createdAt: asDateString(entity.createdAt),
     updatedAt: asDateString(entity.updatedAt),
   };
 }
+
+export const ProximityQuerySchema = z
+  .object({
+    latitude: z.coerce.number().meta({ format: 'double' }).pipe(latitudeSchema).describe('Asset latitude'),
+    longitude: z.coerce.number().meta({ format: 'double' }).pipe(longitudeSchema).describe('Asset longitude'),
+  })
+  .meta({ id: 'ProximityQueryDto' });
+
+export class ProximityQueryDto extends createZodDto(ProximityQuerySchema) {}
 
