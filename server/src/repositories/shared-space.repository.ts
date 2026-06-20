@@ -1173,6 +1173,14 @@ export class SharedSpaceRepository {
           AND "asset"."deletedAt" IS NULL
           AND "asset"."isOffline" = false
           AND "asset"."visibility" IN (${sql.join(visibleSpaceAssetVisibilities)})
+        UNION
+        SELECT "asset"."id" AS "assetId"
+        FROM "shared_space_owner"
+        INNER JOIN "asset" ON "asset"."ownerId" = "shared_space_owner"."ownerId"
+        WHERE "shared_space_owner"."spaceId" = ${spaceId}
+          AND "asset"."deletedAt" IS NULL
+          AND "asset"."isOffline" = false
+          AND "asset"."visibility" IN (${sql.join(visibleSpaceAssetVisibilities)})
       ),
       "selected_faces" AS (
         SELECT DISTINCT
@@ -1241,6 +1249,13 @@ export class SharedSpaceRepository {
               .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
               .whereRef('shared_space_library.spaceId', '=', 'shared_space_person.spaceId'),
           ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .select('shared_space_owner.ownerId')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .whereRef('shared_space_owner.spaceId', '=', 'shared_space_person.spaceId'),
+          ),
         ]),
       )
       .executeTakeFirst();
@@ -1277,6 +1292,13 @@ export class SharedSpaceRepository {
               .select('shared_space_library.libraryId')
               .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
               .whereRef('shared_space_library.spaceId', '=', 'shared_space_person.spaceId'),
+          ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .select('shared_space_owner.ownerId')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .whereRef('shared_space_owner.spaceId', '=', 'shared_space_person.spaceId'),
           ),
         ]),
       )
@@ -1345,6 +1367,12 @@ export class SharedSpaceRepository {
               .selectFrom('shared_space_library')
               .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
               .where('shared_space_library.spaceId', '=', input.spaceId),
+          ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .where('shared_space_owner.spaceId', '=', input.spaceId),
           ),
         ]),
       )
@@ -1567,6 +1595,13 @@ export class SharedSpaceRepository {
               .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
               .where('shared_space_library.spaceId', '=', spaceId),
           ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .select('shared_space_owner.ownerId')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .where('shared_space_owner.spaceId', '=', spaceId),
+          ),
         ]),
       )
       .where('person.identityId', 'is not', null)
@@ -1697,6 +1732,13 @@ export class SharedSpaceRepository {
               .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
               .whereRef('shared_space_library.spaceId', '=', 'shared_space_person.spaceId'),
           ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .select('shared_space_owner.ownerId')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .whereRef('shared_space_owner.spaceId', '=', 'shared_space_person.spaceId'),
+          ),
         ]),
       )
       .executeTakeFirst();
@@ -1732,6 +1774,13 @@ export class SharedSpaceRepository {
               .select('shared_space_library.libraryId')
               .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
               .whereRef('shared_space_library.spaceId', '=', 'shared_space_person.spaceId'),
+          ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .select('shared_space_owner.ownerId')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .whereRef('shared_space_owner.spaceId', '=', 'shared_space_person.spaceId'),
           ),
         ]),
       )
@@ -2148,6 +2197,17 @@ export class SharedSpaceRepository {
               .where('asset.isOffline', '=', false)
               .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
           )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .select('asset.id')
+              .where('shared_space_owner.spaceId', '=', spaceId)
+              .where('asset.id', '=', assetId)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false)
+              .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
+          )
           .as('combined'),
       )
       .select('combined.id')
@@ -2174,6 +2234,18 @@ export class SharedSpaceRepository {
               .innerJoin('asset_face', 'asset_face.assetId', 'asset.id')
               .select('asset_face.id')
               .where('shared_space_library.spaceId', '=', spaceId)
+              .where('asset_face.id', '=', faceId)
+              .where('asset_face.deletedAt', 'is', null)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .innerJoin('asset_face', 'asset_face.assetId', 'asset.id')
+              .select('asset_face.id')
+              .where('shared_space_owner.spaceId', '=', spaceId)
               .where('asset_face.id', '=', faceId)
               .where('asset_face.deletedAt', 'is', null)
               .where('asset.deletedAt', 'is', null)
@@ -2220,6 +2292,16 @@ export class SharedSpaceRepository {
           .where('asset.isOffline', '=', false)
           .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
       )
+      .union(
+        this.db
+          .selectFrom('shared_space_owner')
+          .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+          .select('asset.id')
+          .where('shared_space_owner.spaceId', '=', spaceId)
+          .where('asset.deletedAt', 'is', null)
+          .where('asset.isOffline', '=', false)
+          .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
+      )
       .as('combined');
 
     return this.db
@@ -2253,6 +2335,16 @@ export class SharedSpaceRepository {
               .where('asset.isOffline', '=', false)
               .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
           )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .select('asset.id')
+              .where('shared_space_owner.spaceId', '=', spaceId)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false)
+              .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
+          )
           .as('combined'),
       )
       .select('combined.id as assetId')
@@ -2275,6 +2367,15 @@ export class SharedSpaceRepository {
               .innerJoin('asset', 'asset.libraryId', 'shared_space_library.libraryId')
               .innerJoin('shared_space', 'shared_space.id', 'shared_space_library.spaceId')
               .select('shared_space_library.spaceId')
+              .where('asset.id', '=', assetId)
+              .where('shared_space.faceRecognitionEnabled', '=', true),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .innerJoin('shared_space', 'shared_space.id', 'shared_space_owner.spaceId')
+              .select('shared_space_owner.spaceId')
               .where('asset.id', '=', assetId)
               .where('shared_space.faceRecognitionEnabled', '=', true),
           )
@@ -2432,6 +2533,20 @@ export class SharedSpaceRepository {
                   .on('asset.isOffline', '=', false),
               )
               .select('shared_space_library.spaceId')
+              .where('shared_space_member.userId', '=', userId),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+              .innerJoin('asset', (join) =>
+                join
+                  .onRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
+                  .on('asset.id', '=', assetId)
+                  .on('asset.deletedAt', 'is', null)
+                  .on('asset.isOffline', '=', false),
+              )
+              .select('shared_space_owner.spaceId')
               .where('shared_space_member.userId', '=', userId),
           )
           .as('combined'),

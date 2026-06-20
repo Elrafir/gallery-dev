@@ -207,15 +207,6 @@ const USER_PAGES: readonly NavigationItem[] = [
     adminOnly: false,
   },
   {
-    id: 'nav:userPages:spaces',
-    category: 'userPages',
-    labelKey: 'spaces',
-    descriptionKey: 'cmdk_nav_spaces_description',
-    icon: mdiBookOpenOutline,
-    route: '/spaces',
-    adminOnly: false,
-  },
-  {
     id: 'nav:userPages:trash',
     category: 'userPages',
     labelKey: 'trash',

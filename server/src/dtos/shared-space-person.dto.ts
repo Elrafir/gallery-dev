@@ -55,6 +55,16 @@ const SpaceRepresentativeFaceUpdateSchema = z
   })
   .meta({ id: 'SpaceRepresentativeFaceUpdateDto' });
 
+const SharedSpacePersonResetSchema = z
+  .object({
+    name: z.boolean().optional().describe('Reset name to inherited value'),
+    birthDate: z.boolean().optional().describe('Reset birth date to inherited value'),
+    description: z.boolean().optional().describe('Reset description to default'),
+    thumbnail: z.boolean().optional().describe('Reset thumbnail to auto-selected'),
+    alias: z.boolean().optional().describe('Remove per-user alias overrides'),
+  })
+  .meta({ id: 'SharedSpacePersonResetDto' });
+
 const SharedSpacePersonMergeSchema = z
   .object({
     ids: z.array(z.uuidv4()).describe('Person IDs to merge into target'),
@@ -93,6 +103,7 @@ export class SpacePeopleQueryDto extends createZodDto(SpacePeopleQuerySchema) {}
 export class SharedSpacePersonUpdateDto extends createZodDto(SharedSpacePersonUpdateSchema) {}
 export class SharedSpacePersonAliasDto extends createZodDto(SharedSpacePersonAliasSchema) {}
 export class SpaceRepresentativeFaceUpdateDto extends createZodDto(SpaceRepresentativeFaceUpdateSchema) {}
+export class SharedSpacePersonResetDto extends createZodDto(SharedSpacePersonResetSchema) {}
 export class SharedSpacePersonMergeDto extends createZodDto(SharedSpacePersonMergeSchema) {}
 export class SharedSpacePersonResponseDto extends createZodDto(SharedSpacePersonResponseSchema) {}
 export class SharedSpacePeopleStatisticsResponseDto extends createZodDto(SharedSpacePeopleStatisticsResponseSchema) {}

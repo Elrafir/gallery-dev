@@ -213,8 +213,11 @@
               text="Скрыть из библиотеки"
               onClick={async () => {
                 try {
-                  await fetch(`/api/assets/${asset.id}/hide`, { method: 'PUT', credentials: 'include' });
-                  onClose?.();
+                  const response = await fetch(`/api/assets/${asset.id}/hide`, { method: 'PUT', credentials: 'include' });
+                  if (response.ok) {
+                    onAction({ type: 'archive', asset });
+                    onClose?.();
+                  }
                 } catch {}
               }}
             />

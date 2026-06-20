@@ -43,6 +43,7 @@
       numberPeopleToSearch={5}
       inputClass="w-full gap-2 bg-gray-100 dark:bg-gray-700 dark:text-white"
       bind:showLoadingSpinner={isSearchingPeople}
+      withSharedSpaces={true}
     />
     <Button size="small" shape="round" type="submit">{$t('done')}</Button>
   </form>

@@ -3,7 +3,7 @@
   import ImageThumbnail from '$lib/components/assets/thumbnail/image-thumbnail.svelte';
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
   import FaceCreateTagModal from '$lib/modals/CreateFaceModal.svelte';
-  import { getPeopleThumbnailUrl } from '$lib/utils';
+  import { getGlobalPersonThumbnailUrl } from '$lib/utils/global-person-route';
   import { getNaturalSize, scaleToFit } from '$lib/utils/container-utils';
   import { handleError } from '$lib/utils/handle-error';
   import { createFace, getAllPeople, type PersonResponseDto } from '@immich/sdk';
@@ -145,7 +145,7 @@
   };
 
   const getPeople = async () => {
-    const { hasNextPage, people, total } = await getAllPeople({ page, size: 1000, withHidden: false });
+    const { hasNextPage, people, total } = await getAllPeople({ page, size: 1000, withHidden: false, withSharedSpaces: true });
 
     if (candidates.length === total) {
       return;
@@ -399,7 +399,7 @@
                   <ImageThumbnail
                     curve
                     shadow
-                    url={getPeopleThumbnailUrl(person)}
+                    url={getGlobalPersonThumbnailUrl(person)}
                     altText={person.name}
                     widthStyle="30px"
                     heightStyle="30px"

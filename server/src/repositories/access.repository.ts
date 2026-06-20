@@ -745,6 +745,52 @@ class PersonAccess {
       .execute()
       .then((faces) => new Set(faces.map((face) => face.id)));
   }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
+  async checkFaceSpaceAccess(userId: string, assetFaceIds: Set<string>) {
+    if (assetFaceIds.size === 0) {
+      return new Set<string>();
+    }
+
+    return this.db
+      .selectFrom('asset_face')
+      .select('asset_face.id')
+      .innerJoin('asset', (join) =>
+        join.onRef('asset.id', '=', 'asset_face.assetId').on('asset.deletedAt', 'is', null),
+      )
+      .where('asset_face.id', 'in', [...assetFaceIds])
+      .where((eb) =>
+        eb.or([
+          eb.exists(
+            eb
+              .selectFrom('shared_space_asset')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_asset.spaceId')
+              .whereRef('shared_space_asset.assetId', '=', 'asset.id')
+              .where('shared_space_member.userId', '=', userId)
+              .where('shared_space_member.role', 'in', ['editor', 'owner']),
+          ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_library')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_library.spaceId')
+              .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
+              .where('shared_space_member.userId', '=', userId)
+              .where('shared_space_member.role', 'in', ['editor', 'owner']),
+          ),
+          eb.exists(
+            eb
+              .selectFrom('shared_space_owner')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+              .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+              .where('shared_space_member.userId', '=', userId)
+              .where('shared_space_member.role', 'in', ['editor', 'owner']),
+          ),
+        ]),
+      )
+      .execute()
+      .then((faces) => new Set(faces.map((face) => face.id)));
+  }
 }
 
 class PartnerAccess {

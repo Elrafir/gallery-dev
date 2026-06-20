@@ -43,6 +43,7 @@
   import { isExternalUrl } from '$lib/utils/navigation';
   import { getPersonFaceThumbnailUrl } from '$lib/utils/people-utils';
   import { isSpaceScopedPerson, toScopedPersonRef } from '$lib/utils/scoped-person-ref';
+  import { smartUpdatePerson } from '$lib/services/person.service';
   import {
     AssetVisibility,
     detachScopedPerson,
@@ -273,7 +274,7 @@
     }
 
     try {
-      person = await updatePerson({ id: person.id, personUpdateDto: { name: personName } });
+      person = await smartUpdatePerson(person, { name: personName });
       toastManager.primary($t('change_name_successfully'));
     } catch (error) {
       handleError(error, $t('errors.unable_to_save_name'));

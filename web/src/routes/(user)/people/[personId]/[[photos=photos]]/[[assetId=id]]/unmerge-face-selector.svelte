@@ -46,7 +46,7 @@
   }
 
   onMount(async () => {
-    const data = await getAllPeople({ withHidden: false });
+    const data = await getAllPeople({ withHidden: false, withSharedSpaces: true });
     people = data.people;
   });
 

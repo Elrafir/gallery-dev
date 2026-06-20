@@ -1344,6 +1344,78 @@ export class SharedSpaceService extends BaseService {
     await this.sharedSpaceRepository.deleteAlias(personId, auth.user.id);
   }
 
+  async resetSpacePersonToDefaults(
+    auth: AuthDto,
+    spaceId: string,
+    personId: string,
+    dto: { name?: boolean; birthDate?: boolean; description?: boolean; thumbnail?: boolean; alias?: boolean },
+  ): Promise<SharedSpacePersonResponseDto> {
+    await this.requireRole(auth, spaceId, SharedSpaceRole.Editor);
+
+    const person = await this.sharedSpaceRepository.getPersonById(personId);
+    if (!person || person.spaceId !== spaceId) {
+      throw new BadRequestException('Person not found');
+    }
+
+    const updates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {};
+
+    if (dto.name) {
+      updates.name = '';
+      updates.nameSource = 'none';
+      updates.nameSourceProfileType = null;
+      updates.nameSourceProfileId = null;
+      updates.nameSourceUpdatedAt = null;
+    }
+
+    if (dto.birthDate) {
+      updates.birthDate = null;
+      updates.birthDateSource = 'none';
+      updates.birthDateSourceProfileType = null;
+      updates.birthDateSourceProfileId = null;
+      updates.birthDateSourceUpdatedAt = null;
+    }
+
+    if (dto.description) {
+      updates.description = null;
+    }
+
+    if (dto.thumbnail) {
+      const autoFaceId = await this.sharedSpaceRepository.getFirstValidRepresentativeFaceForPerson(person.id);
+      updates.representativeFaceSource = 'auto';
+      updates.representativeFaceId = autoFaceId;
+    }
+
+    const hasUpdates = Object.values(updates).some((value) => value !== undefined);
+    if (hasUpdates) {
+      await this.sharedSpaceRepository.updatePerson(personId, updates);
+    }
+
+    // Удалить per-user alias если запрошено
+    if (dto.alias) {
+      await this.sharedSpaceRepository.deleteAlias(personId, auth.user.id);
+    }
+
+    // Перезапустить backfill чтобы подхватить inherited значения
+    if (person.identityId && (dto.name || dto.birthDate)) {
+      await this.queueSpacePersonMetadataBackfill(person.identityId);
+    }
+
+    await this.sharedSpaceRepository.logActivity({
+      spaceId,
+      userId: auth.user.id,
+      type: SharedSpaceActivityType.PersonUpdate,
+      data: { personId, action: 'reset-defaults' },
+    });
+
+    const enriched = await this.sharedSpaceRepository.getPersonById(personId);
+    if (!enriched) {
+      throw new BadRequestException('Person not found');
+    }
+
+    const alias = await this.sharedSpaceRepository.getAlias(personId, auth.user.id);
+    return this.mapSpacePerson(enriched, alias ?? null);
+  }
+
   async getSpacePersonAssets(auth: AuthDto, spaceId: string, personId: string): Promise<string[]> {
     await this.requireMembership(auth, spaceId);
 

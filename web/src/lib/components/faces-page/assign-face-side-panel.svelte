@@ -2,7 +2,8 @@
   import SearchPeople from '$lib/components/faces-page/people-search.svelte';
   import { timeBeforeShowLoadingSpinner } from '$lib/constants';
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
-  import { getPeopleThumbnailUrl, handlePromiseError } from '$lib/utils';
+  import { handlePromiseError } from '$lib/utils';
+  import { getGlobalPersonThumbnailUrl } from '$lib/utils/global-person-route';
   import { handleError } from '$lib/utils/handle-error';
   import { zoomImageToBase64 } from '$lib/utils/people-utils';
   import { getPersonNameWithHiddenValue } from '$lib/utils/person';
@@ -35,7 +36,7 @@
   async function loadPeople() {
     const timeout = setTimeout(() => (isShowLoadingPeople = true), timeBeforeShowLoadingSpinner);
     try {
-      const { people } = await getAllPeople({ withHidden: true, closestAssetId: editedFace.id });
+      const { people } = await getAllPeople({ withHidden: true, closestAssetId: editedFace.id, withSharedSpaces: true });
       allPeople = people;
     } catch (error) {
       handleError(error, $t('errors.cant_get_faces'));
@@ -131,6 +132,7 @@
           bind:searchName
           bind:showLoadingSpinner={isShowLoadingSearch}
           bind:searchedPeopleLocal={searchedPeople}
+          withSharedSpaces={true}
         />
         {#if isShowLoadingSearch}
           <div>
@@ -166,7 +168,7 @@
                       <ImageThumbnail
                         curve
                         shadow
-                        url={getPeopleThumbnailUrl(person)}
+                        url={getGlobalPersonThumbnailUrl(person)}
                         altText={$getPersonNameWithHiddenValue(person.name, person.isHidden)}
                         widthStyle="90px"
                         heightStyle="90px"

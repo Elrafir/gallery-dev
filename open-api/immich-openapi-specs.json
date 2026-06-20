@@ -10326,6 +10326,162 @@
         "x-immich-permission": "systemConfig.update"
       }
     },
+    "/primary-library/shared-users": {
+      "get": {
+        "description": "Получить список пользователей, чьи фото расшарены через PL.",
+        "operationId": "getSharedUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get shared users",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.read"
+      }
+    },
+    "/primary-library/shared-users/{userId}": {
+      "delete": {
+        "description": "Убрать пользователя из источников фото PL.",
+        "operationId": "removeSharedUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Remove shared user",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      },
+      "put": {
+        "description": "Добавить пользователя как источник фото. Все его фото станут видны участникам PL.",
+        "operationId": "addSharedUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Add shared user",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
+    "/primary-library/sync-faces": {
+      "put": {
+        "description": "Запустить синхронизацию распознанных лиц для базовой библиотеки.",
+        "operationId": "syncFaces",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Sync faces for Primary Library",
+        "tags": [
+          "System config"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "systemConfig.update"
+      }
+    },
     "/primary-library/tags": {
       "delete": {
         "description": "Отвязать теги от базовой библиотеки.",
@@ -10816,6 +10972,70 @@
         ]
       }
     },
+    "/saved-locations/proximity": {
+      "get": {
+        "description": "Find all saved locations whose radius covers the given GPS point.",
+        "operationId": "findByProximity",
+        "parameters": [
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "description": "Asset latitude",
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "description": "Asset longitude",
+            "schema": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedLocationResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Find saved locations by proximity",
+        "tags": [
+          "Saved Locations"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          }
+        ]
+      }
+    },
     "/saved-locations/{id}": {
       "delete": {
         "description": "Delete a saved location by ID.",
@@ -11235,6 +11455,17 @@
               "minimum": -1,
               "maximum": 5,
               "nullable": true
+            }
+          },
+          {
+            "name": "savedLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by saved location proximity",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
             }
           },
           {
@@ -16339,6 +16570,79 @@
         "x-immich-state": "Stable"
       }
     },
+    "/shared-spaces/{id}/people/{personId}/reset-defaults": {
+      "post": {
+        "description": "Reset manually set fields (name, birthDate, description, thumbnail) to inherited/auto values.",
+        "operationId": "resetSpacePersonToDefaults",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "personId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedSpacePersonResetDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedSpacePersonResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Reset person fields to defaults",
+        "tags": [
+          "Shared Spaces"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v2",
+            "state": "Added"
+          },
+          {
+            "version": "v2",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "sharedSpace.update",
+        "x-immich-state": "Stable"
+      }
+    },
     "/shared-spaces/{id}/people/{personId}/statistics": {
       "get": {
         "description": "Retrieve asset and face statistics for a person in a shared space.",
@@ -18578,6 +18882,17 @@
             }
           },
           {
+            "name": "savedLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by saved location proximity",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          },
+          {
             "name": "slug",
             "required": false,
             "in": "query",
@@ -18939,6 +19254,17 @@
               "minimum": 1,
               "maximum": 5,
               "type": "integer"
+            }
+          },
+          {
+            "name": "savedLocationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by saved location proximity",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
             }
           },
           {
@@ -23270,6 +23596,12 @@
             "description": "Resolved geodata address name",
             "minLength": 1,
             "type": "string"
+          },
+          "radius": {
+            "description": "Radius in meters (10-5000, default 50)",
+            "maximum": 5000,
+            "minimum": 10,
+            "type": "integer"
           }
         },
         "required": [
@@ -25048,6 +25380,12 @@
               }
             ],
             "x-immich-state": "Stable"
+          },
+          "savedLocationId": {
+            "description": "Filter by saved location proximity",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
           },
           "size": {
             "description": "Number of results to return",
@@ -27318,6 +27656,12 @@
             ],
             "x-immich-state": "Stable"
           },
+          "savedLocationId": {
+            "description": "Filter by saved location proximity",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
           "size": {
             "description": "Number of results to return",
             "maximum": 1000,
@@ -27555,6 +27899,12 @@
             "description": "Resolved geodata address name",
             "type": "string"
           },
+          "radius": {
+            "description": "Radius in meters",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
           "updatedAt": {
             "description": "Update timestamp",
             "format": "date-time",
@@ -27577,6 +27927,7 @@
           "latitude",
           "longitude",
           "name",
+          "radius",
           "updatedAt",
           "userId"
         ],
@@ -29113,6 +29464,31 @@
         ],
         "type": "object"
       },
+      "SharedSpacePersonResetDto": {
+        "properties": {
+          "alias": {
+            "description": "Remove per-user alias overrides",
+            "type": "boolean"
+          },
+          "birthDate": {
+            "description": "Reset birth date to inherited value",
+            "type": "boolean"
+          },
+          "description": {
+            "description": "Reset description to default",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Reset name to inherited value",
+            "type": "boolean"
+          },
+          "thumbnail": {
+            "description": "Reset thumbnail to auto-selected",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "SharedSpacePersonResponseDto": {
         "properties": {
           "alias": {
@@ -29578,6 +29954,12 @@
               }
             ],
             "x-immich-state": "Stable"
+          },
+          "savedLocationId": {
+            "description": "Filter by saved location proximity",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
           },
           "size": {
             "description": "Number of results to return",
@@ -30093,6 +30475,12 @@
               }
             ],
             "x-immich-state": "Stable"
+          },
+          "savedLocationId": {
+            "description": "Filter by saved location proximity",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
           },
           "spaceId": {
             "description": "Shared space ID to filter by",
@@ -33698,6 +34086,12 @@
             "description": "Resolved geodata address name",
             "minLength": 1,
             "type": "string"
+          },
+          "radius": {
+            "description": "Radius in meters (10-5000)",
+            "maximum": 5000,
+            "minimum": 10,
+            "type": "integer"
           }
         },
         "type": "object"

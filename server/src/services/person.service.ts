@@ -225,14 +225,59 @@ export class PersonService extends BaseService {
     return result;
   }
 
+  /**
+   * Резолвит любой person-like ID в person table ID с проверкой доступа.
+   * Поддерживает:
+   * 1. Person table ID с ownership (owner видит своих)
+   * 2. Space-person ID (резолвится через identity → person)
+   * 3. Person table ID без ownership (space member видит через identity)
+   *
+   * @returns person table ID, готовый для операций
+   * @throws BadRequestException если доступа нет
+   */
+  private async resolvePersonIdWithSpaceAccess(auth: AuthDto, id: string, permission: Permission): Promise<string> {
+    // 1. Прямой доступ через ownership
+    const allowedIds = await this.checkAccess({ auth, permission, ids: [id] });
+    if (allowedIds.has(id)) {
+      return id;
+    }
+
+    // 2. Попробовать как space-person ID → резолвить в person table ID
+    const resolvedFromSpace = await this.faceIdentityRepository.resolveSpacePersonToPersonId(auth.user.id, id);
+    if (resolvedFromSpace) {
+      // Проверить ownership на resolved ID
+      const resolvedAllowed = await this.checkAccess({ auth, permission, ids: [resolvedFromSpace] });
+      if (resolvedAllowed.has(resolvedFromSpace)) {
+        return resolvedFromSpace;
+      }
+      // Даже без ownership, space member имеет доступ если resolveSpacePersonToPersonId вернул результат
+      // (метод уже проверяет space membership через INNER JOIN shared_space_member)
+      return resolvedFromSpace;
+    }
+
+    // 3. Person table ID без ownership → проверить через identity + space
+    const person = await this.personRepository.getById(id);
+    if (person?.identityId) {
+      const accessible = await this.faceIdentityRepository.getAccessiblePersonByIdentityId(
+        auth.user.id,
+        person.identityId,
+      );
+      if (accessible) {
+        return id;
+      }
+    }
+
+    throw new BadRequestException(`Not found or no ${permission} access`);
+  }
+
   async reassignFacesById(auth: AuthDto, personId: string, dto: FaceDto): Promise<PersonResponseDto> {
-    await this.requireAccess({ auth, permission: Permission.PersonUpdate, ids: [personId] });
+    const resolvedPersonId = await this.resolvePersonIdWithSpaceAccess(auth, personId, Permission.PersonUpdate);
     await this.requireAccess({ auth, permission: Permission.PersonCreate, ids: [dto.id] });
     const face = await this.personRepository.getFaceById(dto.id);
-    const person = await this.findOrFail(personId);
+    const person = await this.findOrFail(resolvedPersonId);
 
-    await this.personRepository.reassignFace(face.id, personId);
-    await this.replaceFaceIdentity(personId, face.id, 'manual');
+    await this.personRepository.reassignFace(face.id, resolvedPersonId);
+    await this.replaceFaceIdentity(resolvedPersonId, face.id, 'manual');
     if (person.faceAssetId === null) {
       await this.createNewFeaturePhoto([person.id]);
     }
@@ -240,7 +285,7 @@ export class PersonService extends BaseService {
       await this.createNewFeaturePhoto([face.person.id]);
     }
 
-    return await this.findOrFail(personId).then(mapPerson);
+    return await this.findOrFail(resolvedPersonId).then(mapPerson);
   }
 
   async getFacesById(auth: AuthDto, dto: FaceDto): Promise<AssetFaceResponseDto[]> {
@@ -249,7 +294,108 @@ export class PersonService extends BaseService {
     const asset = await this.assetRepository.getForFaces(dto.id);
     const assetDimensions = getDimensions(asset);
 
-    return faces.map((face) => mapFaces(face, auth, asset.edits, assetDimensions));
+    const mappedFaces = faces.map((face) => mapFaces(face, auth, asset.edits, assetDimensions));
+
+    // Обогащаем person data space-aware overlay (аналогично applySpacePeople в asset.service)
+    await this.applySpacePeopleToFaces(auth, dto.id, mappedFaces);
+
+    return mappedFaces;
+  }
+
+  /**
+   * Обогащает faces space-aware данными для space members.
+   * Для не-owners ассета находит space, подставляет space person имена/birthDate/hidden,
+   * и применяет per-user alias overrides.
+   */
+  private async applySpacePeopleToFaces(
+    auth: AuthDto,
+    assetId: string,
+    faces: AssetFaceResponseDto[],
+  ): Promise<void> {
+    // Получаем ownerId ассета
+    const assetInfo = await this.assetRepository.getById(assetId);
+    if (!assetInfo || assetInfo.ownerId === auth.user.id) {
+      return; // Owner видит свои raw данные
+    }
+
+    // Найти space для этого ассета и пользователя
+    const spaceForAsset = await this.sharedSpaceRepository.findSpaceForAssetAndUser(assetId, auth.user.id);
+    if (!spaceForAsset) {
+      return;
+    }
+
+    // Собрать все person IDs из faces
+    const personIds = faces
+      .map((f) => f.person?.id)
+      .filter((id): id is string => !!id);
+
+    if (personIds.length === 0) {
+      return;
+    }
+
+    // Получить space person overlay
+    const spacePersonMap = await this.sharedSpaceRepository.findSpacePersonsByLinkedPersonIds(
+      spaceForAsset.spaceId,
+      personIds,
+    );
+
+    // Применить overlay к person data в faces
+    for (const face of faces) {
+      if (!face.person) {
+        continue;
+      }
+      const spacePerson = spacePersonMap.get(face.person.id);
+      if (!spacePerson) {
+        continue;
+      }
+
+      (face.person as any).spacePersonId = spacePerson.id;
+      face.person.isHidden = spacePerson.isHidden;
+      if (spacePerson.name !== undefined) {
+        face.person.name = spacePerson.name ?? '';
+      }
+      face.person.thumbnailPath = '';
+      // Добавляем primaryProfile чтобы фронтенд мог построить space-aware thumbnail URL
+      face.person.primaryProfile = {
+        type: 'space-person',
+        id: spacePerson.id,
+        spaceId: spaceForAsset.spaceId,
+      };
+      if (spacePerson.birthDate !== undefined) {
+        face.person.birthDate = spacePerson.birthDate ?? null;
+      }
+      if (spacePerson.updatedAt !== undefined) {
+        face.person.updatedAt = asDateString(spacePerson.updatedAt);
+      }
+    }
+
+    // Также применить per-user alias overlay
+    const spacePersonIds = faces
+      .map((f) => (f.person as any)?.spacePersonId as string | undefined)
+      .filter((id): id is string => !!id);
+
+    if (spacePersonIds.length > 0) {
+      const aliasMap = await this.sharedSpaceRepository.findPersonAliasOverrides(spacePersonIds, auth.user.id);
+      for (const face of faces) {
+        const spacePersonId = (face.person as any)?.spacePersonId as string | undefined;
+        if (!spacePersonId) {
+          continue;
+        }
+        const alias = aliasMap.get(spacePersonId);
+        if (!alias) {
+          continue;
+        }
+        if (alias.alias) {
+          face.person!.name = alias.alias;
+        }
+        if (alias.isHidden) {
+          face.person!.isHidden = true;
+        }
+        if (alias.birthDate !== null) {
+          face.person!.birthDate = alias.birthDate;
+        }
+      }
+    }
   }
 
   async createNewFeaturePhoto(changeFeaturePhoto: string[]) {
@@ -276,20 +422,33 @@ export class PersonService extends BaseService {
       return this.findOrFail(id).then(mapPerson);
     }
 
+    // Попробовать найти как space-person profile ID
     const accessiblePerson = await this.faceIdentityRepository.getAccessiblePersonByProfileId(auth.user.id, id);
     if (accessiblePerson) {
       return accessiblePerson;
+    }
+
+    // Fallback: попробовать как person table ID — резолвить через identity для space members
+    const person = await this.personRepository.getById(id);
+    if (person?.identityId) {
+      const accessibleByIdentity = await this.faceIdentityRepository.getAccessiblePersonByIdentityId(
+        auth.user.id,
+        person.identityId,
+      );
+      if (accessibleByIdentity) {
+        return accessibleByIdentity;
+      }
     }
 
     throw new BadRequestException(`Not found or no ${Permission.PersonRead} access`);
   }
 
   async getFacesForPicker(auth: AuthDto, id: string, dto: PersonFacePageQueryDto): Promise<PersonFacePageResponseDto> {
-    await this.requireAccess({ auth, permission: Permission.PersonRead, ids: [id] });
-    const person = await this.findOrFail(id);
+    const resolvedId = await this.resolvePersonIdWithSpaceAccess(auth, id, Permission.PersonRead);
+    const person = await this.findOrFail(resolvedId);
     const take = dto.size;
     const rows = await this.personRepository.getRepresentativeFaces({
-      personId: id,
+      personId: resolvedId,
       take,
       skip: (dto.page - 1) * dto.size,
     });
@@ -314,8 +473,8 @@ export class PersonService extends BaseService {
   }
 
   async getFaceThumbnail(auth: AuthDto, personId: string, faceId: string): Promise<ImmichMediaResponse> {
-    await this.requireAccess({ auth, permission: Permission.PersonRead, ids: [personId] });
-    const face = await this.personRepository.getRepresentativeFaceForUpdate({ personId, assetFaceId: faceId });
+    const resolvedPersonId = await this.resolvePersonIdWithSpaceAccess(auth, personId, Permission.PersonRead);
+    const face = await this.personRepository.getRepresentativeFaceForUpdate({ personId: resolvedPersonId, assetFaceId: faceId });
     if (!face) {
       throw new NotFoundException();
     }
@@ -368,17 +527,41 @@ export class PersonService extends BaseService {
       return this.personRepository.getStatistics(id);
     }
 
+    // Попробовать как space-person profile ID
     const identityId = await this.faceIdentityRepository.getAccessibleProfileIdentityId(auth.user.id, id);
-    if (!identityId) {
-      throw new BadRequestException(`Not found or no ${Permission.PersonRead} access`);
+    if (identityId) {
+      return this.faceIdentityRepository.getAccessiblePersonStatistics(auth.user.id, identityId);
     }
 
-    return this.faceIdentityRepository.getAccessiblePersonStatistics(auth.user.id, identityId);
+    // Fallback: попробовать как person table ID → identity для space members
+    const person = await this.personRepository.getById(id);
+    if (person?.identityId) {
+      const accessibleByIdentity = await this.faceIdentityRepository.getAccessiblePersonByIdentityId(
+        auth.user.id,
+        person.identityId,
+      );
+      if (accessibleByIdentity) {
+        return this.faceIdentityRepository.getAccessiblePersonStatistics(auth.user.id, person.identityId);
+      }
+    }
+
+    throw new BadRequestException(`Not found or no ${Permission.PersonRead} access`);
   }
 
   async getThumbnail(auth: AuthDto, id: string): Promise<ImmichMediaResponse> {
-    await this.requireThumbnailAccess(auth, id);
-    const person = await this.personRepository.getById(id);
+    // Резолвим ID: может быть space-person ID
+    let resolvedId = id;
+    const directPerson = await this.personRepository.getById(id);
+    if (!directPerson) {
+      const resolved = await this.faceIdentityRepository.resolveSpacePersonToPersonId(auth.user.id, id);
+      if (!resolved) {
+        throw new NotFoundException();
+      }
+      resolvedId = resolved;
+    }
+
+    await this.requireThumbnailAccess(auth, resolvedId);
+    const person = await this.personRepository.getById(resolvedId);
     if (!person || !person.thumbnailPath) {
       throw new NotFoundException();
     }
@@ -426,7 +609,7 @@ export class PersonService extends BaseService {
   }
 
   async update(auth: AuthDto, id: string, dto: PersonUpdateDto): Promise<PersonResponseDto> {
-    await this.requireAccess({ auth, permission: Permission.PersonUpdate, ids: [id] });
+    const resolvedId = await this.resolvePersonIdWithSpaceAccess(auth, id, Permission.PersonUpdate);
 
     const { name, birthDate, description, isHidden, featureFaceAssetId: assetId, isFavorite, color, type, species } =
       dto;
@@ -434,7 +617,7 @@ export class PersonService extends BaseService {
     let faceId: string | undefined = undefined;
     if (assetId) {
       await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [assetId] });
-      const face = await this.personRepository.getForFeatureFaceUpdate({ personId: id, assetId });
+      const face = await this.personRepository.getForFeatureFaceUpdate({ personId: resolvedId, assetId });
       if (!face) {
         throw new BadRequestException('Invalid assetId for feature face or asset is offline');
       }
@@ -443,7 +626,7 @@ export class PersonService extends BaseService {
     }
 
     const person = await this.personRepository.update({
-      id,
+      id: resolvedId,
       faceAssetId: faceId,
       name,
       birthDate,
@@ -455,7 +638,7 @@ export class PersonService extends BaseService {
     });
 
     if (assetId) {
-      await this.jobRepository.queue({ name: JobName.PersonGenerateThumbnail, data: { id } });
+      await this.jobRepository.queue({ name: JobName.PersonGenerateThumbnail, data: { id: resolvedId } });
     }
 
     if (person.identityId && (name !== undefined || birthDate !== undefined)) {
@@ -1279,14 +1462,30 @@ export class PersonService extends BaseService {
 
   // TODO return a asset face response
   async createFace(auth: AuthDto, dto: AssetFaceCreateDto): Promise<void> {
+    // Резолвим personId: может быть person table ID или space-person ID
+    let resolvedPersonId = dto.personId;
+    const directPerson = await this.personRepository.getById(dto.personId);
+
+    if (!directPerson) {
+      // Возможно это space-person ID — резолвим через identity → person
+      const personId = await this.faceIdentityRepository.resolveSpacePersonToPersonId(
+        auth.user.id,
+        dto.personId,
+      );
+      if (!personId) {
+        throw new NotFoundException('Person not found');
+      }
+      resolvedPersonId = personId;
+    }
+
     await Promise.all([
       this.requireAccess({ auth, permission: Permission.AssetRead, ids: [dto.assetId] }),
-      this.requireAccess({ auth, permission: Permission.PersonRead, ids: [dto.personId] }),
+      this.requireAccess({ auth, permission: Permission.PersonRead, ids: [resolvedPersonId] }),
     ]);
 
     const [asset, person] = await Promise.all([
       this.assetRepository.getById(dto.assetId, { edits: true, exifInfo: true }),
-      this.findOrFail(dto.personId),
+      this.findOrFail(resolvedPersonId),
     ]);
 
     if (!asset) {
@@ -1336,7 +1535,7 @@ export class PersonService extends BaseService {
     }
 
     const faceId = await this.personRepository.createAssetFace({
-      personId: dto.personId,
+      personId: resolvedPersonId,
       assetId: dto.assetId,
       imageHeight: dto.imageHeight,
       imageWidth: dto.imageWidth,
@@ -1346,7 +1545,7 @@ export class PersonService extends BaseService {
       boundingBoxY2: Math.round(bottomRight.y),
       sourceType: SourceType.Manual,
     });
-    await this.replaceFaceIdentity(dto.personId, faceId, 'manual');
+    await this.replaceFaceIdentity(resolvedPersonId, faceId, 'manual');
 
     if (!person.faceAssetId) {
       await this.createNewFeaturePhoto([person.id]);

@@ -45,19 +45,6 @@
 <Sidebar ariaLabel={$t('primary')}>
   <NavbarItem title={$t('photos')} href={Route.photos()} icon={mdiImageMultipleOutline} activeIcon={mdiImageMultiple} />
 
-  <NavbarItem
-    title={$t('spaces')}
-    href={Route.spaces()}
-    icon={mdiAccountGroupOutline}
-    activeIcon={mdiAccountGroup}
-    bind:expanded={$recentSpacesDropdown}
-  >
-    {#snippet items()}
-      <span in:fly={{ y: -20 }} class="hidden md:block">
-        <RecentSpaces />
-      </span>
-    {/snippet}
-  </NavbarItem>
 
   {#if featureFlagsManager.value.search}
     <NavbarItem title={$t('explore')} href={Route.explore()} icon={mdiMagnify} />

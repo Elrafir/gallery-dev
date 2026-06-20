@@ -103,6 +103,19 @@ export class PrimaryLibraryController {
     return this.service.getMembers();
   }
 
+  // ВАЖНО: enroll-all ДОЛЖЕН быть объявлен ПЕРЕД :userId маршрутами,
+  // иначе NestJS интерпретирует 'enroll-all' как значение параметра :userId
+  @Put('members/enroll-all')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Enroll all existing users',
+    description: 'Зачислить всех существующих пользователей в базовую библиотеку.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  enrollAllUsers() {
+    return this.service.enrollAllUsers();
+  }
+
   @Put('members/:userId')
   @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
   @Endpoint({
@@ -112,17 +125,6 @@ export class PrimaryLibraryController {
   })
   updateMember(@Param('userId') userId: string, @Body() dto: UpdatePrimaryLibraryMemberDto) {
     return this.service.updateMember(userId, dto);
-  }
-
-  @Delete('members/:userId')
-  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
-  @Endpoint({
-    summary: 'Remove user from Primary Library',
-    description: 'Удалить пользователя из базовой библиотеки.',
-    history: new HistoryBuilder().added('v1'),
-  })
-  removeMember(@Param('userId') userId: string) {
-    return this.service.removeUser(userId);
   }
 
   @Put('members/:userId/enroll')
@@ -136,15 +138,15 @@ export class PrimaryLibraryController {
     return this.service.enrollUser(userId);
   }
 
-  @Put('members/enroll-all')
+  @Delete('members/:userId')
   @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
   @Endpoint({
-    summary: 'Enroll all existing users',
-    description: 'Зачислить всех существующих пользователей в базовую библиотеку.',
+    summary: 'Remove user from Primary Library',
+    description: 'Удалить пользователя из базовой библиотеки.',
     history: new HistoryBuilder().added('v1'),
   })
-  enrollAllUsers() {
-    return this.service.enrollAllUsers();
+  removeMember(@Param('userId') userId: string) {
+    return this.service.removeUser(userId);
   }
 
   // ─── Libraries (legacy, для External Libraries) ───────────────────────
@@ -215,5 +217,18 @@ export class PrimaryLibraryController {
   })
   unlinkSpaceTags(@Body() dto: PrimaryLibraryTagsDto) {
     return this.service.removeSpaceTags(dto.tagIds);
+  }
+
+  // ─── Face Sync ────────────────────────────────────────────────────────
+
+  @Put('sync-faces')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Sync faces for Primary Library',
+    description: 'Запустить синхронизацию распознанных лиц для базовой библиотеки.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  syncFaces() {
+    return this.service.syncFaces();
   }
 }

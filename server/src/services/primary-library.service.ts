@@ -4,7 +4,7 @@
  * автоматическое зачисление пользователей, синхронизацию библиотек админа.
  */
 import { OnEvent } from 'src/decorators';
-import { SharedSpaceRole, SystemMetadataKey } from 'src/enum';
+import { JobName, SharedSpaceRole, SystemMetadataKey } from 'src/enum';
 import { ArgOf } from 'src/repositories/event.repository';
 import { BaseService } from 'src/services/base.service';
 import { PrimaryLibrarySettings } from 'src/types';
@@ -138,9 +138,9 @@ export class PrimaryLibraryService extends BaseService {
 
   /**
    * Зачислить пользователя в Primary Library.
-   * Добавляет как viewer с настройками по умолчанию.
+   * Добавляет как editor с настройками по умолчанию.
    */
-  async enrollUser(userId: string, role: string = SharedSpaceRole.Viewer): Promise<void> {
+  async enrollUser(userId: string, role: string = SharedSpaceRole.Editor): Promise<void> {
     const settings = await this.getSettings();
     if (!settings?.enabled || !settings.spaceId) {
       return;
@@ -203,6 +203,16 @@ export class PrimaryLibraryService extends BaseService {
     if (!settings.sharedUserIds.includes(userId)) {
       settings.sharedUserIds.push(userId);
       await this.systemMetadataRepository.set(SystemMetadataKey.PrimaryLibrarySpaceId, settings);
+    }
+
+    // Запускаем синхронизацию лиц для пространства PL,
+    // чтобы лица из фото нового shared user появились у участников
+    const space = await this.sharedSpaceRepository.getById(settings.spaceId);
+    if (space?.faceRecognitionEnabled) {
+      await this.jobRepository.queue({
+        name: JobName.SharedSpaceFaceMatchAll,
+        data: { spaceId: settings.spaceId },
+      });
     }
 
     this.logger.log(`Added shared user ${userId} to Primary Library`);
@@ -419,5 +429,28 @@ export class PrimaryLibraryService extends BaseService {
 
     await this.enrollUser(user.id);
     this.logger.log(`Re-enrolled restored user ${user.email} into Primary Library`);
+  }
+
+  /**
+   * Вручную запустить синхронизацию распознанных лиц для PL-пространства.
+   * Полезно после добавления shared users, если лица ещё не синхронизированы.
+   */
+  async syncFaces(): Promise<void> {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      throw new Error('Primary Library is not enabled');
+    }
+
+    const space = await this.sharedSpaceRepository.getById(settings.spaceId);
+    if (!space?.faceRecognitionEnabled) {
+      throw new Error('Face recognition is not enabled for Primary Library space');
+    }
+
+    await this.jobRepository.queue({
+      name: JobName.SharedSpaceFaceMatchAll,
+      data: { spaceId: settings.spaceId },
+    });
+
+    this.logger.log('Queued face sync for Primary Library');
   }
 }

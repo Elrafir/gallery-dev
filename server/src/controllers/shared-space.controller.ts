@@ -28,6 +28,7 @@ import {
   SharedSpacePeopleStatisticsResponseDto,
   SharedSpacePersonAliasDto,
   SharedSpacePersonMergeDto,
+  SharedSpacePersonResetDto,
   SharedSpacePersonResponseDto,
   SharedSpacePersonUpdateDto,
   SpacePeopleQueryDto,
@@ -490,6 +491,22 @@ export class SharedSpaceController {
     @Param('personId') personId: string,
   ): Promise<void> {
     return this.service.deleteSpacePerson(auth, id, personId);
+  }
+
+  @Post(':id/people/:personId/reset-defaults')
+  @Authenticated({ permission: Permission.SharedSpaceUpdate })
+  @Endpoint({
+    summary: 'Reset person fields to defaults',
+    description: 'Reset manually set fields (name, birthDate, description, thumbnail) to inherited/auto values.',
+    history: new HistoryBuilder().added('v2').stable('v2'),
+  })
+  resetSpacePersonToDefaults(
+    @Auth() auth: AuthDto,
+    @Param('id') id: string,
+    @Param('personId') personId: string,
+    @Body() dto: SharedSpacePersonResetDto,
+  ): Promise<SharedSpacePersonResponseDto> {
+    return this.service.resetSpacePersonToDefaults(auth, id, personId, dto);
   }
 
   @Post(':id/people/:personId/merge')

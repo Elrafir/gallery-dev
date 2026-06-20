@@ -32,7 +32,7 @@
   onMount(async () => {
     try {
       loading = true;
-      const result = await getAllPeople({ withHidden: false });
+      const result = await getAllPeople({ withHidden: false, withSharedSpaces: true });
       people = result.people;
       loading = false;
     } catch (error) {

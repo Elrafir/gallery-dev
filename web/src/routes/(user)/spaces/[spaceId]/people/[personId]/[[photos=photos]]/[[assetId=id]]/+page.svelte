@@ -38,6 +38,7 @@
     mergeSpacePeople,
     mergeScopedPeople,
     RepresentativeFaceSource,
+    resetSpacePersonToDefaults,
     searchPerson,
     SharedSpaceRole,
     Type3 as ScopedPersonProfileType,
@@ -59,6 +60,7 @@
     mdiDotsVertical,
     mdiTextBoxOutline,
     mdiEyeOffOutline,
+    mdiRestore,
   } from '@mdi/js';
   import { DateTime } from 'luxon';
   import { tick } from 'svelte';
@@ -454,6 +456,34 @@
     }
   }
 
+  async function handleResetToDefaults() {
+    const isConfirm = await modalManager.showDialog({
+      prompt: $t('reset_person_to_defaults_prompt'),
+    });
+    if (!isConfirm) {
+      return;
+    }
+
+    try {
+      const updatedPerson = await resetSpacePersonToDefaults({
+        id: space.id,
+        personId: person.id,
+        sharedSpacePersonResetDto: {
+          name: true,
+          birthDate: true,
+          description: true,
+          thumbnail: true,
+          alias: true,
+        },
+      });
+      setPerson({ ...person, ...updatedPerson });
+      toastManager.success($t('person_reset_to_defaults_success'));
+      await invalidateAll();
+    } catch (error) {
+      handleError(error, $t('errors.unable_to_reset_person'));
+    }
+  }
+
   async function handleDetachProfile() {
     const isConfirm = await modalManager.showDialog({ prompt: $t('separate_from_grouped_person_prompt') });
     if (!isConfirm) {
@@ -508,6 +538,11 @@
           title: $t('separate_from_grouped_person'),
           icon: mdiAccountMultipleCheckOutline,
           onAction: () => void handleDetachProfile(),
+        },
+        {
+          title: $t('reset_person_to_defaults'),
+          icon: mdiRestore,
+          onAction: () => void handleResetToDefaults(),
         },
       );
     }

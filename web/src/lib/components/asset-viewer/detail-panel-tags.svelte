@@ -49,7 +49,7 @@
   async function saveTagAlias(tagId: string) {
     if (!effectiveSpaceId) return;
     try {
-      await fetch(`/api/shared-spaces/${effectiveSpaceId}/tags/${tagId}/overrides`, {
+      await fetch(`/api/tags/${tagId}/override`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,7 @@
   async function hideTag(tagId: string) {
     if (!effectiveSpaceId) return;
     try {
-      await fetch(`/api/shared-spaces/${effectiveSpaceId}/tags/${tagId}/overrides`, {
+      await fetch(`/api/tags/${tagId}/override`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

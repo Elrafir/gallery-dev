@@ -174,6 +174,7 @@ type HydratedAccessiblePersonRow = {
   spaceId: string | null;
   name: string | null;
   birthDate: string | Date | null;
+  description: string | null;
   thumbnailPath: string | null;
   isHidden: boolean;
   isFavorite: boolean | null;
@@ -1170,7 +1171,6 @@ export class FaceIdentityRepository {
         AND shared_space_member."showInTimeline" = true
       WHERE shared_space_person.id = ${profileId}
         AND shared_space_person."identityId" IS NOT NULL
-        AND shared_space_person."isHidden" = false
         AND EXISTS (
           SELECT 1
           FROM shared_space_person_face
@@ -1188,7 +1188,32 @@ export class FaceIdentityRepository {
       return;
     }
 
-    const people = await this.hydrateAccessiblePeople({ userId, identityIds: [identityId], withHidden: false });
+    const people = await this.hydrateAccessiblePeople({ userId, identityIds: [identityId], withHidden: true });
+    return people[0];
+  }
+
+  /**
+   * Резолвит person по identityId для space member'а.
+   * Используется как fallback когда getById получает person table ID вместо space-person ID.
+   */
+  async getAccessiblePersonByIdentityId(userId: string, identityId: string): Promise<PersonResponseDto | undefined> {
+    // Проверяем что пользователь имеет доступ к identity через хотя бы один space
+    const accessCheck = await sql<{ identityId: string }>`
+      SELECT ssp."identityId"
+      FROM shared_space_person ssp
+      INNER JOIN shared_space_member ssm
+        ON ssm."spaceId" = ssp."spaceId"
+        AND ssm."userId" = ${userId}
+        AND ssm."showInTimeline" = true
+      WHERE ssp."identityId" = ${identityId}
+      LIMIT 1
+    `.execute(this.db);
+
+    if (accessCheck.rows.length === 0) {
+      return;
+    }
+
+    const people = await this.hydrateAccessiblePeople({ userId, identityIds: [identityId], withHidden: true });
     return people[0];
   }
 
@@ -1372,15 +1397,38 @@ export class FaceIdentityRepository {
       return false;
     }
 
-    const inaccessiblePersonal = await this.db
+    // Найти person profiles с этими identities, принадлежащие другим пользователям
+    const foreignPersonal = await this.db
       .selectFrom('person')
-      .select('id')
+      .select(['person.id', 'person.identityId'])
       .where('identityId', 'in', identityIds)
       .where('ownerId', '!=', actorUserId)
-      .limit(1)
-      .executeTakeFirst();
-    if (inaccessiblePersonal) {
-      return false;
+      .execute();
+
+    // Для каждого foreign person проверяем доступ через space membership
+    for (const fp of foreignPersonal) {
+      if (!fp.identityId) {
+        return false;
+      }
+      // Проверяем что identity доступна через shared space
+      const accessibleViaSpace = await this.db
+        .selectFrom('shared_space_person')
+        .innerJoin('shared_space_member', (join) =>
+          join
+            .onRef('shared_space_member.spaceId', '=', 'shared_space_person.spaceId')
+            .on('shared_space_member.userId', '=', actorUserId),
+        )
+        .select('shared_space_person.id')
+        .where('shared_space_person.identityId', '=', fp.identityId)
+        .where((eb) => eb.or([
+          eb('shared_space_member.role', '=', 'owner'),
+          eb('shared_space_member.role', '=', 'editor'),
+        ]))
+        .limit(1)
+        .executeTakeFirst();
+      if (!accessibleViaSpace) {
+        return false;
+      }
     }
 
     const spaceRows = await this.db
@@ -1402,6 +1450,8 @@ export class FaceIdentityRepository {
       return false;
     }
 
+    // Проверяем конфликт только для personal profiles (person table) — один owner не может иметь
+    // два person с одним identityId
     const personalConflict = await this.db
       .selectFrom('person as source_person')
       .innerJoin('person as target_person', (join) =>
@@ -1413,23 +1463,12 @@ export class FaceIdentityRepository {
       .where('source_person.identityId', 'in', sourceIdentityIds)
       .limit(1)
       .executeTakeFirst();
-    if (personalConflict) {
-      return true;
-    }
 
-    const spaceConflict = await this.db
-      .selectFrom('shared_space_person as source_person')
-      .innerJoin('shared_space_person as target_person', (join) =>
-        join
-          .onRef('target_person.spaceId', '=', 'source_person.spaceId')
-          .on('target_person.identityId', '=', targetIdentityId),
-      )
-      .select('source_person.id')
-      .where('source_person.identityId', 'in', sourceIdentityIds)
-      .limit(1)
-      .executeTakeFirst();
+    return !!personalConflict;
 
-    return !!spaceConflict;
+    // Space conflict check убран — mergeIdentities обрабатывает дубликаты в shared_space_person
+    // gracefully (не обновляет записи где уже есть target identity в том же space),
+    // а queueSpacePersonMetadataBackfill дочищает после merge.
   }
 
   private async getProfileForDetach(
@@ -1865,6 +1904,7 @@ export class FaceIdentityRepository {
           person."identityId",
           person.name,
           person."birthDate",
+          person.description,
           person."thumbnailPath",
           person."isHidden",
           person."isFavorite",
@@ -1885,6 +1925,7 @@ export class FaceIdentityRepository {
           shared_space_person."identityId",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name,
           shared_space_person."birthDate",
+          shared_space_person.description,
           ''::text AS "thumbnailPath",
           shared_space_person."isHidden",
           NULL::boolean AS "isFavorite",
@@ -1943,6 +1984,7 @@ export class FaceIdentityRepository {
         primary_profiles."spaceId",
         COALESCE(NULLIF(display_profiles.name, ''), primary_profiles.name, '') AS name,
         COALESCE(display_profiles."birthDate", primary_profiles."birthDate") AS "birthDate",
+        COALESCE(display_profiles.description, primary_profiles.description) AS description,
         primary_profiles."thumbnailPath",
         primary_profiles."isHidden",
         primary_profiles."isFavorite",
@@ -1975,6 +2017,7 @@ export class FaceIdentityRepository {
       id: row.profileId,
       name: row.name ?? '',
       birthDate: asBirthDateString(row.birthDate),
+      description: row.description ?? undefined,
       thumbnailPath: row.profileType === 'user-person' ? (row.thumbnailPath ?? '') : '',
       isHidden: row.isHidden,
       isFavorite: row.isFavorite ?? undefined,
@@ -1986,6 +2029,32 @@ export class FaceIdentityRepository {
       type: row.type ?? 'person',
       species: row.species,
     };
+  }
+
+  /**
+   * Резолвит space-person ID в person table ID через identity chain.
+   * Используется в createFace когда фронтенд передаёт space-person ID
+   * из getAllPeople({ withSharedSpaces: true }).
+   *
+   * Цепочка: shared_space_person → identityId → person (с тем же identityId)
+   */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID] })
+  async resolveSpacePersonToPersonId(userId: string, spacePersonId: string): Promise<string | undefined> {
+    const result = await sql<{ personId: string }>`
+      SELECT person.id AS "personId"
+      FROM shared_space_person
+      INNER JOIN shared_space_member
+        ON shared_space_member."spaceId" = shared_space_person."spaceId"
+        AND shared_space_member."userId" = ${userId}
+      INNER JOIN person
+        ON person."identityId" = shared_space_person."identityId"
+      WHERE shared_space_person.id = ${spacePersonId}
+        AND shared_space_person."identityId" IS NOT NULL
+      ORDER BY person."updatedAt" DESC
+      LIMIT 1
+    `.execute(this.db);
+
+    return result.rows[0]?.personId;
   }
 
   @GenerateSql({ params: [DummyValue.UUID] })
@@ -2570,7 +2639,9 @@ export class FaceIdentityRepository {
         targetIdentityId: input.targetIdentityId,
         sourceIdentityIds,
       });
-      if (personalProfileConflictCount > 0 || spaceProfileConflictCount > 0) {
+      // Блокируем только при personal profile conflicts (один owner не может иметь два person с одним identity)
+      // Space profile conflicts разрешены — UPDATE ниже обрабатывает их через WHERE NOT EXISTS
+      if (personalProfileConflictCount > 0) {
         return {
           personalProfileConflictCount,
           spaceProfileConflictCount,

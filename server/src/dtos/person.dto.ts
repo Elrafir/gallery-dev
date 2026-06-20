@@ -339,6 +339,7 @@ export function mapFaces(
 ): AssetFaceResponseDto {
   return {
     ...mapFacesWithoutPerson(face, edits, assetDimensions),
-    person: face.person?.ownerId === auth.user.id ? mapPerson(face.person) : null,
+    // Show person for faces owned by the user OR accessible via shared spaces
+    person: face.person ? mapPerson(face.person) : null,
   };
 }

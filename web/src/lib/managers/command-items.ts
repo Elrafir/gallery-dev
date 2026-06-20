@@ -154,13 +154,6 @@ export const COMMAND_ITEMS: readonly CommandItem[] = [
     handler: () => createAlbumAndRedirect(),
   },
   {
-    id: 'cmd:create_space',
-    labelKey: 'create_space',
-    descriptionKey: 'cmdk_cmd_create_space_description',
-    icon: mdiAccountMultiplePlus,
-    handler: () => modalManager.show(SpaceCreateModal, {}),
-  },
-  {
     id: 'cmd:signout',
     labelKey: 'sign_out',
     descriptionKey: 'cmdk_cmd_sign_out_description',

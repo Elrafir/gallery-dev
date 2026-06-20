@@ -4,7 +4,7 @@ import PersonEditDescriptionModal from '$lib/modals/PersonEditDescriptionModal.s
 import PersonEditTypeModal from '$lib/modals/PersonEditTypeModal.svelte';
 import { handleError } from '$lib/utils/handle-error';
 import { getFormatter } from '$lib/utils/i18n';
-import { updatePerson, type PersonResponseDto } from '@immich/sdk';
+import { updatePerson, updateSpacePerson, getPerson, type PersonResponseDto, type PersonUpdateDto } from '@immich/sdk';
 import { modalManager, toastManager, type ActionItem } from '@immich/ui';
 import {
   mdiCalendarEditOutline,
@@ -16,6 +16,30 @@ import {
   mdiPaw,
 } from '@mdi/js';
 import type { MessageFormatter } from 'svelte-i18n';
+
+/**
+ * Smart update — определяет по primaryProfile, какой API использовать:
+ * - Space person → updateSpacePerson (space API)
+ * - Regular person → updatePerson (person API)
+ */
+export const smartUpdatePerson = async (
+  person: Pick<PersonResponseDto, 'id' | 'primaryProfile'>,
+  dto: Partial<PersonUpdateDto>,
+): Promise<PersonResponseDto> => {
+  const profile = person.primaryProfile;
+  if (profile?.type === 'space-person' && profile.spaceId) {
+    // Space person — используем space API для мутации
+    await updateSpacePerson({
+      id: profile.spaceId,
+      personId: profile.id,
+      sharedSpacePersonUpdateDto: dto,
+    });
+    // Перезагружаем полный PersonResponseDto через getPerson
+    return getPerson({ id: person.id });
+  }
+  // Regular person
+  return updatePerson({ id: person.id, personUpdateDto: dto as PersonUpdateDto });
+};
 
 export const getPersonActions = ($t: MessageFormatter, person: PersonResponseDto) => {
   const SetDateOfBirth: ActionItem = {
@@ -68,11 +92,11 @@ export const getPersonActions = ($t: MessageFormatter, person: PersonResponseDto
   return { SetDateOfBirth, EditDescription, EditType, Favorite, Unfavorite, HidePerson, ShowPerson };
 };
 
-const handleFavoritePerson = async (person: { id: string }) => {
+const handleFavoritePerson = async (person: PersonResponseDto) => {
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({ id: person.id, personUpdateDto: { isFavorite: true } });
+    const response = await smartUpdatePerson(person, { isFavorite: true });
     eventManager.emit('PersonUpdate', response);
     toastManager.primary($t('added_to_favorites'));
   } catch (error) {
@@ -80,11 +104,11 @@ const handleFavoritePerson = async (person: { id: string }) => {
   }
 };
 
-const handleUnfavoritePerson = async (person: { id: string }) => {
+const handleUnfavoritePerson = async (person: PersonResponseDto) => {
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({ id: person.id, personUpdateDto: { isFavorite: false } });
+    const response = await smartUpdatePerson(person, { isFavorite: false });
     eventManager.emit('PersonUpdate', response);
     toastManager.primary($t('removed_from_favorites'));
   } catch (error) {
@@ -92,11 +116,11 @@ const handleUnfavoritePerson = async (person: { id: string }) => {
   }
 };
 
-const handleHidePerson = async (person: { id: string }) => {
+const handleHidePerson = async (person: PersonResponseDto) => {
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({ id: person.id, personUpdateDto: { isHidden: true } });
+    const response = await smartUpdatePerson(person, { isHidden: true });
     toastManager.primary($t('changed_visibility_successfully'));
     eventManager.emit('PersonUpdate', response);
   } catch (error) {
@@ -104,11 +128,11 @@ const handleHidePerson = async (person: { id: string }) => {
   }
 };
 
-const handleShowPerson = async (person: { id: string }) => {
+const handleShowPerson = async (person: PersonResponseDto) => {
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({ id: person.id, personUpdateDto: { isHidden: false } });
+    const response = await smartUpdatePerson(person, { isHidden: false });
     toastManager.primary($t('changed_visibility_successfully'));
     eventManager.emit('PersonUpdate', response);
   } catch (error) {
@@ -120,7 +144,7 @@ export const handleUpdatePersonBirthDate = async (person: PersonResponseDto, bir
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({ id: person.id, personUpdateDto: { birthDate } });
+    const response = await smartUpdatePerson(person, { birthDate });
     toastManager.primary($t('date_of_birth_saved'));
     eventManager.emit('PersonUpdate', response);
     return true;
@@ -137,10 +161,7 @@ export const handleUpdatePersonType = async (
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({
-      id: person.id,
-      personUpdateDto: { type, species },
-    });
+    const response = await smartUpdatePerson(person, { type, species });
     toastManager.primary($t('person_type_saved'));
     eventManager.emit('PersonUpdate', response);
     return true;
@@ -153,7 +174,7 @@ export const handleUpdatePersonDescription = async (person: PersonResponseDto, d
   const $t = await getFormatter();
 
   try {
-    const response = await updatePerson({ id: person.id, personUpdateDto: { description } });
+    const response = await smartUpdatePerson(person, { description });
     toastManager.primary($t('person_description_saved'));
     eventManager.emit('PersonUpdate', response);
     return true;

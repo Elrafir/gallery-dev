@@ -17,7 +17,7 @@
   import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte';
   import PersonMergeSuggestionModal from '$lib/modals/PersonMergeSuggestionModal.svelte';
   import { Route } from '$lib/route';
-  import { getPersonActions } from '$lib/services/person.service';
+  import { getPersonActions, smartUpdatePerson } from '$lib/services/person.service';
   import { locale } from '$lib/stores/preferences.store';
   import { websocketEvents } from '$lib/stores/websocket';
   import { handlePromiseError } from '$lib/utils';
@@ -31,6 +31,7 @@
     getPeopleFaceStatistics,
     getPerson,
     searchPerson,
+    Type,
     updatePerson,
     updateSpacePerson,
     type PersonResponseDto,
@@ -198,10 +199,7 @@
 
   const handleHidePerson = async (detail: PersonResponseDto) => {
     try {
-      const updatedPerson = await updatePerson({
-        id: detail.id,
-        personUpdateDto: { isHidden: true },
-      });
+      const updatedPerson = await smartUpdatePerson(detail, { isHidden: true });
 
       people = people.map((person: PersonResponseDto) => {
         if (person.id === updatedPerson.id) {
@@ -218,10 +216,7 @@
 
   const handleToggleFavorite = async (detail: PersonResponseDto) => {
     try {
-      const updatedPerson = await updatePerson({
-        id: detail.id,
-        personUpdateDto: { isFavorite: !detail.isFavorite },
-      });
+      const updatedPerson = await smartUpdatePerson(detail, { isFavorite: !detail.isFavorite });
 
       people = people.map((person: PersonResponseDto) => {
         if (person.id === updatedPerson.id) {
@@ -498,10 +493,9 @@
         {#snippet actions(person)}
           {@const Actions = getPersonActions($t, person)}
           <ButtonContextMenu
-            buttonClass="icon-white-drop-shadow"
-            color="secondary"
+            buttonClass="icon-white-drop-shadow text-gray-800 dark:text-white"
+            color="currentColor"
             size="24"
-            variant="filled"
             icon={mdiDotsVertical}
             title={$t('show_person_options')}
           >

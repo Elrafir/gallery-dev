@@ -299,7 +299,9 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
     }
 
     case Permission.PersonCreate: {
-      return access.person.checkFaceOwnerAccess(auth.user.id, ids);
+      const isOwner = await access.person.checkFaceOwnerAccess(auth.user.id, ids);
+      const isSpace = await access.person.checkFaceSpaceAccess(auth.user.id, setDifference(ids, isOwner));
+      return setUnion(isOwner, isSpace);
     }
 
     case Permission.PersonRead: {
@@ -312,14 +314,21 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
       return setUnion(isOwner, isShared, isAlbum);
     }
 
-    case Permission.PersonUpdate:
+    case Permission.PersonUpdate: {
+      const isOwner = await access.person.checkOwnerAccess(auth.user.id, ids);
+      const isSpace = await access.person.checkSharedSpaceAccess(auth.user.id, setDifference(ids, isOwner));
+      return setUnion(isOwner, isSpace);
+    }
+
     case Permission.PersonDelete:
     case Permission.PersonMerge: {
       return await access.person.checkOwnerAccess(auth.user.id, ids);
     }
 
     case Permission.PersonReassign: {
-      return access.person.checkFaceOwnerAccess(auth.user.id, ids);
+      const isOwner = await access.person.checkFaceOwnerAccess(auth.user.id, ids);
+      const isSpace = await access.person.checkFaceSpaceAccess(auth.user.id, setDifference(ids, isOwner));
+      return setUnion(isOwner, isSpace);
     }
 
     case Permission.PartnerUpdate: {

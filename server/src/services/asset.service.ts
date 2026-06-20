@@ -253,7 +253,9 @@ export class AssetService extends BaseService {
 
   /**
    * Phase 3.4: Применить пользовательские alias overrides к людям ассета.
-   * Подменяет name (alias), isHidden, birthDate и фильтрует скрытых.
+   * Подменяет name (alias), isHidden, birthDate.
+   * Скрытые per-user помечаются isHidden=true, но НЕ удаляются из массива —
+   * фронтенд показывает/скрывает их по toggle кнопке (как для owner).
    */
   private applyPersonAliases(
     data: AssetResponseDto,
@@ -278,7 +280,7 @@ export class AssetService extends BaseService {
         person.name = alias.alias;
       }
 
-      // Per-user isHidden override
+      // Per-user isHidden override — помечаем, но не фильтруем
       if (alias.isHidden) {
         person.isHidden = true;
       }
@@ -288,15 +290,6 @@ export class AssetService extends BaseService {
         person.birthDate = alias.birthDate;
       }
     }
-
-    // Фильтруем скрытых per-user
-    data.people = data.people.filter((person) => {
-      if (!person.spacePersonId) {
-        return true;
-      }
-      const alias = aliasMap.get(person.spacePersonId);
-      return !alias?.isHidden;
-    });
   }
 
   async update(auth: AuthDto, id: string, dto: UpdateAssetDto): Promise<AssetResponseDto> {

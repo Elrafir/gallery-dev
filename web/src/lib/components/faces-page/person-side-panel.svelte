@@ -5,7 +5,8 @@
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
   import { eventManager } from '$lib/managers/event-manager.svelte';
   import { boundingBoxesArray } from '$lib/stores/people.store';
-  import { getPeopleThumbnailUrl, handlePromiseError } from '$lib/utils';
+  import { handlePromiseError } from '$lib/utils';
+  import { getGlobalPersonThumbnailUrl } from '$lib/utils/global-person-route';
   import { handleError } from '$lib/utils/handle-error';
   import { zoomImageToBase64 } from '$lib/utils/people-utils';
   import { getPersonNameWithHiddenValue } from '$lib/utils/person';
@@ -283,7 +284,7 @@
                         curve
                         shadow
                         highlighted={isHighlighted}
-                        url={getPeopleThumbnailUrl(selectedPersonToReassign[face.id])}
+                        url={getGlobalPersonThumbnailUrl(selectedPersonToReassign[face.id])}
                         altText={selectedPersonToReassign[face.id].name}
                         widthStyle={thumbnailWidth}
                         heightStyle={thumbnailWidth}
@@ -294,7 +295,7 @@
                         curve
                         shadow
                         highlighted={isHighlighted}
-                        url={getPeopleThumbnailUrl(face.person)}
+                        url={getGlobalPersonThumbnailUrl(face.person)}
                         altText={face.person.name}
                         widthStyle={thumbnailWidth}
                         heightStyle={thumbnailWidth}

@@ -2,7 +2,7 @@
   import PeopleVisibilityModal from '$lib/components/people/people-visibility-modal.svelte';
   import type { VisibilityChange, VisibilityPerson, VisibilitySaveResult } from '$lib/components/people/people-types';
   import { getPeopleThumbnailUrl } from '$lib/utils';
-  import { updatePeople, type PersonResponseDto } from '@immich/sdk';
+  import { updatePeople, updateSpacePerson, type PersonResponseDto } from '@immich/sdk';
 
   interface Props {
     people: PersonResponseDto[];
@@ -25,9 +25,44 @@
   );
 
   const saveVisibilityChanges = async (changes: VisibilityChange[]): Promise<VisibilitySaveResult> => {
-    const results = await updatePeople({ peopleUpdateDto: { people: changes } });
-    const successCount = results.filter(({ success }) => success).length;
-    return { successCount, failCount: results.length - successCount };
+    // Разделяем на personal и space changes
+    const personalChanges: VisibilityChange[] = [];
+    const spaceChanges: { person: PersonResponseDto; isHidden: boolean }[] = [];
+
+    for (const change of changes) {
+      const person = people.find((p) => p.id === change.id);
+      if (person?.primaryProfile?.type === 'space-person' && person.primaryProfile.spaceId) {
+        spaceChanges.push({ person, isHidden: change.isHidden });
+      } else {
+        personalChanges.push(change);
+      }
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // Personal persons — batch update
+    if (personalChanges.length > 0) {
+      const results = await updatePeople({ peopleUpdateDto: { people: personalChanges } });
+      successCount += results.filter(({ success }) => success).length;
+      failCount += results.length - successCount;
+    }
+
+    // Space persons — individual smart updates
+    for (const { person, isHidden } of spaceChanges) {
+      try {
+        await updateSpacePerson({
+          id: person.primaryProfile!.spaceId!,
+          personId: person.primaryProfile!.id,
+          sharedSpacePersonUpdateDto: { isHidden },
+        });
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    return { successCount, failCount };
   };
 
   const handleUpdate = (updatedVisibilityPeople: VisibilityPerson[]) => {
