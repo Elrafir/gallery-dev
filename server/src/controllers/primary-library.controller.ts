@@ -6,7 +6,8 @@
  */
 import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Endpoint, HistoryBuilder } from 'src/decorators';
+import { Auth, Authenticated, Endpoint, HistoryBuilder } from 'src/decorators';
+import type { AuthDto } from 'src/dtos/auth.dto';
 import {
   PrimaryLibraryLinkLibraryDto,
   PrimaryLibraryTagsDto,
@@ -49,8 +50,8 @@ export class PrimaryLibraryController {
     description: 'Обновить настройки базовой библиотеки. Создаёт системное пространство при первом включении.',
     history: new HistoryBuilder().added('v1'),
   })
-  updateSettings(@Body() dto: UpdatePrimaryLibrarySettingsDto) {
-    return this.service.updateSettings(dto);
+  updateSettings(@Auth() auth: AuthDto, @Body() dto: UpdatePrimaryLibrarySettingsDto) {
+    return this.service.updateSettings({ ...dto, adminUserId: auth.user.id });
   }
 
   @Get('members')
