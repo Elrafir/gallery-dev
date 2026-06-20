@@ -48,6 +48,11 @@ export class DownloadRepository {
       .where('shared_space_library.spaceId', '=', spaceId)
       .where('asset.isOffline', '=', false);
 
-    return direct.union(library).stream();
+    const owner = builder(this.db)
+      .innerJoin('shared_space_owner', (join) => join.onRef('shared_space_owner.ownerId', '=', 'asset.ownerId'))
+      .where('shared_space_owner.spaceId', '=', spaceId)
+      .where('asset.isOffline', '=', false);
+
+    return direct.union(library).union(owner).stream();
   }
 }

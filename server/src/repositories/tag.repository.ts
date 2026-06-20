@@ -107,6 +107,16 @@ export class TagRepository {
           .where('asset.deletedAt', 'is', null)
           .where('shared_space_member.userId', '=', asUuid(userId)),
       ),
+      eb.exists(
+        eb
+          .selectFrom('tag_asset')
+          .innerJoin('asset', 'asset.id', 'tag_asset.assetId')
+          .innerJoin('shared_space_owner', 'shared_space_owner.ownerId', 'asset.ownerId')
+          .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+          .whereRef('tag_asset.tagId', '=', 'tag.id')
+          .where('asset.deletedAt', 'is', null)
+          .where('shared_space_member.userId', '=', asUuid(userId)),
+      ),
     ]);
   }
 

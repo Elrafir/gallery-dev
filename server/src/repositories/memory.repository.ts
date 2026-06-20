@@ -90,6 +90,15 @@ export class MemoryRepository implements IBulkAsset {
                     .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
                     .where('asset.isOffline', '=', false),
                 ),
+                eb.exists(
+                  eb
+                    .selectFrom('shared_space_owner')
+                    .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+                    .select('shared_space_owner.ownerId')
+                    .where('shared_space_member.userId', '=', userId)
+                    .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+                    .where('asset.isOffline', '=', false),
+                ),
               ]),
             ),
         ),

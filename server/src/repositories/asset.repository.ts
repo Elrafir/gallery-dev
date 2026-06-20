@@ -968,6 +968,12 @@ export class AssetRepository {
                     .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
                     .where('shared_space_library.spaceId', '=', asUuid(options.spaceId!)),
                 ),
+                eb.exists(
+                  eb
+                    .selectFrom('shared_space_owner')
+                    .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+                    .where('shared_space_owner.spaceId', '=', asUuid(options.spaceId!)),
+                ),
               ]),
             ),
           )
@@ -999,6 +1005,12 @@ export class AssetRepository {
                     .selectFrom('shared_space_library')
                     .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
                     .where('shared_space_library.spaceId', '=', anyUuid(options.timelineSpaceIds!)),
+                ),
+                eb.exists(
+                  eb
+                    .selectFrom('shared_space_owner')
+                    .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+                    .where('shared_space_owner.spaceId', '=', anyUuid(options.timelineSpaceIds!)),
                 ),
               ]),
             ),
@@ -1121,6 +1133,12 @@ export class AssetRepository {
                     .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
                     .where('shared_space_library.spaceId', '=', asUuid(options.spaceId!)),
                 ),
+                eb.exists(
+                  eb
+                    .selectFrom('shared_space_owner')
+                    .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+                    .where('shared_space_owner.spaceId', '=', asUuid(options.spaceId!)),
+                ),
               ]),
             ),
           )
@@ -1161,6 +1179,12 @@ export class AssetRepository {
                     .selectFrom('shared_space_library')
                     .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
                     .where('shared_space_library.spaceId', '=', anyUuid(options.timelineSpaceIds!)),
+                ),
+                eb.exists(
+                  eb
+                    .selectFrom('shared_space_owner')
+                    .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+                    .where('shared_space_owner.spaceId', '=', anyUuid(options.timelineSpaceIds!)),
                 ),
               ]),
             ),

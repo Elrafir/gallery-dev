@@ -451,6 +451,13 @@ export type SharedSpaceLibrary = {
   updateId: string;
 };
 
+export type SharedSpaceOwner = {
+  spaceId: string;
+  ownerId: string;
+  addedById: string | null;
+  createdAt: Date;
+};
+
 export type UserGroup = {
   id: string;
   name: string;

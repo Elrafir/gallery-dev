@@ -72,6 +72,7 @@ import { SharedSpaceAuditTable } from 'src/schema/tables/shared-space-audit.tabl
 import { SharedSpaceFaceMatchBackfillTargetTable } from 'src/schema/tables/shared-space-face-match-backfill-target.table';
 import { SharedSpaceLibraryAuditTable } from 'src/schema/tables/shared-space-library-audit.table';
 import { SharedSpaceLibraryTable } from 'src/schema/tables/shared-space-library.table';
+import { SharedSpaceOwnerTable } from 'src/schema/tables/shared-space-owner.table';
 import { SharedSpaceMemberAuditTable } from 'src/schema/tables/shared-space-member-audit.table';
 import { SharedSpaceMemberTable } from 'src/schema/tables/shared-space-member.table';
 import { SharedSpacePersonAliasTable } from 'src/schema/tables/shared-space-person-alias.table';
@@ -157,6 +158,7 @@ export class ImmichDatabase {
     SharedSpaceFaceMatchBackfillTargetTable,
     SharedSpaceLibraryTable,
     SharedSpaceLibraryAuditTable,
+    SharedSpaceOwnerTable,
     SharedSpaceActivityTable,
     SharedSpacePersonTable,
     SharedSpacePersonFaceTable,
@@ -293,6 +295,7 @@ export interface DB {
   shared_space_face_match_backfill_target: SharedSpaceFaceMatchBackfillTargetTable;
   shared_space_library: SharedSpaceLibraryTable;
   shared_space_library_audit: SharedSpaceLibraryAuditTable;
+  shared_space_owner: SharedSpaceOwnerTable;
   shared_space_activity: SharedSpaceActivityTable;
   shared_space_person: SharedSpacePersonTable;
   shared_space_person_face: SharedSpacePersonFaceTable;

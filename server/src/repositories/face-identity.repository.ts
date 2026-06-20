@@ -515,6 +515,29 @@ export class FaceIdentityRepository {
           AND asset_face."deletedAt" IS NULL
           AND asset_face."isVisible" = true
           ${assetFaceFilter}
+
+        UNION
+
+        SELECT
+          shared_space_owner."spaceId",
+          asset.id AS "assetId",
+          asset_face.id AS "assetFaceId",
+          face_identity_face."identityId",
+          COALESCE(person.type, 'person') AS type
+        FROM shared_space_owner
+        INNER JOIN shared_space ON shared_space.id = shared_space_owner."spaceId"
+        INNER JOIN asset ON asset."ownerId" = shared_space_owner."ownerId"
+        INNER JOIN asset_face ON asset_face."assetId" = asset.id
+        INNER JOIN face_identity_face ON face_identity_face."assetFaceId" = asset_face.id
+        LEFT JOIN person ON person.id = asset_face."personId"
+        WHERE shared_space."faceRecognitionEnabled" = true
+          AND asset."deletedAt" IS NULL
+          AND asset."isOffline" = false
+          AND asset.visibility IN (${sql.join(peopleAssetVisibilities)})
+          AND asset_face."personId" IS NOT NULL
+          AND asset_face."deletedAt" IS NULL
+          AND asset_face."isVisible" = true
+          ${assetFaceFilter}
       ),
       targets AS (
         SELECT DISTINCT "spaceId", "assetId"
@@ -617,6 +640,32 @@ export class FaceIdentityRepository {
               ON shared_space_person.id = shared_space_person_face."personId"
             WHERE shared_space_person_face."assetFaceId" = asset_face.id
               AND shared_space_person."spaceId" = shared_space_library."spaceId"
+          )
+
+        UNION
+
+        SELECT
+          shared_space_owner."spaceId",
+          asset.id AS "assetId"
+        FROM shared_space_owner
+        INNER JOIN shared_space ON shared_space.id = shared_space_owner."spaceId"
+        INNER JOIN asset ON asset."ownerId" = shared_space_owner."ownerId"
+        INNER JOIN asset_face ON asset_face."assetId" = asset.id
+        WHERE shared_space."faceRecognitionEnabled" = true
+          AND asset."deletedAt" IS NULL
+          AND asset."isOffline" = false
+          AND asset.visibility IN (${sql.join(peopleAssetVisibilities)})
+          AND asset_face.id = ${anyUuid(uniqueAssetFaceIds)}
+          AND asset_face."personId" IS NOT NULL
+          AND asset_face."deletedAt" IS NULL
+          AND asset_face."isVisible" = true
+          AND NOT EXISTS (
+            SELECT 1
+            FROM shared_space_person_face
+            INNER JOIN shared_space_person
+              ON shared_space_person.id = shared_space_person_face."personId"
+            WHERE shared_space_person_face."assetFaceId" = asset_face.id
+              AND shared_space_person."spaceId" = shared_space_owner."spaceId"
           )
       )
       SELECT DISTINCT "spaceId", "assetId"
@@ -798,6 +847,12 @@ export class FaceIdentityRepository {
               INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_library."spaceId"
               WHERE shared_space_library."libraryId" = asset."libraryId"
             )
+            OR EXISTS (
+              SELECT 1
+              FROM shared_space_owner
+              INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_owner."spaceId"
+              WHERE shared_space_owner."ownerId" = asset."ownerId"
+            )
           )
       ),
       accessible_faces AS (
@@ -912,6 +967,12 @@ export class FaceIdentityRepository {
               FROM shared_space_library
               INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_library."spaceId"
               WHERE shared_space_library."libraryId" = asset."libraryId"
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM shared_space_owner
+              INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_owner."spaceId"
+              WHERE shared_space_owner."ownerId" = asset."ownerId"
             )
           )
       ),
@@ -1049,6 +1110,12 @@ export class FaceIdentityRepository {
               FROM shared_space_library
               INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_library."spaceId"
               WHERE shared_space_library."libraryId" = asset."libraryId"
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM shared_space_owner
+              INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_owner."spaceId"
+              WHERE shared_space_owner."ownerId" = asset."ownerId"
             )
           )
       )
@@ -1513,6 +1580,12 @@ export class FaceIdentityRepository {
               INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_library."spaceId"
               WHERE shared_space_library."libraryId" = asset."libraryId"
             )
+            OR EXISTS (
+              SELECT 1
+              FROM shared_space_owner
+              INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_owner."spaceId"
+              WHERE shared_space_owner."ownerId" = asset."ownerId"
+            )
           )
       ),
       accessible_profiles AS (
@@ -1652,6 +1725,12 @@ export class FaceIdentityRepository {
               INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_library."spaceId"
               WHERE shared_space_library."libraryId" = asset."libraryId"
             )
+            OR EXISTS (
+              SELECT 1
+              FROM shared_space_owner
+              INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_owner."spaceId"
+              WHERE shared_space_owner."ownerId" = asset."ownerId"
+            )
           )
       ),
       identity_counts AS (
@@ -1762,6 +1841,12 @@ export class FaceIdentityRepository {
               FROM shared_space_library
               INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_library."spaceId"
               WHERE shared_space_library."libraryId" = asset."libraryId"
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM shared_space_owner
+              INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_owner."spaceId"
+              WHERE shared_space_owner."ownerId" = asset."ownerId"
             )
           )
       ),

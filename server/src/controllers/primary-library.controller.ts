@@ -1,7 +1,7 @@
 /**
  * Контроллер API для управления базовой библиотекой (Primary Library).
  * Предоставляет эндпоинты для настройки системного пространства,
- * управления участниками и привязки библиотек.
+ * управления участниками и расшаренными пользователями (Multi-Admin).
  * Доступен только администраторам.
  */
 import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
@@ -15,7 +15,6 @@ import {
   UpdatePrimaryLibrarySettingsDto,
 } from 'src/dtos/primary-library.dto';
 import { ApiTag, Permission } from 'src/enum';
-import { Authenticated } from 'src/middleware/auth.guard';
 import { PrimaryLibraryService } from 'src/services/primary-library.service';
 
 @ApiTags(ApiTag.SystemConfig)
@@ -34,6 +33,7 @@ export class PrimaryLibraryController {
     const settings = await this.service.getSettings();
     return settings ?? {
       enabled: false,
+      sharedUserIds: [],
       autoEnrollNewUsers: true,
       sharePeople: true,
       shareTags: true,
@@ -53,6 +53,43 @@ export class PrimaryLibraryController {
   updateSettings(@Auth() auth: AuthDto, @Body() dto: UpdatePrimaryLibrarySettingsDto) {
     return this.service.updateSettings({ ...dto, adminUserId: auth.user.id });
   }
+
+  // ─── Shared Users (Multi-Admin) ───────────────────────────────────────
+
+  @Get('shared-users')
+  @Authenticated({ permission: Permission.SystemConfigRead, admin: true })
+  @Endpoint({
+    summary: 'Get shared users',
+    description: 'Получить список пользователей, чьи фото расшарены через PL.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  getSharedUsers() {
+    return this.service.getSharedUsers();
+  }
+
+  @Put('shared-users/:userId')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Add shared user',
+    description: 'Добавить пользователя как источник фото. Все его фото станут видны участникам PL.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  addSharedUser(@Auth() auth: AuthDto, @Param('userId') userId: string) {
+    return this.service.addSharedUser(userId, auth.user.id);
+  }
+
+  @Delete('shared-users/:userId')
+  @Authenticated({ permission: Permission.SystemConfigUpdate, admin: true })
+  @Endpoint({
+    summary: 'Remove shared user',
+    description: 'Убрать пользователя из источников фото PL.',
+    history: new HistoryBuilder().added('v1'),
+  })
+  removeSharedUser(@Param('userId') userId: string) {
+    return this.service.removeSharedUser(userId);
+  }
+
+  // ─── Members ──────────────────────────────────────────────────────────
 
   @Get('members')
   @Authenticated({ permission: Permission.SystemConfigRead, admin: true })
@@ -109,6 +146,8 @@ export class PrimaryLibraryController {
     return this.service.enrollAllUsers();
   }
 
+  // ─── Libraries (legacy, для External Libraries) ───────────────────────
+
   @Get('libraries')
   @Authenticated({ permission: Permission.SystemConfigRead, admin: true })
   @Endpoint({
@@ -142,7 +181,7 @@ export class PrimaryLibraryController {
     return this.service.unlinkLibraries(dto.libraryIds);
   }
 
-  // ─── Phase 3.3: Space Tag Management ───────────────────────────────────
+  // ─── Tags ─────────────────────────────────────────────────────────────
 
   @Get('tags')
   @Authenticated({ permission: Permission.SystemConfigRead, admin: true })

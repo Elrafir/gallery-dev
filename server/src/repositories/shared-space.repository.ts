@@ -263,6 +263,16 @@ export class SharedSpaceRepository {
               .where('asset.isOffline', '=', false)
               .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
           )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .select('asset.id')
+              .where('shared_space_owner.spaceId', '=', spaceId)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false)
+              .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
+          )
           .as('combined'),
       )
       .select((eb) => eb.fn.countAll().as('count'))
@@ -394,6 +404,37 @@ export class SharedSpaceRepository {
       .then((row) => !!row);
   }
 
+  // ==========================================
+  // Shared Space Owner Link CRUD
+  // ==========================================
+
+  async addOwner(spaceId: string, ownerId: string, addedById: string | null) {
+    await this.db
+      .insertInto('shared_space_owner')
+      .values({ spaceId, ownerId, addedById })
+      .onConflict((oc) => oc.columns(['spaceId', 'ownerId']).doNothing())
+      .execute();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID] })
+  async removeOwner(spaceId: string, ownerId: string) {
+    await this.db
+      .deleteFrom('shared_space_owner')
+      .where('spaceId', '=', spaceId)
+      .where('ownerId', '=', ownerId)
+      .execute();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getLinkedOwners(spaceId: string) {
+    return this.db
+      .selectFrom('shared_space_owner')
+      .innerJoin('user', 'user.id', 'shared_space_owner.ownerId')
+      .where('shared_space_owner.spaceId', '=', spaceId)
+      .select(['shared_space_owner.ownerId', 'user.name', 'user.email'])
+      .execute();
+  }
+
   @GenerateSql({ params: [DummyValue.UUID, 4] })
   getRecentAssets(spaceId: string, limit = 4) {
     return this.db
@@ -414,6 +455,18 @@ export class SharedSpaceRepository {
               .innerJoin('asset', 'asset.libraryId', 'shared_space_library.libraryId')
               .select(['asset.id', 'asset.thumbhash', 'asset.fileCreatedAt'])
               .where('shared_space_library.spaceId', '=', spaceId)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false)
+              .where('asset.type', '=', AssetType.Image)
+              .where('asset.visibility', 'in', visibleSpaceAssetVisibilities)
+              .where('asset.thumbhash', 'is not', null),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .select(['asset.id', 'asset.thumbhash', 'asset.fileCreatedAt'])
+              .where('shared_space_owner.spaceId', '=', spaceId)
               .where('asset.deletedAt', 'is', null)
               .where('asset.isOffline', '=', false)
               .where('asset.type', '=', AssetType.Image)
@@ -461,6 +514,17 @@ export class SharedSpaceRepository {
               .innerJoin('asset', 'asset.libraryId', 'shared_space_library.libraryId')
               .select('asset.id')
               .where('shared_space_library.spaceId', '=', spaceId)
+              .where('asset.createdAt', '>', since)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false)
+              .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .select('asset.id')
+              .where('shared_space_owner.spaceId', '=', spaceId)
               .where('asset.createdAt', '>', since)
               .where('asset.deletedAt', 'is', null)
               .where('asset.isOffline', '=', false)
@@ -564,6 +628,16 @@ export class SharedSpaceRepository {
               .innerJoin('asset', 'asset.libraryId', 'shared_space_library.libraryId')
               .select('asset.id')
               .where('shared_space_library.spaceId', '=', spaceId)
+              .where('asset.deletedAt', 'is', null)
+              .where('asset.isOffline', '=', false)
+              .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('asset', 'asset.ownerId', 'shared_space_owner.ownerId')
+              .select('asset.id')
+              .where('shared_space_owner.spaceId', '=', spaceId)
               .where('asset.deletedAt', 'is', null)
               .where('asset.isOffline', '=', false)
               .where('asset.visibility', 'in', visibleSpaceAssetVisibilities),
@@ -727,6 +801,13 @@ export class SharedSpaceRepository {
                       .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
                       .where('shared_space_library.spaceId', '=', spaceId),
                   ),
+                  spaceEb.exists(
+                    spaceEb
+                      .selectFrom('shared_space_owner')
+                      .select('shared_space_owner.ownerId')
+                      .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+                      .where('shared_space_owner.spaceId', '=', spaceId),
+                  ),
                 ]),
               )
               .$if(!!options.takenAfter, (qb2) => qb2.where('asset.fileCreatedAt', '>=', options.takenAfter!))
@@ -847,6 +928,16 @@ export class SharedSpaceRepository {
           AND ${visibilityFilter}
           ${takenAfterFilter}
           ${takenBeforeFilter}
+        UNION
+        SELECT "asset"."id" AS "assetId"
+        FROM "shared_space_owner"
+        INNER JOIN "asset" ON "asset"."ownerId" = "shared_space_owner"."ownerId"
+        WHERE "shared_space_owner"."spaceId" = ${spaceId}
+          AND "asset"."deletedAt" IS NULL
+          AND "asset"."isOffline" = false
+          AND ${visibilityFilter}
+          ${takenAfterFilter}
+          ${takenBeforeFilter}
       ),
       "person_rows" AS (
         SELECT
@@ -947,6 +1038,16 @@ export class SharedSpaceRepository {
         FROM "shared_space_library"
         INNER JOIN "asset" ON "asset"."libraryId" = "shared_space_library"."libraryId"
         WHERE "shared_space_library"."spaceId" = ${spaceId}
+          AND "asset"."deletedAt" IS NULL
+          AND "asset"."isOffline" = false
+          AND ${visibilityFilter}
+          ${takenAfterFilter}
+          ${takenBeforeFilter}
+        UNION
+        SELECT "asset"."id" AS "assetId"
+        FROM "shared_space_owner"
+        INNER JOIN "asset" ON "asset"."ownerId" = "shared_space_owner"."ownerId"
+        WHERE "shared_space_owner"."spaceId" = ${spaceId}
           AND "asset"."deletedAt" IS NULL
           AND "asset"."isOffline" = false
           AND ${visibilityFilter}

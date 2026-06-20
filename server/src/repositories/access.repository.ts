@@ -249,6 +249,22 @@ class AssetAccess {
                 eb.or([eb('asset.id', 'in', [...assetIds]), eb('asset.livePhotoVideoId', 'in', [...assetIds])]),
               ),
           )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+              .innerJoin('asset', (join) =>
+                join
+                  .onRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
+                  .on('asset.deletedAt', 'is', null)
+                  .on('asset.isOffline', '=', false),
+              )
+              .select(['asset.id', 'asset.livePhotoVideoId'])
+              .where('shared_space_member.userId', '=', userId)
+              .where((eb) =>
+                eb.or([eb('asset.id', 'in', [...assetIds]), eb('asset.livePhotoVideoId', 'in', [...assetIds])]),
+              ),
+          )
           .as('combined'),
       )
       .select(['combined.id', 'combined.livePhotoVideoId'])
@@ -305,6 +321,23 @@ class AssetAccess {
                 eb.or([eb('asset.id', 'in', [...assetIds]), eb('asset.livePhotoVideoId', 'in', [...assetIds])]),
               ),
           )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+              .innerJoin('asset', (join) =>
+                join
+                  .onRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
+                  .on('asset.deletedAt', 'is', null)
+                  .on('asset.isOffline', '=', false),
+              )
+              .select(['asset.id', 'asset.livePhotoVideoId'])
+              .where('shared_space_member.userId', '=', userId)
+              .where('shared_space_owner.spaceId', '=', spaceId)
+              .where((eb) =>
+                eb.or([eb('asset.id', 'in', [...assetIds]), eb('asset.livePhotoVideoId', 'in', [...assetIds])]),
+              ),
+          )
           .as('combined'),
       )
       .select(['combined.id', 'combined.livePhotoVideoId'])
@@ -351,6 +384,23 @@ class AssetAccess {
               .innerJoin('asset', (join) =>
                 join
                   .onRef('asset.libraryId', '=', 'shared_space_library.libraryId')
+                  .on('asset.deletedAt', 'is', null)
+                  .on('asset.isOffline', '=', false),
+              )
+              .select(['asset.id', 'asset.livePhotoVideoId'])
+              .where('shared_space_member.userId', '=', userId)
+              .where((eb) =>
+                eb.or([eb('asset.id', 'in', [...assetIds]), eb('asset.livePhotoVideoId', 'in', [...assetIds])]),
+              )
+              .where('shared_space_member.role', 'in', ['editor', 'owner']),
+          )
+          .union(
+            this.db
+              .selectFrom('shared_space_owner')
+              .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+              .innerJoin('asset', (join) =>
+                join
+                  .onRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
                   .on('asset.deletedAt', 'is', null)
                   .on('asset.isOffline', '=', false),
               )
@@ -630,6 +680,13 @@ class PersonAccess {
                     .selectFrom('shared_space_library')
                     .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_library.spaceId')
                     .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
+                    .where('shared_space_member.userId', '=', userId),
+                ),
+                eb.exists(
+                  eb
+                    .selectFrom('shared_space_owner')
+                    .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+                    .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
                     .where('shared_space_member.userId', '=', userId),
                 ),
               ]),

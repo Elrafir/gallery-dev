@@ -615,8 +615,10 @@ export type PrimaryLibrarySettings = {
   enabled: boolean;
   /** ID пространства Primary Library */
   spaceId: string;
-  /** ID пользователя-источника базовой библиотеки */
+  /** ID пользователя-источника (legacy, для обратной совместимости) */
   adminUserId: string;
+  /** ID пользователей, чьи фото расшарены через PL (Multi-Admin) */
+  sharedUserIds: string[];
   /** Автоматически добавлять новых пользователей */
   autoEnrollNewUsers: boolean;
   /** Расшарить распознанные лица */

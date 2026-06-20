@@ -115,6 +115,12 @@ export class MapRepository {
                 .whereRef('asset.libraryId', '=', 'shared_space_library.libraryId')
                 .where('shared_space_library.spaceId', 'in', options.timelineSpaceIds!),
             ),
+            eb.exists((eb) =>
+              eb
+                .selectFrom('shared_space_owner')
+                .whereRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
+                .where('shared_space_owner.spaceId', 'in', options.timelineSpaceIds!),
+            ),
           );
         }
 
@@ -167,6 +173,12 @@ export class MapRepository {
                   .whereRef('asset.libraryId', '=', 'shared_space_library.libraryId')
                   .where('shared_space_library.spaceId', 'in', timelineSpaceIds),
               ),
+              eb.exists((eb) =>
+                eb
+                  .selectFrom('shared_space_owner')
+                  .whereRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
+                  .where('shared_space_owner.spaceId', 'in', timelineSpaceIds),
+              ),
             );
           }
 
@@ -201,6 +213,15 @@ export class MapRepository {
                   .selectFrom('shared_space_library')
                   .whereRef('asset.libraryId', '=', 'shared_space_library.libraryId')
                   .where('shared_space_library.spaceId', 'in', timelineSpaceIds),
+              ),
+            ]),
+            eb.and([
+              eb('asset.visibility', '=', AssetVisibility.Timeline),
+              eb.exists((eb) =>
+                eb
+                  .selectFrom('shared_space_owner')
+                  .whereRef('asset.ownerId', '=', 'shared_space_owner.ownerId')
+                  .where('shared_space_owner.spaceId', 'in', timelineSpaceIds),
               ),
             ]),
           );

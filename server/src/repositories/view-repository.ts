@@ -71,6 +71,13 @@ export class ViewRepository {
           .whereRef('shared_space_library.libraryId', '=', 'asset.libraryId')
           .where('shared_space_member.userId', '=', asUuid(userId)),
       ),
+      eb.exists(
+        eb
+          .selectFrom('shared_space_owner')
+          .innerJoin('shared_space_member', 'shared_space_member.spaceId', 'shared_space_owner.spaceId')
+          .whereRef('shared_space_owner.ownerId', '=', 'asset.ownerId')
+          .where('shared_space_member.userId', '=', asUuid(userId)),
+      ),
     ]);
   }
 }

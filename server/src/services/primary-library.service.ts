@@ -10,7 +10,7 @@ import { BaseService } from 'src/services/base.service';
 import { PrimaryLibrarySettings } from 'src/types';
 
 /** Настройки по умолчанию для Primary Library */
-const DEFAULT_SETTINGS: Omit<PrimaryLibrarySettings, 'spaceId' | 'adminUserId'> = {
+const DEFAULT_SETTINGS: Omit<PrimaryLibrarySettings, 'spaceId' | 'adminUserId' | 'sharedUserIds'> = {
   enabled: false,
   autoEnrollNewUsers: true,
   sharePeople: true,
@@ -75,9 +75,14 @@ export class PrimaryLibraryService extends BaseService {
         ...DEFAULT_SETTINGS,
         spaceId: '',
         adminUserId: '',
+        sharedUserIds: [],
         ...dto,
       };
     } else {
+      // Миграция: добавляем sharedUserIds если их нет (обратная совместимость)
+      if (!settings.sharedUserIds) {
+        settings.sharedUserIds = settings.adminUserId ? [settings.adminUserId] : [];
+      }
       settings = { ...settings, ...dto };
     }
 
@@ -85,11 +90,17 @@ export class PrimaryLibraryService extends BaseService {
     if (settings.enabled && !settings.spaceId && settings.adminUserId) {
       const spaceId = await this.createSystemSpace(settings.adminUserId);
       settings.spaceId = spaceId;
+
+      // Автоматически добавляем админа как расшаренного пользователя
+      if (!settings.sharedUserIds.includes(settings.adminUserId)) {
+        settings.sharedUserIds.push(settings.adminUserId);
+      }
+      await this.sharedSpaceRepository.addOwner(spaceId, settings.adminUserId, settings.adminUserId);
     }
 
     await this.systemMetadataRepository.set(SystemMetadataKey.PrimaryLibrarySpaceId, settings);
 
-    this.logger.log(`Primary Library settings updated: enabled=${settings.enabled}, adminUserId=${settings.adminUserId}`);
+    this.logger.log(`Primary Library settings updated: enabled=${settings.enabled}, sharedUsers=${settings.sharedUserIds.length}`);
 
     return settings;
   }
@@ -169,8 +180,68 @@ export class PrimaryLibraryService extends BaseService {
     this.logger.log(`Removed user ${userId} from Primary Library`);
   }
 
+  // ==========================================
+  // Multi-Admin: Shared Users (shared_space_owner)
+  // ==========================================
+
   /**
-   * Привязать библиотеки админа к системному пространству.
+   * Добавить пользователя как источник фото в PL.
+   * Все его фото станут видны участникам.
+   */
+  async addSharedUser(userId: string, addedById: string): Promise<void> {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      throw new Error('Primary Library is not enabled');
+    }
+
+    await this.sharedSpaceRepository.addOwner(settings.spaceId, userId, addedById);
+
+    // Обновляем список в settings
+    if (!settings.sharedUserIds) {
+      settings.sharedUserIds = [];
+    }
+    if (!settings.sharedUserIds.includes(userId)) {
+      settings.sharedUserIds.push(userId);
+      await this.systemMetadataRepository.set(SystemMetadataKey.PrimaryLibrarySpaceId, settings);
+    }
+
+    this.logger.log(`Added shared user ${userId} to Primary Library`);
+  }
+
+  /**
+   * Убрать пользователя из источников фото.
+   */
+  async removeSharedUser(userId: string): Promise<void> {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      throw new Error('Primary Library is not enabled');
+    }
+
+    await this.sharedSpaceRepository.removeOwner(settings.spaceId, userId);
+
+    // Обновляем список в settings
+    if (settings.sharedUserIds) {
+      settings.sharedUserIds = settings.sharedUserIds.filter((id) => id !== userId);
+      await this.systemMetadataRepository.set(SystemMetadataKey.PrimaryLibrarySpaceId, settings);
+    }
+
+    this.logger.log(`Removed shared user ${userId} from Primary Library`);
+  }
+
+  /**
+   * Получить список расшаренных пользователей.
+   */
+  async getSharedUsers() {
+    const settings = await this.getSettings();
+    if (!settings?.enabled || !settings.spaceId) {
+      return [];
+    }
+
+    return this.sharedSpaceRepository.getLinkedOwners(settings.spaceId);
+  }
+
+  /**
+   * Привязать библиотеки к системному пространству (legacy, для external libraries).
    */
   async linkLibraries(libraryIds: string[]): Promise<void> {
     const settings = await this.getSettings();
@@ -185,12 +256,10 @@ export class PrimaryLibraryService extends BaseService {
         addedById: settings.adminUserId,
       });
     }
-
-    this.logger.log(`Linked ${libraryIds.length} libraries to Primary Library`);
   }
 
   /**
-   * Отвязать библиотеки от системного пространства.
+   * Отвязать библиотеки от системного пространства (legacy).
    */
   async unlinkLibraries(libraryIds: string[]): Promise<void> {
     const settings = await this.getSettings();
@@ -201,12 +270,10 @@ export class PrimaryLibraryService extends BaseService {
     for (const libraryId of libraryIds) {
       await this.sharedSpaceRepository.removeLibrary(settings.spaceId, libraryId);
     }
-
-    this.logger.log(`Unlinked ${libraryIds.length} libraries from Primary Library`);
   }
 
   /**
-   * Получить список привязанных библиотек.
+   * Получить список привязанных библиотек (legacy).
    */
   async getLinkedLibraries(): Promise<Array<{ libraryId: string; addedById: string | null }>> {
     const settings = await this.getSettings();
@@ -294,11 +361,12 @@ export class PrimaryLibraryService extends BaseService {
     }
 
     const users = await this.userRepository.getList({ withDeleted: false });
+    const sharedUserIds = settings.sharedUserIds || [settings.adminUserId];
     let enrolled = 0;
 
     for (const user of users) {
-      // Пропускаем админа-источника (он уже owner)
-      if (user.id === settings.adminUserId) {
+      // Пропускаем пользователей-источников (они уже owner/shared)
+      if (sharedUserIds.includes(user.id)) {
         continue;
       }
 
@@ -324,7 +392,8 @@ export class PrimaryLibraryService extends BaseService {
       return;
     }
 
-    if (user.id === settings.adminUserId) {
+    const sharedUserIds = settings.sharedUserIds || [settings.adminUserId];
+    if (sharedUserIds.includes(user.id)) {
       return;
     }
 
@@ -343,7 +412,8 @@ export class PrimaryLibraryService extends BaseService {
       return;
     }
 
-    if (user.id === settings.adminUserId) {
+    const sharedUserIds = settings.sharedUserIds || [settings.adminUserId];
+    if (sharedUserIds.includes(user.id)) {
       return;
     }
 
