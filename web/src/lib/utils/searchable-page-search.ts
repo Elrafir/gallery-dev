@@ -9,6 +9,7 @@ export const SEARCHABLE_PAGE_FILTER_PARAMS = [
   'city',
   'street',
   'country',
+  'savedLocationId',
   'make',
   'model',
   'type',
@@ -28,6 +29,7 @@ export type SearchablePageFilterState = Partial<
     | 'city'
     | 'street'
     | 'country'
+    | 'savedLocationId'
     | 'make'
     | 'model'
     | 'mediaType'
@@ -177,6 +179,9 @@ export function getSearchablePageFilterState(url: URL): SearchablePageFilterStat
   if (url.searchParams.get('country')) {
     result.country = url.searchParams.get('country') ?? undefined;
   }
+  if (url.searchParams.get('savedLocationId')) {
+    result.savedLocationId = url.searchParams.get('savedLocationId') ?? undefined;
+  }
   if (url.searchParams.get('make')) {
     result.make = url.searchParams.get('make') ?? undefined;
   }
@@ -238,6 +243,9 @@ function appendSearchablePageFilterParams(params: URLSearchParams, filters: Filt
   }
   if (filters.make) {
     params.set('make', filters.make);
+  }
+  if (filters.savedLocationId) {
+    params.set('savedLocationId', filters.savedLocationId);
   }
   if (filters.model) {
     params.set('model', filters.model);

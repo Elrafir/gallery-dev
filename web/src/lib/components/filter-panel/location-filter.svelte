@@ -12,9 +12,10 @@
     selectedState?: string;
     selectedCity?: string;
     selectedStreet?: string;
+    selectedSavedLocationId?: string;
     context?: FilterContext;
     onCityFetch: (state: string, context?: FilterContext) => Promise<string[]>;
-    onSelectionChange: (state?: string, city?: string, street?: string) => void;
+    onSelectionChange: (state?: string, city?: string, street?: string, savedLocationId?: string) => void;
     emptyText?: string;
   }
 
@@ -23,6 +24,7 @@
     selectedState,
     selectedCity,
     selectedStreet,
+    selectedSavedLocationId,
     context,
     onCityFetch,
     onSelectionChange,
@@ -93,14 +95,12 @@
   );
 
   function handleSavedLocationSelect(loc: SavedLocationResponseDto) {
-    const state = getStateFromSaved(loc);
-    const city = getCityFromSaved(loc);
-    const street = getStreetFromSaved(loc);
-
-    if (selectedState === state && selectedCity === city && selectedStreet === street) {
-      onSelectionChange(undefined, undefined, undefined);
+    if (selectedSavedLocationId === loc.id) {
+      // Снять выбор
+      onSelectionChange(undefined, undefined, undefined, undefined);
     } else {
-      onSelectionChange(state, city, street);
+      // Выбрать saved location — очищаем state/city/street, устанавливаем savedLocationId
+      onSelectionChange(undefined, undefined, undefined, loc.id);
     }
   }
 
@@ -298,34 +298,33 @@
     });
   }
 
-  // Click Handlers
   function handleStateClick(state: string) {
     if (selectedState === state && !selectedCity) {
       expandedState = undefined;
-      onSelectionChange(undefined, undefined, undefined);
+      onSelectionChange(undefined, undefined, undefined, undefined);
     } else {
       expandedState = state;
       expandedCity = undefined;
-      onSelectionChange(state, undefined, undefined);
+      onSelectionChange(state, undefined, undefined, undefined);
     }
   }
 
   function handleCityClick(state: string, city: string) {
     if (selectedState === state && selectedCity === city && !selectedStreet) {
       expandedCity = undefined;
-      onSelectionChange(state, undefined, undefined);
+      onSelectionChange(state, undefined, undefined, undefined);
     } else {
       expandedState = state;
       expandedCity = city;
-      onSelectionChange(state, city, undefined);
+      onSelectionChange(state, city, undefined, undefined);
     }
   }
 
   function handleStreetClick(state: string, city: string, street: string) {
     if (selectedState === state && selectedCity === city && selectedStreet === street) {
-      onSelectionChange(state, city, undefined);
+      onSelectionChange(state, city, undefined, undefined);
     } else {
-      onSelectionChange(state, city, street);
+      onSelectionChange(state, city, street, undefined);
     }
   }
 </script>
@@ -336,12 +335,9 @@
     <div class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 mt-1">
       {$t('saved_locations') ?? 'Сохранённые места'}
     </div>
-    <div class="max-h-[160px] overflow-y-auto pr-1 flex flex-col gap-0.5 mb-2 border-b border-gray-100 dark:border-zinc-800 pb-2">
+    <div class="flex flex-col gap-0.5 mb-2 border-b border-gray-100 dark:border-zinc-800 pb-2">
       {#each filteredSavedLocations as loc (loc.id)}
-        {@const state = getStateFromSaved(loc)}
-        {@const city = getCityFromSaved(loc)}
-        {@const street = getStreetFromSaved(loc)}
-        {@const isSelected = selectedState === state && selectedCity === city && selectedStreet === street}
+        {@const isSelected = selectedSavedLocationId === loc.id}
         <button
           type="button"
           class="-mx-2 flex w-[calc(100%+1rem)] items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-subtle {isSelected ? 'font-semibold text-primary dark:text-primary-light bg-primary/5' : 'text-gray-600 dark:text-gray-300'}"
@@ -349,6 +345,9 @@
         >
           <Icon icon={mdiStar} class="text-amber-500 shrink-0" size="14" />
           <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">{loc.label}</span>
+          {#if loc.radius}
+            <span class="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{loc.radius}м</span>
+          {/if}
         </button>
       {/each}
     </div>

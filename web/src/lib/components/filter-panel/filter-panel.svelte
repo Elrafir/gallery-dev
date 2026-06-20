@@ -563,8 +563,8 @@
     updateFilters({ ...filters, personIds: ids });
   }
 
-  function handleLocationChange(state?: string, city?: string, street?: string) {
-    updateFilters({ ...filters, state, city, street, country: undefined });
+  function handleLocationChange(state?: string, city?: string, street?: string, savedLocationId?: string) {
+    updateFilters({ ...filters, state, city, street, country: undefined, savedLocationId });
   }
 
   function handleCameraChange(make?: string, model?: string) {
@@ -613,7 +613,7 @@
         return filters.personIds.length > 0;
       }
       case 'location': {
-        return !!filters.state || !!filters.city || !!filters.street;
+        return !!filters.state || !!filters.city || !!filters.street || !!filters.savedLocationId;
       }
       case 'camera': {
         return !!filters.make;
@@ -772,6 +772,7 @@
                 selectedState={filters.state}
                 selectedCity={filters.city}
                 selectedStreet={filters.street}
+                selectedSavedLocationId={filters.savedLocationId}
                 context={locationFilterContext}
                 onCityFetch={async (state, ctx) => {
                   if (providers.cities) {

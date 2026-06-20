@@ -63,6 +63,7 @@ export interface FilterState {
   city?: string;
   street?: string;
   country?: string;
+  savedLocationId?: string;
   make?: string;
   model?: string;
   tagIds: string[];
@@ -95,6 +96,7 @@ export function getActiveFilterCount(state: FilterState): number {
     (state.state ? 1 : 0) +
     (state.city ? 1 : 0) +
     (state.street ? 1 : 0) +
+    (state.savedLocationId ? 1 : 0) +
     (state.make ? 1 : 0) +
     (state.tagIds.length > 0 ? 1 : 0) +
     (state.rating === undefined ? 0 : 1) +
@@ -213,6 +215,7 @@ export function clearFilters(state: FilterState): FilterState {
     city: undefined,
     street: undefined,
     country: undefined,
+    savedLocationId: undefined,
     make: undefined,
     model: undefined,
     tagIds: [],
