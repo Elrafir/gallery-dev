@@ -33,6 +33,7 @@
     getAllAlbums,
     getAssetInfo,
     getPerson,
+    getSpacePerson,
     type AlbumResponseDto,
     type AssetResponseDto,
   } from '@immich/sdk';
@@ -42,6 +43,7 @@
   import {
     mdiCamera,
     mdiCameraIris,
+    mdiChevronDown,
     mdiClose,
     mdiEye,
     mdiEyeOff,
@@ -77,38 +79,9 @@
   let people = $derived(asset.people || []);
   let unassignedFaces = $derived(asset.unassignedFaces || []);
   let showingHiddenPeople = $state(false);
+  let showExtendedInfo = $state(false);
   let canOverridePeople = $derived(isSpaceMember && !isOwner);
 
-  // Person alias editing state
-  let editingPersonId = $state<string | null>(null);
-  let editingPersonAlias = $state('');
-
-  async function savePersonAlias(personId: string, spacePersonId?: string) {
-    if (!effectiveSpaceId || !spacePersonId) return;
-    try {
-      await fetch(`/api/shared-spaces/${effectiveSpaceId}/people/${spacePersonId}/alias`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ alias: editingPersonAlias }),
-      });
-      asset = await getAssetInfo({ id: asset.id, spaceId: effectiveSpaceId });
-    } catch { /* ignore */ }
-    editingPersonId = null;
-  }
-
-  async function hidePersonFromSpace(spacePersonId?: string) {
-    if (!effectiveSpaceId || !spacePersonId) return;
-    try {
-      await fetch(`/api/shared-spaces/${effectiveSpaceId}/people/${spacePersonId}/alias`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isHidden: true }),
-      });
-      asset = await getAssetInfo({ id: asset.id, spaceId: effectiveSpaceId });
-    } catch { /* ignore */ }
-  }
   let latlng = $derived(
     (() => {
       const lat = asset.exifInfo?.latitude;
@@ -126,19 +99,28 @@
 
   $effect(() => {
     const currentPeople = people;
-    const peopleIds = currentPeople.map((p) => p.id);
+    const spaceIdForDescriptions = effectiveSpaceId;
     
     const loadDescriptions = async () => {
       const newDescriptions = new SvelteMap<string, string>();
       await Promise.all(
-        peopleIds.map(async (id) => {
+        currentPeople.map(async (person) => {
           try {
-            const personDto = await getPerson({ id });
-            if (personDto.description) {
-              newDescriptions.set(id, personDto.description);
+            if (spaceIdForDescriptions && person.spacePersonId) {
+              // Загружаем из space person (включая alias overlay)
+              const spacePersonDto = await getSpacePerson({ id: spaceIdForDescriptions, personId: person.spacePersonId });
+              if (spacePersonDto.description) {
+                newDescriptions.set(person.id, spacePersonDto.description);
+              }
+            } else if (!spaceIdForDescriptions || isOwner) {
+              // Только owner или вне space context может вызывать getPerson напрямую
+              const personDto = await getPerson({ id: person.id });
+              if (personDto.description) {
+                newDescriptions.set(person.id, personDto.description);
+              }
             }
           } catch (e) {
-            console.error('Failed to load person description for ID:', id, e);
+            // Silently ignore — space member может не иметь person.read доступа
           }
         })
       );
@@ -249,7 +231,7 @@
         <div class="flex h-10 w-full items-center justify-between">
           <Text size="small" color="muted">{$t('people')}</Text>
           <div class="flex gap-2 items-center">
-            {#if isOwner}
+            {#if isOwner || canOverridePeople}
               {#if people.some((person) => person.isHidden)}
                 <IconButton
                   aria-label={$t('show_hidden_people')}
@@ -295,9 +277,7 @@
                 {#snippet child()}
                   <a
                     class="group w-22 outline-none"
-                    href={effectiveSpaceId && person.spacePersonId
-                      ? Route.viewSpacePerson(effectiveSpaceId, person.spacePersonId)
-                      : Route.viewPerson(person, { previousRoute })}
+                    href={Route.viewPerson({ id: person.spacePersonId || person.id }, { previousRoute })}
                     onfocus={() => ($boundingBoxesArray = people[index].faces)}
                     onblur={() => ($boundingBoxesArray = [])}
                     onmouseover={() => ($boundingBoxesArray = people[index].faces)}
@@ -316,39 +296,7 @@
                         class="group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-immich-primary dark:group-focus-visible:outline-immich-dark-primary"
                       />
                     </div>
-                    {#if editingPersonId === person.id}
-                      <div class="mt-1 flex flex-col items-center gap-1">
-                        <input
-                          type="text"
-                          bind:value={editingPersonAlias}
-                          class="w-20 text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5 text-center border-none outline-none"
-                          onkeydown={(e) => {
-                            if (e.key === 'Enter') void savePersonAlias(person.id, person.spacePersonId);
-                            if (e.key === 'Escape') (editingPersonId = null);
-                          }}
-                        />
-                        <div class="flex gap-1">
-                          <button class="text-xs text-green-600" onclick={() => void savePersonAlias(person.id, person.spacePersonId)}>✓</button>
-                          <button class="text-xs text-gray-400" onclick={() => (editingPersonId = null)}>✕</button>
-                        </div>
-                      </div>
-                    {:else}
                       <p class="mt-1 truncate font-medium">{person.name}</p>
-                      {#if canOverridePeople && person.spacePersonId}
-                        <div class="flex gap-0.5 justify-center mt-0.5">
-                          <button
-                            class="text-xs text-gray-400 hover:text-indigo-500 transition-colors"
-                            title="Переименовать"
-                            onclick={(e) => { e.preventDefault(); e.stopPropagation(); editingPersonId = person.id; editingPersonAlias = person.name; }}
-                          >✎</button>
-                          <button
-                            class="text-xs text-gray-400 hover:text-red-500 transition-colors"
-                            title="Скрыть"
-                            onclick={(e) => { e.preventDefault(); e.stopPropagation(); void hidePersonFromSpace(person.spacePersonId); }}
-                          >👁</button>
-                        </div>
-                      {/if}
-                    {/if}
                     {#if person.birthDate}
                       {@const personBirthDate = DateTime.fromISO(person.birthDate)}
                       {@const age = Math.floor(DateTime.fromISO(asset.localDateTime).diff(personBirthDate, 'years').years)}
@@ -396,115 +344,6 @@
       {/if}
 
       <DetailPanelDate {asset} />
-
-      <div class="flex gap-4 py-4" data-testid="detail-panel-filename">
-        <div><Icon icon={mdiImageOutline} size="24" /></div>
-
-        <div>
-          <p class="break-all flex place-items-center gap-2 whitespace-pre-wrap">
-            {asset.originalFileName}
-            {#if isOwner}
-              <IconButton
-                icon={mdiInformationOutline}
-                aria-label={$t('show_file_location')}
-                size="small"
-                shape="round"
-                color="secondary"
-                variant="ghost"
-                onclick={() => assetViewerManager.toggleAssetPath()}
-              />
-            {/if}
-          </p>
-          {#if assetViewerManager.isShowAssetPath}
-            <p class="text-xs opacity-50 break-all pb-2 hover:text-primary" transition:slide={{ duration: 250 }}>
-              <!-- eslint-disable-next-line svelte/no-navigation-without-resolve this is supposed to be treated as an absolute/external link -->
-              <a href={getAssetFolderHref(asset)} title={$t('go_to_folder')} class="whitespace-pre-wrap">
-                {asset.originalPath}
-              </a>
-            </p>
-          {/if}
-          {#if (asset.exifInfo?.exifImageHeight && asset.exifInfo?.exifImageWidth) || asset.exifInfo?.fileSizeInByte}
-            <div class="flex gap-2 text-sm">
-              {#if asset.exifInfo?.exifImageHeight && asset.exifInfo?.exifImageWidth}
-                {#if getMegapixel(asset.exifInfo.exifImageHeight, asset.exifInfo.exifImageWidth)}
-                  <p>
-                    {getMegapixel(asset.exifInfo.exifImageHeight, asset.exifInfo.exifImageWidth)} MP
-                  </p>
-                {/if}
-                {@const { width, height } = getDimensions(asset.exifInfo)}
-                <p>{width} x {height}</p>
-              {/if}
-              {#if asset.exifInfo?.fileSizeInByte}
-                <p>{getByteUnitString(asset.exifInfo.fileSizeInByte, $locale)}</p>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      {#if asset.exifInfo?.make || asset.exifInfo?.model || asset.exifInfo?.exposureTime || asset.exifInfo?.iso}
-        <div class="flex gap-4 py-4" data-testid="detail-panel-camera">
-          <div><Icon icon={mdiCamera} size="24" /></div>
-
-          <div>
-            {#if asset.exifInfo?.make || asset.exifInfo?.model}
-              <p>
-                <a
-                  href={Route.search({
-                    make: asset.exifInfo?.make ?? undefined,
-                    model: asset.exifInfo?.model ?? undefined,
-                  })}
-                  title="{$t('search_for')} {asset.exifInfo.make || ''} {asset.exifInfo.model || ''}"
-                  class="hover:text-primary"
-                >
-                  {asset.exifInfo.make || ''}
-                  {asset.exifInfo.model || ''}
-                </a>
-              </p>
-            {/if}
-
-            <div class="flex gap-2 text-sm">
-              {#if asset.exifInfo.exposureTime}
-                <p>{`${asset.exifInfo.exposureTime} s`}</p>
-              {/if}
-
-              {#if asset.exifInfo.iso}
-                <p>{`ISO ${asset.exifInfo.iso}`}</p>
-              {/if}
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      {#if asset.exifInfo?.lensModel || asset.exifInfo?.fNumber || asset.exifInfo?.focalLength}
-        <div class="flex gap-4 py-4" data-testid="detail-panel-lens">
-          <div><Icon icon={mdiCameraIris} size="24" /></div>
-
-          <div>
-            {#if asset.exifInfo?.lensModel}
-              <p>
-                <a
-                  href={Route.search({ lensModel: asset.exifInfo.lensModel })}
-                  title="{$t('search_for')} {asset.exifInfo.lensModel}"
-                  class="hover:text-primary line-clamp-1"
-                >
-                  {asset.exifInfo.lensModel}
-                </a>
-              </p>
-            {/if}
-
-            <div class="flex gap-2 text-sm">
-              {#if asset.exifInfo?.fNumber}
-                <p>ƒ/{asset.exifInfo.fNumber.toLocaleString($locale)}</p>
-              {/if}
-
-              {#if asset.exifInfo.focalLength}
-                <p>{`${asset.exifInfo.focalLength.toLocaleString($locale)} mm`}</p>
-              {/if}
-            </div>
-          </div>
-        </div>
-      {/if}
 
       <DetailPanelLocation {isOwner} {asset} />
     </div>
@@ -615,10 +454,134 @@
     {/await}
 
     {#if authManager.authenticated && authManager.preferences.tags.enabled}
-      <section class="relative px-2 pb-12 dark:bg-immich-dark-bg dark:text-immich-dark-fg">
+      <section class="relative px-2 pb-4 dark:bg-immich-dark-bg dark:text-immich-dark-fg">
         <DetailPanelTags {asset} {isOwner} spaceId={effectiveSpaceId} />
       </section>
     {/if}
+
+    <div class="px-4 pb-4">
+      <button
+        type="button"
+        class="flex w-full items-center justify-between py-2 text-sm font-medium text-immich-fg dark:text-immich-dark-fg hover:text-primary dark:hover:text-immich-dark-primary transition-colors"
+        onclick={() => (showExtendedInfo = !showExtendedInfo)}
+      >
+        <Text size="small" color="muted">Расширенная информация</Text>
+        <Icon icon={mdiChevronDown} size="24" class="transition-transform duration-200 {showExtendedInfo ? 'rotate-180' : ''}" />
+      </button>
+
+      {#if showExtendedInfo}
+        <div transition:slide={{ duration: 200 }}>
+          <div class="flex gap-4 py-4" data-testid="detail-panel-filename">
+            <div><Icon icon={mdiImageOutline} size="24" /></div>
+
+            <div>
+              <p class="break-all flex place-items-center gap-2 whitespace-pre-wrap">
+                {asset.originalFileName}
+                {#if isOwner}
+                  <IconButton
+                    icon={mdiInformationOutline}
+                    aria-label={$t('show_file_location')}
+                    size="small"
+                    shape="round"
+                    color="secondary"
+                    variant="ghost"
+                    onclick={() => assetViewerManager.toggleAssetPath()}
+                  />
+                {/if}
+              </p>
+              {#if assetViewerManager.isShowAssetPath}
+                <p class="text-xs opacity-50 break-all pb-2 hover:text-primary" transition:slide={{ duration: 250 }}>
+                  <!-- eslint-disable-next-line svelte/no-navigation-without-resolve this is supposed to be treated as an absolute/external link -->
+                  <a href={getAssetFolderHref(asset)} title={$t('go_to_folder')} class="whitespace-pre-wrap">
+                    {asset.originalPath}
+                  </a>
+                </p>
+              {/if}
+              {#if (asset.exifInfo?.exifImageHeight && asset.exifInfo?.exifImageWidth) || asset.exifInfo?.fileSizeInByte}
+                <div class="flex gap-2 text-sm">
+                  {#if asset.exifInfo?.exifImageHeight && asset.exifInfo?.exifImageWidth}
+                    {#if getMegapixel(asset.exifInfo.exifImageHeight, asset.exifInfo.exifImageWidth)}
+                      <p>
+                        {getMegapixel(asset.exifInfo.exifImageHeight, asset.exifInfo.exifImageWidth)} MP
+                      </p>
+                    {/if}
+                    {@const { width, height } = getDimensions(asset.exifInfo)}
+                    <p>{width} x {height}</p>
+                  {/if}
+                  {#if asset.exifInfo?.fileSizeInByte}
+                    <p>{getByteUnitString(asset.exifInfo.fileSizeInByte, $locale)}</p>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          {#if asset.exifInfo?.make || asset.exifInfo?.model || asset.exifInfo?.exposureTime || asset.exifInfo?.iso}
+            <div class="flex gap-4 py-4" data-testid="detail-panel-camera">
+              <div><Icon icon={mdiCamera} size="24" /></div>
+
+              <div>
+                {#if asset.exifInfo?.make || asset.exifInfo?.model}
+                  <p>
+                    <a
+                      href={Route.search({
+                        make: asset.exifInfo?.make ?? undefined,
+                        model: asset.exifInfo?.model ?? undefined,
+                      })}
+                      title="{$t('search_for')} {asset.exifInfo.make || ''} {asset.exifInfo.model || ''}"
+                      class="hover:text-primary"
+                    >
+                      {asset.exifInfo.make || ''}
+                      {asset.exifInfo.model || ''}
+                    </a>
+                  </p>
+                {/if}
+
+                <div class="flex gap-2 text-sm">
+                  {#if asset.exifInfo.exposureTime}
+                    <p>{`${asset.exifInfo.exposureTime} s`}</p>
+                  {/if}
+
+                  {#if asset.exifInfo.iso}
+                    <p>{`ISO ${asset.exifInfo.iso}`}</p>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {/if}
+
+          {#if asset.exifInfo?.lensModel || asset.exifInfo?.fNumber || asset.exifInfo?.focalLength}
+            <div class="flex gap-4 py-4" data-testid="detail-panel-lens">
+              <div><Icon icon={mdiCameraIris} size="24" /></div>
+
+              <div>
+                {#if asset.exifInfo?.lensModel}
+                  <p>
+                    <a
+                      href={Route.search({ lensModel: asset.exifInfo.lensModel })}
+                      title="{$t('search_for')} {asset.exifInfo.lensModel}"
+                      class="hover:text-primary line-clamp-1"
+                    >
+                      {asset.exifInfo.lensModel}
+                    </a>
+                  </p>
+                {/if}
+
+                <div class="flex gap-2 text-sm">
+                  {#if asset.exifInfo?.fNumber}
+                    <p>ƒ/{asset.exifInfo.fNumber.toLocaleString($locale)}</p>
+                  {/if}
+
+                  {#if asset.exifInfo.focalLength}
+                    <p>{`${asset.exifInfo.focalLength.toLocaleString($locale)} mm`}</p>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </section>
 {/if}
 
