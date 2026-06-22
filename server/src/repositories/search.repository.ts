@@ -1694,7 +1694,7 @@ export class SearchRepository {
           shared_space_person."spaceId",
           shared_space_person."identityId",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name,
-          shared_space_person."isHidden",
+          COALESCE(shared_space_person_alias."isHidden", shared_space_person."isHidden") AS "isHidden",
           shared_space_person."updatedAt",
           CASE WHEN NULLIF(shared_space_person_alias.alias, '') IS NULL THEN 2 ELSE 1 END AS "profileRank"
         FROM shared_space_person

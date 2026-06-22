@@ -897,7 +897,7 @@ export class FaceIdentityRepository {
         UNION ALL
         SELECT
           shared_space_person."identityId",
-          shared_space_person."isHidden",
+          COALESCE(shared_space_person_alias."isHidden", shared_space_person."isHidden") AS "isHidden",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name
         FROM shared_space_person
         INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_person."spaceId"
@@ -1019,7 +1019,7 @@ export class FaceIdentityRepository {
         UNION ALL
         SELECT
           shared_space_person."identityId",
-          shared_space_person."isHidden",
+          COALESCE(shared_space_person_alias."isHidden", shared_space_person."isHidden") AS "isHidden",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name
         FROM shared_space_person
         INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_person."spaceId"
@@ -1663,7 +1663,7 @@ export class FaceIdentityRepository {
         SELECT
           shared_space_person."identityId",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name,
-          shared_space_person."isHidden",
+          COALESCE(shared_space_person_alias."isHidden", shared_space_person."isHidden") AS "isHidden",
           NULL::boolean AS "isFavorite",
           shared_space_person."updatedAt",
           shared_space_person.id AS "profileId",
@@ -1805,7 +1805,7 @@ export class FaceIdentityRepository {
         UNION ALL
         SELECT
           shared_space_person."identityId",
-          shared_space_person."isHidden",
+          COALESCE(shared_space_person_alias."isHidden", shared_space_person."isHidden") AS "isHidden",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name
         FROM shared_space_person
         INNER JOIN timeline_spaces ON timeline_spaces."spaceId" = shared_space_person."spaceId"
@@ -1944,7 +1944,7 @@ export class FaceIdentityRepository {
           COALESCE(shared_space_person_alias."birthDate", shared_space_person."birthDate") AS "birthDate",
           COALESCE(shared_space_person_alias.description, shared_space_person.description) AS description,
           ''::text AS "thumbnailPath",
-          shared_space_person."isHidden",
+          COALESCE(shared_space_person_alias."isHidden", shared_space_person."isHidden") AS "isHidden",
           NULL::boolean AS "isFavorite",
           NULL::text AS color,
           shared_space_person."updatedAt",

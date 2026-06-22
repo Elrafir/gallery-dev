@@ -1150,9 +1150,8 @@ export class SharedSpaceService extends BaseService {
         await this.queueSpacePersonMetadataBackfill(person.identityId);
       }
     } else {
-      // Не-owner: name, description, birthDate → personal alias (только для этого юзера)
-      // isHidden и representativeFaceId → общие настройки (если editor)
-      const hasPersonalOverrides = dto.name !== undefined || dto.description !== undefined || dto.birthDate !== undefined;
+      // Не-owner: name, description, birthDate, isHidden → personal alias (только для этого юзера)
+      const hasPersonalOverrides = dto.name !== undefined || dto.description !== undefined || dto.birthDate !== undefined || dto.isHidden !== undefined;
       if (hasPersonalOverrides) {
         const existingAlias = await this.sharedSpaceRepository.getAlias(personId, auth.user.id);
         await this.sharedSpaceRepository.upsertAlias({
@@ -1167,7 +1166,7 @@ export class SharedSpaceService extends BaseService {
         });
       }
 
-      // isHidden и representativeFaceId — общие для всех, editor может менять
+      // representativeFaceId — общая для всех, editor может менять
       const sharedUpdates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {};
       if (dto.representativeFaceId !== undefined) {
         sharedUpdates.representativeFaceId = dto.representativeFaceId;
