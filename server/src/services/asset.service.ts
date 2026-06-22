@@ -128,8 +128,8 @@ export class AssetService extends BaseService {
           spaceId,
           globalPersonIds,
         );
-        this.applySpacePeople(data, spacePersonMap);
-        data.people = data.people.filter((p) => p.spacePersonId && !spacePersonMap.get(p.id)?.isHidden);
+        await this.applySpacePeopleWithOwnerFallback(data, spacePersonMap, spaceId, globalPersonIds);
+        data.people = data.people.filter((p) => p.spacePersonId);
       }
 
       // Phase 3.3: Tag overlay
@@ -156,8 +156,8 @@ export class AssetService extends BaseService {
           spaceForAsset.spaceId,
           globalPersonIds,
         );
-        this.applySpacePeople(data, spacePersonMap);
-        data.people = (data.people || []).filter((p) => p.spacePersonId && !spacePersonMap.get(p.id)?.isHidden);
+        await this.applySpacePeopleWithOwnerFallback(data, spacePersonMap, spaceForAsset.spaceId, globalPersonIds);
+        data.people = (data.people || []).filter((p) => p.spacePersonId);
         data.resolvedSpaceId = spaceForAsset.spaceId;
 
         // Phase 3.3: Tag overlay for auto-detected space
@@ -217,6 +217,78 @@ export class AssetService extends BaseService {
 
       if (spacePerson.type) {
         person.type = spacePerson.type;
+      }
+    }
+  }
+
+  /**
+   * Применяет space person данные с fallback-подменой от owner'а пространства.
+   * Если face-link ведёт к space person с пустым именем, а через person.identityId
+   * находится другой space person (от owner'а) с именем — подменяем имя и метаданные.
+   * Это предохранитель на случай когда identity reconciliation прошёл,
+   * а dedup ещё не объединил space person дубликаты.
+   */
+  private async applySpacePeopleWithOwnerFallback(
+    data: AssetResponseDto,
+    spacePersonMap: Map<string, LinkedSpacePerson>,
+    spaceId: string,
+    globalPersonIds: string[],
+  ) {
+    this.applySpacePeople(data, spacePersonMap);
+
+    // Собираем personIds, для которых space person имеет пустое или сомнительное имя
+    const needsFallback: string[] = [];
+    const appliedSpacePersonIds: string[] = [];
+    for (const person of data.people || []) {
+      if (!person.spacePersonId) {
+        continue;
+      }
+      appliedSpacePersonIds.push(person.spacePersonId);
+      if (!person.name || person.name.trim() === '') {
+        needsFallback.push(person.id);
+      }
+    }
+
+    // Также ищем fallback для всех personIds — на случай когда face-link space person
+    // имеет имя, но через identity есть space person с бо́льшим faceCount (от owner'а)
+    const allFallbackPersonIds = globalPersonIds.filter((pid) => {
+      const sp = spacePersonMap.get(pid);
+      return sp !== undefined;
+    });
+
+    if (allFallbackPersonIds.length === 0) {
+      return;
+    }
+
+    const overrideMap = await this.sharedSpaceRepository.findOwnerSpacePersonOverrides(
+      spaceId,
+      allFallbackPersonIds,
+      appliedSpacePersonIds,
+    );
+
+    if (overrideMap.size === 0) {
+      return;
+    }
+
+    // Применяем override: подменяем имя и метаданные на данные от owner'а
+    for (const person of data.people || []) {
+      const override = overrideMap.get(person.id);
+      if (!override || !override.name) {
+        continue;
+      }
+
+      // Override только если имя от owner'а "лучше" (непустое и текущее пустое,
+      // или override имеет больше данных)
+      if (!person.name || person.name.trim() === '') {
+        person.name = override.name;
+        person.spacePersonId = override.id;
+        person.isHidden = override.isHidden;
+        if (override.birthDate !== undefined) {
+          person.birthDate = override.birthDate ?? null;
+        }
+        if (override.type) {
+          person.type = override.type;
+        }
       }
     }
   }
@@ -288,6 +360,11 @@ export class AssetService extends BaseService {
       // Per-user birthDate override
       if (alias.birthDate !== null) {
         person.birthDate = alias.birthDate;
+      }
+
+      // Per-user description override
+      if (alias.description !== null && alias.description !== undefined) {
+        person.description = alias.description;
       }
     }
   }

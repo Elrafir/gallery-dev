@@ -33,11 +33,12 @@
   interface Props {
     assetId: string;
     assetType: AssetTypeEnum;
+    isOwner?: boolean;
     onClose: () => void;
     onRefresh: () => void;
   }
 
-  let { assetId, assetType, onClose, onRefresh }: Props = $props();
+  let { assetId, assetType, isOwner = true, onClose, onRefresh }: Props = $props();
 
   // keep track of the changes
   let peopleToCreate: string[] = [];
@@ -234,16 +235,18 @@
       />
       <p class="flex text-lg text-immich-fg dark:text-immich-dark-fg">{$t('edit_faces')}</p>
     </div>
-    {#if !isShowLoadingDone}
-      <button
-        type="button"
-        class="justify-self-end rounded-lg p-2 hover:bg-immich-dark-primary hover:dark:bg-immich-dark-primary/50"
-        onclick={() => handleEditFaces()}
-      >
-        {$t('done')}
-      </button>
-    {:else}
-      <LoadingSpinner />
+    {#if isOwner}
+      {#if !isShowLoadingDone}
+        <button
+          type="button"
+          class="justify-self-end rounded-lg p-2 hover:bg-immich-dark-primary hover:dark:bg-immich-dark-primary/50"
+          onclick={() => handleEditFaces()}
+        >
+          {$t('done')}
+        </button>
+      {:else}
+        <LoadingSpinner />
+      {/if}
     {/if}
   </div>
 
@@ -339,30 +342,32 @@
               {/snippet}
             </PersonTooltip>
 
-              <div class="absolute -end-[3px] -top-[3px] h-5 w-5 rounded-full">
-                {#if selectedPersonToCreate[face.id] || selectedPersonToReassign[face.id]}
-                  <IconButton
-                    shape="round"
-                    variant="ghost"
-                    color="primary"
-                    icon={mdiRestart}
-                    aria-label={$t('reset')}
-                    size="small"
-                    class="absolute start-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] transform"
-                    onclick={() => handleReset(face.id)}
-                  />
-                {:else}
-                  <IconButton
-                    shape="round"
-                    color="primary"
-                    icon={mdiPencil}
-                    aria-label={$t('select_new_face')}
-                    size="small"
-                    class="absolute start-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] transform"
-                    onclick={() => handleFacePicker(face)}
-                  />
-                {/if}
-              </div>
+              {#if isOwner}
+                <div class="absolute -end-[3px] -top-[3px] h-5 w-5 rounded-full">
+                  {#if selectedPersonToCreate[face.id] || selectedPersonToReassign[face.id]}
+                    <IconButton
+                      shape="round"
+                      variant="ghost"
+                      color="primary"
+                      icon={mdiRestart}
+                      aria-label={$t('reset')}
+                      size="small"
+                      class="absolute start-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] transform"
+                      onclick={() => handleReset(face.id)}
+                    />
+                  {:else}
+                    <IconButton
+                      shape="round"
+                      color="primary"
+                      icon={mdiPencil}
+                      aria-label={$t('select_new_face')}
+                      size="small"
+                      class="absolute start-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] transform"
+                      onclick={() => handleFacePicker(face)}
+                    />
+                  {/if}
+                </div>
+              {/if}
               <div class="absolute end-8 -top-[3px] h-5 w-5 rounded-full">
                 {#if !selectedPersonToCreate[face.id] && !selectedPersonToReassign[face.id] && !face.person}
                   <div
@@ -372,7 +377,7 @@
                   </div>
                 {/if}
               </div>
-              {#if face.person != null}
+              {#if isOwner && face.person != null}
                 <div class="absolute -end-[3px] top-8 h-5 w-5 rounded-full">
                   <IconButton
                     shape="round"

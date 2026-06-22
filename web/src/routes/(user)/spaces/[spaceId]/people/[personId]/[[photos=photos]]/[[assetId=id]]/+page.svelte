@@ -112,6 +112,7 @@
   });
 
   const currentMember = $derived(members.find((member) => member.userId === authManager.user.id));
+  const isOwner = $derived(currentMember?.role === SharedSpaceRole.Owner);
   const isEditor = $derived(
     currentMember?.role === SharedSpaceRole.Owner || currentMember?.role === SharedSpaceRole.Editor,
   );
@@ -507,12 +508,14 @@
     const items: ActionItem[] = [];
 
     if (isEditor) {
-      items.push(
-        {
+      if (isOwner) {
+        items.push({
           title: $t('select_representative_face'),
           icon: mdiAccountBoxOutline,
           onAction: () => void openRepresentativeFacePicker(),
-        },
+        });
+      }
+      items.push(
         {
           title: $t('set_date_of_birth'),
           icon: mdiCalendarEditOutline,

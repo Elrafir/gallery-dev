@@ -80,7 +80,7 @@
   let unassignedFaces = $derived(asset.unassignedFaces || []);
   let showingHiddenPeople = $state(false);
   let showExtendedInfo = $state(false);
-  let canOverridePeople = $derived(isSpaceMember && !isOwner);
+
 
   let latlng = $derived(
     (() => {
@@ -231,7 +231,7 @@
         <div class="flex h-10 w-full items-center justify-between">
           <Text size="small" color="muted">{$t('people')}</Text>
           <div class="flex gap-2 items-center">
-            {#if isOwner || canOverridePeople}
+            {#if isOwner}
               {#if people.some((person) => person.isHidden)}
                 <IconButton
                   aria-label={$t('show_hidden_people')}
@@ -589,6 +589,7 @@
   <PersonSidePanel
     assetId={asset.id}
     assetType={asset.type}
+    {isOwner}
     onClose={() => assetViewerManager.closeEditFacesPanel()}
     onRefresh={handleRefreshPeople}
   />

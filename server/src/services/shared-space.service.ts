@@ -917,7 +917,7 @@ export class SharedSpaceService extends BaseService {
     personId: string,
     dto: SpaceRepresentativeFaceUpdateDto,
   ): Promise<SharedSpacePersonResponseDto> {
-    await this.requireRole(auth, spaceId, SharedSpaceRole.Editor);
+    await this.requireRole(auth, spaceId, SharedSpaceRole.Owner);
     const person = await this.sharedSpaceRepository.getPersonById(personId);
     if (!person || person.spaceId !== spaceId) {
       throw new BadRequestException('Person not found');
@@ -1101,7 +1101,8 @@ export class SharedSpaceService extends BaseService {
     personId: string,
     dto: SharedSpacePersonUpdateDto,
   ): Promise<SharedSpacePersonResponseDto> {
-    await this.requireRole(auth, spaceId, SharedSpaceRole.Editor);
+    const member = await this.requireRole(auth, spaceId, SharedSpaceRole.Editor);
+    const isOwner = member.role === SharedSpaceRole.Owner;
 
     const person = await this.sharedSpaceRepository.getPersonById(personId);
     if (!person || person.spaceId !== spaceId) {
@@ -1115,36 +1116,66 @@ export class SharedSpaceService extends BaseService {
       }
     }
 
-    const sharedPersonUpdates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {
-      isHidden: dto.isHidden,
-      representativeFaceId: dto.representativeFaceId,
-      description: dto.description,
-    };
-    if (dto.name !== undefined) {
-      sharedPersonUpdates.name = dto.name;
-      sharedPersonUpdates.nameSource = 'manual';
-      sharedPersonUpdates.nameSourceProfileType = 'space-person';
-      sharedPersonUpdates.nameSourceProfileId = personId;
-      sharedPersonUpdates.nameSourceUpdatedAt = new Date();
-    }
+    if (isOwner) {
+      // Owner обновляет общую запись shared_space_person (видно всем как дефолт)
+      const sharedPersonUpdates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {
+        isHidden: dto.isHidden,
+        representativeFaceId: dto.representativeFaceId,
+        description: dto.description,
+      };
+      if (dto.name !== undefined) {
+        sharedPersonUpdates.name = dto.name;
+        sharedPersonUpdates.nameSource = 'manual';
+        sharedPersonUpdates.nameSourceProfileType = 'space-person';
+        sharedPersonUpdates.nameSourceProfileId = personId;
+        sharedPersonUpdates.nameSourceUpdatedAt = new Date();
+      }
 
-    const hasSharedPersonUpdates = Object.values(sharedPersonUpdates).some((value) => value !== undefined);
-    if (hasSharedPersonUpdates) {
-      await this.sharedSpaceRepository.updatePerson(personId, sharedPersonUpdates);
-    }
+      const hasSharedPersonUpdates = Object.values(sharedPersonUpdates).some((value) => value !== undefined);
+      if (hasSharedPersonUpdates) {
+        await this.sharedSpaceRepository.updatePerson(personId, sharedPersonUpdates);
+      }
 
-    if (dto.birthDate !== undefined) {
-      await this.sharedSpaceRepository.updatePerson(personId, {
-        birthDate: dto.birthDate,
-        birthDateSource: 'manual',
-        birthDateSourceProfileType: 'space-person',
-        birthDateSourceProfileId: personId,
-        birthDateSourceUpdatedAt: new Date(),
-      });
-    }
+      if (dto.birthDate !== undefined) {
+        await this.sharedSpaceRepository.updatePerson(personId, {
+          birthDate: dto.birthDate,
+          birthDateSource: 'manual',
+          birthDateSourceProfileType: 'space-person',
+          birthDateSourceProfileId: personId,
+          birthDateSourceUpdatedAt: new Date(),
+        });
+      }
 
-    if (person.identityId && (dto.name !== undefined || dto.birthDate !== undefined || dto.isHidden !== undefined)) {
-      await this.queueSpacePersonMetadataBackfill(person.identityId);
+      if (person.identityId && (dto.name !== undefined || dto.birthDate !== undefined || dto.isHidden !== undefined)) {
+        await this.queueSpacePersonMetadataBackfill(person.identityId);
+      }
+    } else {
+      // Не-owner: name, description, birthDate → personal alias (только для этого юзера)
+      // isHidden и representativeFaceId → общие настройки (если editor)
+      const hasPersonalOverrides = dto.name !== undefined || dto.description !== undefined || dto.birthDate !== undefined;
+      if (hasPersonalOverrides) {
+        const existingAlias = await this.sharedSpaceRepository.getAlias(personId, auth.user.id);
+        await this.sharedSpaceRepository.upsertAlias({
+          personId,
+          userId: auth.user.id,
+          alias: dto.name !== undefined ? (dto.name ?? '') : (existingAlias?.alias ?? ''),
+          isHidden: dto.isHidden !== undefined ? dto.isHidden : (existingAlias?.isHidden ?? false),
+          birthDate: dto.birthDate !== undefined
+            ? (dto.birthDate ? new Date(dto.birthDate) : null)
+            : (existingAlias?.birthDate ?? null),
+          description: dto.description !== undefined ? (dto.description ?? null) : (existingAlias?.description ?? null),
+        });
+      }
+
+      // isHidden и representativeFaceId — общие для всех, editor может менять
+      const sharedUpdates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {};
+      if (dto.representativeFaceId !== undefined) {
+        sharedUpdates.representativeFaceId = dto.representativeFaceId;
+      }
+      const hasSharedUpdates = Object.values(sharedUpdates).some((value) => value !== undefined);
+      if (hasSharedUpdates) {
+        await this.sharedSpaceRepository.updatePerson(personId, sharedUpdates);
+      }
     }
 
     const alias = await this.sharedSpaceRepository.getAlias(personId, auth.user.id);
@@ -1350,54 +1381,58 @@ export class SharedSpaceService extends BaseService {
     personId: string,
     dto: { name?: boolean; birthDate?: boolean; description?: boolean; thumbnail?: boolean; alias?: boolean },
   ): Promise<SharedSpacePersonResponseDto> {
-    await this.requireRole(auth, spaceId, SharedSpaceRole.Editor);
+    const member = await this.requireRole(auth, spaceId, SharedSpaceRole.Editor);
+    const isOwner = member.role === SharedSpaceRole.Owner;
 
     const person = await this.sharedSpaceRepository.getPersonById(personId);
     if (!person || person.spaceId !== spaceId) {
       throw new BadRequestException('Person not found');
     }
 
-    const updates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {};
+    if (isOwner) {
+      // Owner сбрасывает общую запись shared_space_person
+      const updates: Parameters<typeof this.sharedSpaceRepository.updatePerson>[1] = {};
 
-    if (dto.name) {
-      updates.name = '';
-      updates.nameSource = 'none';
-      updates.nameSourceProfileType = null;
-      updates.nameSourceProfileId = null;
-      updates.nameSourceUpdatedAt = null;
+      if (dto.name) {
+        updates.name = '';
+        updates.nameSource = 'none';
+        updates.nameSourceProfileType = null;
+        updates.nameSourceProfileId = null;
+        updates.nameSourceUpdatedAt = null;
+      }
+
+      if (dto.birthDate) {
+        updates.birthDate = null;
+        updates.birthDateSource = 'none';
+        updates.birthDateSourceProfileType = null;
+        updates.birthDateSourceProfileId = null;
+        updates.birthDateSourceUpdatedAt = null;
+      }
+
+      if (dto.description) {
+        updates.description = null;
+      }
+
+      if (dto.thumbnail) {
+        const autoFaceId = await this.sharedSpaceRepository.getFirstValidRepresentativeFaceForPerson(person.id);
+        updates.representativeFaceSource = 'auto';
+        updates.representativeFaceId = autoFaceId;
+      }
+
+      const hasUpdates = Object.values(updates).some((value) => value !== undefined);
+      if (hasUpdates) {
+        await this.sharedSpaceRepository.updatePerson(personId, updates);
+      }
+
+      // Перезапустить backfill чтобы подхватить inherited значения
+      if (person.identityId && (dto.name || dto.birthDate)) {
+        await this.queueSpacePersonMetadataBackfill(person.identityId);
+      }
     }
 
-    if (dto.birthDate) {
-      updates.birthDate = null;
-      updates.birthDateSource = 'none';
-      updates.birthDateSourceProfileType = null;
-      updates.birthDateSourceProfileId = null;
-      updates.birthDateSourceUpdatedAt = null;
-    }
-
-    if (dto.description) {
-      updates.description = null;
-    }
-
-    if (dto.thumbnail) {
-      const autoFaceId = await this.sharedSpaceRepository.getFirstValidRepresentativeFaceForPerson(person.id);
-      updates.representativeFaceSource = 'auto';
-      updates.representativeFaceId = autoFaceId;
-    }
-
-    const hasUpdates = Object.values(updates).some((value) => value !== undefined);
-    if (hasUpdates) {
-      await this.sharedSpaceRepository.updatePerson(personId, updates);
-    }
-
-    // Удалить per-user alias если запрошено
-    if (dto.alias) {
+    // Удалить per-user alias (для всех ролей — и owner, и editor)
+    if (dto.alias || dto.name || dto.description || dto.birthDate) {
       await this.sharedSpaceRepository.deleteAlias(personId, auth.user.id);
-    }
-
-    // Перезапустить backfill чтобы подхватить inherited значения
-    if (person.identityId && (dto.name || dto.birthDate)) {
-      await this.queueSpacePersonMetadataBackfill(person.identityId);
     }
 
     await this.sharedSpaceRepository.logActivity({
@@ -1788,11 +1823,13 @@ export class SharedSpaceService extends BaseService {
     const { machineLearning } = await this.getConfig({ withCache: true });
     const maxDistance = machineLearning.facialRecognition.maxDistance;
 
-    // Repair persons that have faces but lost their representativeFaceId
-    // (e.g., after force-detection reset). Without this, they are invisible
-    // to getSpacePersonsWithEmbeddings due to the INNER JOIN on face_search.
+    // Восстановление персон, потерявших representativeFaceId
+    // (например, после принудительного сброса детекции). Без этого они невидимы
+    // для getSpacePersonsWithEmbeddings из-за INNER JOIN на face_search.
     await this.sharedSpaceRepository.repairInvalidRepresentativeFaces(job.spaceId);
     await this.sharedSpaceRepository.repairOrphanedRepresentativeFaces(job.spaceId);
+    // Восстановление персон, у которых representativeFaceId указывает на лицо без эмбеддинга
+    await this.sharedSpaceRepository.repairMissingEmbeddingRepresentativeFaces(job.spaceId);
 
     const MAX_PASSES = 100;
     let totalMerges = 0;
@@ -1869,6 +1906,10 @@ export class SharedSpaceService extends BaseService {
 
         this.logger.log(
           `Dedup: merging person ${source.id} (${source.name || 'unnamed'}, ${source.faceCount} faces) into ${target.id} (${target.name || 'unnamed'}, ${target.faceCount} faces), distance=${distance.toFixed(4)}`,
+        );
+        // Направление слияния: целевой — персона с большим количеством лиц, исходный — поглощается
+        this.logger.debug(
+          `Дедупликация: направление слияния определено — target=${target.id} (${target.faceCount} лиц), source=${source.id} (${source.faceCount} лиц)`,
         );
 
         // Reassign faces and migrate aliases
@@ -2600,7 +2641,7 @@ export class SharedSpaceService extends BaseService {
     return {
       id: person.id,
       spaceId: person.spaceId,
-      name: person.name || '',
+      name: (alias?.alias ? alias.alias : person.name) || '',
       thumbnailPath: '',
       isHidden: alias?.isHidden ?? person.isHidden,
       birthDate: alias?.birthDate !== undefined && alias?.birthDate !== null

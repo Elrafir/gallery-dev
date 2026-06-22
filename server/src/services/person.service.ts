@@ -52,10 +52,7 @@ import { BoundingBox } from 'src/repositories/machine-learning.repository';
 import { UpdateFacesData } from 'src/repositories/person.repository';
 import { AssetFaceTable } from 'src/schema/tables/asset-face.table';
 import { FaceSearchTable } from 'src/schema/tables/face-search.table';
-import {
-  buildAutomaticReconciliationClaim,
-  chooseAutomaticTargetIdentity,
-} from 'src/services/accessible-identity-reconciliation';
+import { buildAutomaticReconciliationClaim } from 'src/services/accessible-identity-reconciliation';
 import { BaseService } from 'src/services/base.service';
 import { JobItem, JobOf } from 'src/types';
 import { getDimensions } from 'src/utils/asset.util';
@@ -493,10 +490,10 @@ export class PersonService extends BaseService {
     id: string,
     dto: RepresentativeFaceUpdateDto,
   ): Promise<PersonResponseDto> {
-    await this.requireAccess({ auth, permission: Permission.PersonUpdate, ids: [id] });
-    const current = await this.findOrFail(id);
+    const resolvedId = await this.resolvePersonIdWithSpaceAccess(auth, id, Permission.PersonUpdate);
+    const current = await this.findOrFail(resolvedId);
     const face = await this.personRepository.getRepresentativeFaceForUpdate({
-      personId: id,
+      personId: resolvedId,
       assetFaceId: dto.assetFaceId,
     });
     if (!face) {
@@ -504,7 +501,7 @@ export class PersonService extends BaseService {
     }
 
     await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [face.assetId] });
-    const person = await this.personRepository.update({ id, faceAssetId: face.id });
+    const person = await this.personRepository.update({ id: resolvedId, faceAssetId: face.id });
     if (current.identityId) {
       await this.faceIdentityRepository.updateRepresentativeFace({
         identityId: current.identityId,
@@ -512,7 +509,7 @@ export class PersonService extends BaseService {
       });
     }
 
-    await this.jobRepository.queue({ name: JobName.PersonGenerateThumbnail, data: { id } });
+    await this.jobRepository.queue({ name: JobName.PersonGenerateThumbnail, data: { id: resolvedId } });
     return mapPerson(person);
   }
 
@@ -1293,17 +1290,35 @@ export class PersonService extends BaseService {
       return;
     }
 
-    const target = chooseAutomaticTargetIdentity({
-      bridge: 'personal-upload',
-      localIdentityId: input.sourceIdentityId,
-      spaceIdentityId: match.identityId,
-    });
+    // Determine merge direction based on space ownership.
+    // If the uploader is the space owner (admin), their local identity is canonical (target).
+    // Otherwise, the space identity is canonical (target = space identity absorbs local).
+    const isUploaderSpaceOwner = await this.faceIdentityRepository.isUserSpaceOwnerForIdentity(
+      input.userId,
+      match.identityId,
+    );
+
+    const localIdentityId = input.sourceIdentityId;
+    const spaceIdentityId = match.identityId;
+    let targetIdentityId: string;
+    let sourceIdentityId: string;
+
+    if (isUploaderSpaceOwner) {
+      // Admin uploads: admin's identity absorbs space identity
+      targetIdentityId = localIdentityId;
+      sourceIdentityId = spaceIdentityId;
+    } else {
+      // Child uploads: space identity (admin's) absorbs child's identity
+      targetIdentityId = spaceIdentityId;
+      sourceIdentityId = localIdentityId;
+    }
+
     const claim = buildAutomaticReconciliationClaim({
       bridge: 'personal-upload',
-      localIdentityId: input.sourceIdentityId,
-      spaceIdentityId: match.identityId,
-      sourceIdentityId: target.sourceIdentityId,
-      targetIdentityId: target.targetIdentityId,
+      localIdentityId,
+      spaceIdentityId,
+      sourceIdentityId,
+      targetIdentityId,
       distance: match.distance,
       hasAccessBridge: true,
       compatibleType: true,

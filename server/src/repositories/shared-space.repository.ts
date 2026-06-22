@@ -1838,6 +1838,48 @@ export class SharedSpaceRepository {
       .execute();
   }
 
+  /**
+   * Восстановление representativeFaceId для персон, у которых текущий representativeFaceId
+   * указывает на лицо без эмбеддинга в face_search. Такие персоны невидимы для
+   * getSpacePersonsWithEmbeddings (INNER JOIN face_search) и не участвуют в дедупликации.
+   */
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async repairMissingEmbeddingRepresentativeFaces(spaceId: string) {
+    await this.db
+      .updateTable('shared_space_person')
+      .set((eb) => ({
+        representativeFaceId: eb
+          .selectFrom('shared_space_person_face as sspf')
+          .innerJoin('face_search as fs', 'fs.faceId', 'sspf.assetFaceId')
+          .select('sspf.assetFaceId')
+          .whereRef('sspf.personId', '=', 'shared_space_person.id')
+          .limit(1),
+      }))
+      .where('shared_space_person.spaceId', '=', spaceId)
+      .where('shared_space_person.representativeFaceId', 'is not', null)
+      .where('shared_space_person.representativeFaceSource', '=', 'auto')
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('face_search')
+              .select(sql.lit(1).as('one'))
+              .whereRef('face_search.faceId', '=', 'shared_space_person.representativeFaceId'),
+          ),
+        ),
+      )
+      .where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('shared_space_person_face as sspf')
+            .innerJoin('face_search as fs', 'fs.faceId', 'sspf.assetFaceId')
+            .select(sql.lit(1).as('one'))
+            .whereRef('sspf.personId', '=', 'shared_space_person.id'),
+        ),
+      )
+      .execute();
+  }
+
   @GenerateSql({ params: [DummyValue.UUID, [DummyValue.UUID]] })
   async removePersonFacesByAssetIds(spaceId: string, assetIds: string[]) {
     const assetFaceSubquery = this.db
@@ -2490,6 +2532,64 @@ export class SharedSpaceRepository {
         'shared_space_person.type',
         'asset_face.personId',
       ])
+      .execute();
+
+    const map = new Map<string, LinkedSpacePerson>();
+    for (const row of results) {
+      if (row.personId) {
+        map.set(row.personId, {
+          id: row.id,
+          isHidden: row.isHidden,
+          name: row.name,
+          birthDate: row.birthDate,
+          updatedAt: row.updatedAt,
+          type: row.type,
+        });
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Fallback-поиск space person через person.identityId → shared_space_person.identityId.
+   * Используется когда identity reconciliation уже объединил identities на уровне person,
+   * но dedup ещё не успел объединить space persons-дубликаты.
+   * Возвращает Map<personId, LinkedSpacePerson> только для записей, где identity-based
+   * space person имеет непустое имя и отличается от уже найденного face-based space person.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, [DummyValue.UUID], [DummyValue.UUID]] })
+  async findOwnerSpacePersonOverrides(
+    spaceId: string,
+    personIds: string[],
+    excludeSpacePersonIds: string[],
+  ): Promise<Map<string, LinkedSpacePerson>> {
+    if (personIds.length === 0) {
+      return new Map<string, LinkedSpacePerson>();
+    }
+
+    const results = await this.db
+      .selectFrom('person')
+      .innerJoin('shared_space_person', (join) =>
+        join
+          .onRef('shared_space_person.identityId', '=', 'person.identityId')
+          .on('shared_space_person.spaceId', '=', spaceId),
+      )
+      .select([
+        'person.id as personId',
+        'shared_space_person.id',
+        'shared_space_person.name',
+        'shared_space_person.isHidden',
+        'shared_space_person.birthDate',
+        'shared_space_person.updatedAt',
+        'shared_space_person.type',
+        'shared_space_person.faceCount',
+      ])
+      .where('person.id', 'in', personIds)
+      .where('person.identityId', 'is not', null)
+      .$if(excludeSpacePersonIds.length > 0, (qb) =>
+        qb.where('shared_space_person.id', 'not in', excludeSpacePersonIds),
+      )
+      .where('shared_space_person.name', '!=', '')
       .execute();
 
     const map = new Map<string, LinkedSpacePerson>();

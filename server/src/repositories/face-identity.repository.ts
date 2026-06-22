@@ -392,6 +392,24 @@ export class FaceIdentityRepository {
     });
   }
 
+  /**
+   * Checks if the given user is the creator (admin/owner) of any shared space
+   * that contains a shared_space_person linked to the given identityId.
+   * Used to determine identity merge direction: admin's identity is always canonical.
+   */
+  async isUserSpaceOwnerForIdentity(userId: string, identityId: string): Promise<boolean> {
+    const result = await sql<{ exists: boolean }>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM shared_space_person ssp
+        INNER JOIN shared_space ss ON ss.id = ssp."spaceId"
+        WHERE ssp."identityId" = ${identityId}
+          AND ss."createdById" = ${userId}
+      ) AS "exists"
+    `.execute(this.db);
+    return result.rows[0]?.exists ?? false;
+  }
+
   async getBackfillWork(): Promise<FaceIdentityBackfillWork> {
     const result = await sql<Pick<FaceIdentityBackfillWork, 'hasPersonalIdentityWork' | 'hasSpacePersonIdentityWork'>>`
       SELECT
@@ -1144,7 +1162,6 @@ export class FaceIdentityRepository {
         AND shared_space_member."showInTimeline" = true
       WHERE shared_space_person.id = ${profileId}
         AND shared_space_person."identityId" IS NOT NULL
-        AND shared_space_person."isHidden" = false
         AND EXISTS (
           SELECT 1
           FROM shared_space_person_face
@@ -1924,8 +1941,8 @@ export class FaceIdentityRepository {
           shared_space_person."spaceId",
           shared_space_person."identityId",
           COALESCE(NULLIF(shared_space_person_alias.alias, ''), shared_space_person.name, '') AS name,
-          shared_space_person."birthDate",
-          shared_space_person.description,
+          COALESCE(shared_space_person_alias."birthDate", shared_space_person."birthDate") AS "birthDate",
+          COALESCE(shared_space_person_alias.description, shared_space_person.description) AS description,
           ''::text AS "thumbnailPath",
           shared_space_person."isHidden",
           NULL::boolean AS "isFavorite",
