@@ -12,16 +12,16 @@
 
   const sizeClasses: Record<string, string> = {
     tiny: 'h-8',
-    small: 'h-10',
-    medium: 'h-12',
-    large: 'h-16',
-    giant: 'h-24',
+    small: 'h-11',
+    medium: 'h-14',
+    large: 'h-20',
+    giant: 'h-28',
   };
 
   const variantClasses: Record<string, string> = {
-    icon: 'aspect-square',
-    inline: '',
-    stacked: '',
+    icon: 'object-contain',
+    inline: 'object-contain',
+    stacked: 'object-contain',
   };
 
   const src = $derived.by(() => {
