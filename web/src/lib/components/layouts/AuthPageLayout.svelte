@@ -18,7 +18,7 @@
       <img
         src="/gallery-logo-mark.svg"
         class="max-w-(--breakpoint-md) mx-auto h-full mb-2 antialiased overflow-hidden"
-        alt="Gallery logo"
+        alt="Домашний фотоальбом"
       />
       <div
         class="w-full h-[99%] absolute start-0 top-0 backdrop-blur-[200px] bg-transparent dark:bg-immich-dark-bg/20"
