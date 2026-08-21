@@ -17,6 +17,7 @@ final timeBucketsProvider = FutureProvider.autoDispose.family<List<BucketLite>, 
   final buckets = await api.getTimeBuckets(
     country: filter.location.country,
     city: filter.location.city,
+    savedLocationId: filter.location.savedLocationId,
     isFavorite: filter.display.isFavorite ? true : null,
     personIds: filter.people.isEmpty ? null : filter.people.map((p) => p.id).toList(),
     rating: filter.rating.rating,

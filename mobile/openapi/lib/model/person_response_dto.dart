@@ -15,6 +15,7 @@ class PersonResponseDto {
   PersonResponseDto({
     required this.birthDate,
     this.color,
+    this.description,
     this.filterId,
     required this.id,
     this.isFavorite,
@@ -39,6 +40,9 @@ class PersonResponseDto {
   /// Consider adding a "default:" property in the specification file to hide this note.
   ///
   String? color;
+
+  /// Extended notes about this person
+  String? description;
 
   /// Scoped identity filter token
   ///
@@ -109,6 +113,7 @@ class PersonResponseDto {
   bool operator ==(Object other) => identical(this, other) || other is PersonResponseDto &&
     other.birthDate == birthDate &&
     other.color == color &&
+    other.description == description &&
     other.filterId == filterId &&
     other.id == id &&
     other.isFavorite == isFavorite &&
@@ -126,6 +131,7 @@ class PersonResponseDto {
     // ignore: unnecessary_parenthesis
     (birthDate == null ? 0 : birthDate!.hashCode) +
     (color == null ? 0 : color!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (filterId == null ? 0 : filterId!.hashCode) +
     (id.hashCode) +
     (isFavorite == null ? 0 : isFavorite!.hashCode) +
@@ -139,7 +145,7 @@ class PersonResponseDto {
     (updatedAt == null ? 0 : updatedAt!.hashCode);
 
   @override
-  String toString() => 'PersonResponseDto[birthDate=$birthDate, color=$color, filterId=$filterId, id=$id, isFavorite=$isFavorite, isHidden=$isHidden, name=$name, numberOfAssets=$numberOfAssets, primaryProfile=$primaryProfile, species=$species, thumbnailPath=$thumbnailPath, type=$type, updatedAt=$updatedAt]';
+  String toString() => 'PersonResponseDto[birthDate=$birthDate, color=$color, description=$description, filterId=$filterId, id=$id, isFavorite=$isFavorite, isHidden=$isHidden, name=$name, numberOfAssets=$numberOfAssets, primaryProfile=$primaryProfile, species=$species, thumbnailPath=$thumbnailPath, type=$type, updatedAt=$updatedAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -152,6 +158,11 @@ class PersonResponseDto {
       json[r'color'] = this.color;
     } else {
     //  json[r'color'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
     }
     if (this.filterId != null) {
       json[r'filterId'] = this.filterId;
@@ -202,6 +213,7 @@ class PersonResponseDto {
       return PersonResponseDto(
         birthDate: mapDateTime(json, r'birthDate', r''),
         color: mapValueOfType<String>(json, r'color'),
+        description: mapValueOfType<String>(json, r'description'),
         filterId: mapValueOfType<String>(json, r'filterId'),
         id: mapValueOfType<String>(json, r'id')!,
         isFavorite: mapValueOfType<bool>(json, r'isFavorite'),

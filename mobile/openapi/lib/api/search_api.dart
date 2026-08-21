@@ -159,6 +159,12 @@ class SearchApi {
   /// * [String] spaceId:
   ///   Scope to a specific shared space
   ///
+  /// * [String] state:
+  ///   Filter by state/province
+  ///
+  /// * [String] street:
+  ///   Filter by street
+  ///
   /// * [List<String>] tagIds:
   ///   Filter by tag IDs
   ///
@@ -170,7 +176,7 @@ class SearchApi {
   ///
   /// * [bool] withSharedSpaces:
   ///   Include shared spaces the user is a member of
-  Future<Response> getFilterSuggestionsWithHttpInfo({ String? albumId, String? city, String? country, bool? isFavorite, bool? isNotInAlbum, String? make, AssetTypeEnum? mediaType, String? model, List<String>? personIds, int? rating, String? spaceId, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withSharedSpaces, }) async {
+  Future<Response> getFilterSuggestionsWithHttpInfo({ String? albumId, String? city, String? country, bool? isFavorite, bool? isNotInAlbum, String? make, AssetTypeEnum? mediaType, String? model, List<String>? personIds, int? rating, String? spaceId, String? state, String? street, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withSharedSpaces, }) async {
     // ignore: prefer_const_declarations
     final apiPath = r'/search/suggestions/filters';
 
@@ -213,6 +219,12 @@ class SearchApi {
     }
     if (spaceId != null) {
       queryParams.addAll(_queryParams('', 'spaceId', spaceId));
+    }
+    if (state != null) {
+      queryParams.addAll(_queryParams('', 'state', state));
+    }
+    if (street != null) {
+      queryParams.addAll(_queryParams('', 'street', street));
     }
     if (tagIds != null) {
       queryParams.addAll(_queryParams('multi', 'tagIds', tagIds));
@@ -280,6 +292,12 @@ class SearchApi {
   /// * [String] spaceId:
   ///   Scope to a specific shared space
   ///
+  /// * [String] state:
+  ///   Filter by state/province
+  ///
+  /// * [String] street:
+  ///   Filter by street
+  ///
   /// * [List<String>] tagIds:
   ///   Filter by tag IDs
   ///
@@ -291,8 +309,8 @@ class SearchApi {
   ///
   /// * [bool] withSharedSpaces:
   ///   Include shared spaces the user is a member of
-  Future<FilterSuggestionsResponseDto?> getFilterSuggestions({ String? albumId, String? city, String? country, bool? isFavorite, bool? isNotInAlbum, String? make, AssetTypeEnum? mediaType, String? model, List<String>? personIds, int? rating, String? spaceId, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withSharedSpaces, }) async {
-    final response = await getFilterSuggestionsWithHttpInfo( albumId: albumId, city: city, country: country, isFavorite: isFavorite, isNotInAlbum: isNotInAlbum, make: make, mediaType: mediaType, model: model, personIds: personIds, rating: rating, spaceId: spaceId, tagIds: tagIds, takenAfter: takenAfter, takenBefore: takenBefore, withSharedSpaces: withSharedSpaces, );
+  Future<FilterSuggestionsResponseDto?> getFilterSuggestions({ String? albumId, String? city, String? country, bool? isFavorite, bool? isNotInAlbum, String? make, AssetTypeEnum? mediaType, String? model, List<String>? personIds, int? rating, String? spaceId, String? state, String? street, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withSharedSpaces, }) async {
+    final response = await getFilterSuggestionsWithHttpInfo( albumId: albumId, city: city, country: country, isFavorite: isFavorite, isNotInAlbum: isNotInAlbum, make: make, mediaType: mediaType, model: model, personIds: personIds, rating: rating, spaceId: spaceId, state: state, street: street, tagIds: tagIds, takenAfter: takenAfter, takenBefore: takenBefore, withSharedSpaces: withSharedSpaces, );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -361,9 +379,12 @@ class SearchApi {
   /// * [DateTime] takenBefore:
   ///   Filter suggestions by taken date (before)
   ///
+  /// * [bool] withCounts:
+  ///   Include asset counts in the returned suggestions
+  ///
   /// * [bool] withSharedSpaces:
   ///   Include suggestions from shared spaces the user is a member of
-  Future<Response> getSearchSuggestionsWithHttpInfo(SearchSuggestionType type, { String? albumId, String? country, bool? includeNull, bool? isFavorite, bool? isNotInAlbum, String? lensModel, String? make, String? model, List<String>? personIds, int? rating, String? spaceId, String? state, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withSharedSpaces, }) async {
+  Future<Response> getSearchSuggestionsWithHttpInfo(SearchSuggestionType type, { String? albumId, String? country, bool? includeNull, bool? isFavorite, bool? isNotInAlbum, String? lensModel, String? make, String? model, List<String>? personIds, int? rating, String? spaceId, String? state, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withCounts, bool? withSharedSpaces, }) async {
     // ignore: prefer_const_declarations
     final apiPath = r'/search/suggestions';
 
@@ -420,6 +441,9 @@ class SearchApi {
       queryParams.addAll(_queryParams('', 'takenBefore', takenBefore));
     }
       queryParams.addAll(_queryParams('', 'type', type));
+    if (withCounts != null) {
+      queryParams.addAll(_queryParams('', 'withCounts', withCounts));
+    }
     if (withSharedSpaces != null) {
       queryParams.addAll(_queryParams('', 'withSharedSpaces', withSharedSpaces));
     }
@@ -491,10 +515,13 @@ class SearchApi {
   /// * [DateTime] takenBefore:
   ///   Filter suggestions by taken date (before)
   ///
+  /// * [bool] withCounts:
+  ///   Include asset counts in the returned suggestions
+  ///
   /// * [bool] withSharedSpaces:
   ///   Include suggestions from shared spaces the user is a member of
-  Future<List<String>?> getSearchSuggestions(SearchSuggestionType type, { String? albumId, String? country, bool? includeNull, bool? isFavorite, bool? isNotInAlbum, String? lensModel, String? make, String? model, List<String>? personIds, int? rating, String? spaceId, String? state, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withSharedSpaces, }) async {
-    final response = await getSearchSuggestionsWithHttpInfo(type,  albumId: albumId, country: country, includeNull: includeNull, isFavorite: isFavorite, isNotInAlbum: isNotInAlbum, lensModel: lensModel, make: make, model: model, personIds: personIds, rating: rating, spaceId: spaceId, state: state, tagIds: tagIds, takenAfter: takenAfter, takenBefore: takenBefore, withSharedSpaces: withSharedSpaces, );
+  Future<List<String>?> getSearchSuggestions(SearchSuggestionType type, { String? albumId, String? country, bool? includeNull, bool? isFavorite, bool? isNotInAlbum, String? lensModel, String? make, String? model, List<String>? personIds, int? rating, String? spaceId, String? state, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, bool? withCounts, bool? withSharedSpaces, }) async {
+    final response = await getSearchSuggestionsWithHttpInfo(type,  albumId: albumId, country: country, includeNull: includeNull, isFavorite: isFavorite, isNotInAlbum: isNotInAlbum, lensModel: lensModel, make: make, model: model, personIds: personIds, rating: rating, spaceId: spaceId, state: state, tagIds: tagIds, takenAfter: takenAfter, takenBefore: takenBefore, withCounts: withCounts, withSharedSpaces: withSharedSpaces, );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -777,6 +804,9 @@ class SearchApi {
   /// * [num] rating:
   ///   Filter by rating [1-5], or null for unrated
   ///
+  /// * [String] savedLocationId:
+  ///   Filter by saved location proximity
+  ///
   /// * [num] size:
   ///   Number of results to return
   ///
@@ -788,6 +818,9 @@ class SearchApi {
   ///
   /// * [String] state:
   ///   Filter by state/province name
+  ///
+  /// * [String] street:
+  ///   Filter by street name
   ///
   /// * [List<String>] tagIds:
   ///   Filter by tag IDs
@@ -822,7 +855,7 @@ class SearchApi {
   ///
   /// * [bool] withSharedSpaces:
   ///   Include shared spaces the user is a member of
-  Future<Response> searchLargeAssetsWithHttpInfo({ List<String>? albumIds, String? city, String? country, DateTime? createdAfter, DateTime? createdBefore, bool? isEncoded, bool? isFavorite, bool? isMotion, bool? isNotInAlbum, bool? isOffline, String? lensModel, String? libraryId, String? make, int? minFileSize, String? model, String? ocr, List<String>? personIds, num? rating, num? size, String? spaceId, List<String>? spacePersonIds, String? state, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, DateTime? trashedAfter, DateTime? trashedBefore, AssetTypeEnum? type, DateTime? updatedAfter, DateTime? updatedBefore, AssetVisibility? visibility, bool? withDeleted, bool? withExif, bool? withSharedSpaces, }) async {
+  Future<Response> searchLargeAssetsWithHttpInfo({ List<String>? albumIds, String? city, String? country, DateTime? createdAfter, DateTime? createdBefore, bool? isEncoded, bool? isFavorite, bool? isMotion, bool? isNotInAlbum, bool? isOffline, String? lensModel, String? libraryId, String? make, int? minFileSize, String? model, String? ocr, List<String>? personIds, num? rating, String? savedLocationId, num? size, String? spaceId, List<String>? spacePersonIds, String? state, String? street, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, DateTime? trashedAfter, DateTime? trashedBefore, AssetTypeEnum? type, DateTime? updatedAfter, DateTime? updatedBefore, AssetVisibility? visibility, bool? withDeleted, bool? withExif, bool? withSharedSpaces, }) async {
     // ignore: prefer_const_declarations
     final apiPath = r'/search/large-assets';
 
@@ -887,6 +920,9 @@ class SearchApi {
     if (rating != null) {
       queryParams.addAll(_queryParams('', 'rating', rating));
     }
+    if (savedLocationId != null) {
+      queryParams.addAll(_queryParams('', 'savedLocationId', savedLocationId));
+    }
     if (size != null) {
       queryParams.addAll(_queryParams('', 'size', size));
     }
@@ -898,6 +934,9 @@ class SearchApi {
     }
     if (state != null) {
       queryParams.addAll(_queryParams('', 'state', state));
+    }
+    if (street != null) {
+      queryParams.addAll(_queryParams('', 'street', street));
     }
     if (tagIds != null) {
       queryParams.addAll(_queryParams('multi', 'tagIds', tagIds));
@@ -1010,6 +1049,9 @@ class SearchApi {
   /// * [num] rating:
   ///   Filter by rating [1-5], or null for unrated
   ///
+  /// * [String] savedLocationId:
+  ///   Filter by saved location proximity
+  ///
   /// * [num] size:
   ///   Number of results to return
   ///
@@ -1021,6 +1063,9 @@ class SearchApi {
   ///
   /// * [String] state:
   ///   Filter by state/province name
+  ///
+  /// * [String] street:
+  ///   Filter by street name
   ///
   /// * [List<String>] tagIds:
   ///   Filter by tag IDs
@@ -1055,8 +1100,8 @@ class SearchApi {
   ///
   /// * [bool] withSharedSpaces:
   ///   Include shared spaces the user is a member of
-  Future<List<AssetResponseDto>?> searchLargeAssets({ List<String>? albumIds, String? city, String? country, DateTime? createdAfter, DateTime? createdBefore, bool? isEncoded, bool? isFavorite, bool? isMotion, bool? isNotInAlbum, bool? isOffline, String? lensModel, String? libraryId, String? make, int? minFileSize, String? model, String? ocr, List<String>? personIds, num? rating, num? size, String? spaceId, List<String>? spacePersonIds, String? state, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, DateTime? trashedAfter, DateTime? trashedBefore, AssetTypeEnum? type, DateTime? updatedAfter, DateTime? updatedBefore, AssetVisibility? visibility, bool? withDeleted, bool? withExif, bool? withSharedSpaces, }) async {
-    final response = await searchLargeAssetsWithHttpInfo( albumIds: albumIds, city: city, country: country, createdAfter: createdAfter, createdBefore: createdBefore, isEncoded: isEncoded, isFavorite: isFavorite, isMotion: isMotion, isNotInAlbum: isNotInAlbum, isOffline: isOffline, lensModel: lensModel, libraryId: libraryId, make: make, minFileSize: minFileSize, model: model, ocr: ocr, personIds: personIds, rating: rating, size: size, spaceId: spaceId, spacePersonIds: spacePersonIds, state: state, tagIds: tagIds, takenAfter: takenAfter, takenBefore: takenBefore, trashedAfter: trashedAfter, trashedBefore: trashedBefore, type: type, updatedAfter: updatedAfter, updatedBefore: updatedBefore, visibility: visibility, withDeleted: withDeleted, withExif: withExif, withSharedSpaces: withSharedSpaces, );
+  Future<List<AssetResponseDto>?> searchLargeAssets({ List<String>? albumIds, String? city, String? country, DateTime? createdAfter, DateTime? createdBefore, bool? isEncoded, bool? isFavorite, bool? isMotion, bool? isNotInAlbum, bool? isOffline, String? lensModel, String? libraryId, String? make, int? minFileSize, String? model, String? ocr, List<String>? personIds, num? rating, String? savedLocationId, num? size, String? spaceId, List<String>? spacePersonIds, String? state, String? street, List<String>? tagIds, DateTime? takenAfter, DateTime? takenBefore, DateTime? trashedAfter, DateTime? trashedBefore, AssetTypeEnum? type, DateTime? updatedAfter, DateTime? updatedBefore, AssetVisibility? visibility, bool? withDeleted, bool? withExif, bool? withSharedSpaces, }) async {
+    final response = await searchLargeAssetsWithHttpInfo( albumIds: albumIds, city: city, country: country, createdAfter: createdAfter, createdBefore: createdBefore, isEncoded: isEncoded, isFavorite: isFavorite, isMotion: isMotion, isNotInAlbum: isNotInAlbum, isOffline: isOffline, lensModel: lensModel, libraryId: libraryId, make: make, minFileSize: minFileSize, model: model, ocr: ocr, personIds: personIds, rating: rating, savedLocationId: savedLocationId, size: size, spaceId: spaceId, spacePersonIds: spacePersonIds, state: state, street: street, tagIds: tagIds, takenAfter: takenAfter, takenBefore: takenBefore, trashedAfter: trashedAfter, trashedBefore: trashedBefore, type: type, updatedAfter: updatedAfter, updatedBefore: updatedBefore, visibility: visibility, withDeleted: withDeleted, withExif: withExif, withSharedSpaces: withSharedSpaces, );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -1164,7 +1209,10 @@ class SearchApi {
   ///
   /// * [String] name (required):
   ///   Place name to search for
-  Future<Response> searchPlacesWithHttpInfo(String name,) async {
+  ///
+  /// * [String] featuretype:
+  ///   Feature type to filter (e.g. country, state, city)
+  Future<Response> searchPlacesWithHttpInfo(String name, { String? featuretype, }) async {
     // ignore: prefer_const_declarations
     final apiPath = r'/search/places';
 
@@ -1175,6 +1223,9 @@ class SearchApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
+    if (featuretype != null) {
+      queryParams.addAll(_queryParams('', 'featuretype', featuretype));
+    }
       queryParams.addAll(_queryParams('', 'name', name));
 
     const contentTypes = <String>[];
@@ -1199,8 +1250,11 @@ class SearchApi {
   ///
   /// * [String] name (required):
   ///   Place name to search for
-  Future<List<PlacesResponseDto>?> searchPlaces(String name,) async {
-    final response = await searchPlacesWithHttpInfo(name,);
+  ///
+  /// * [String] featuretype:
+  ///   Feature type to filter (e.g. country, state, city)
+  Future<List<PlacesResponseDto>?> searchPlaces(String name, { String? featuretype, }) async {
+    final response = await searchPlacesWithHttpInfo(name,  featuretype: featuretype, );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

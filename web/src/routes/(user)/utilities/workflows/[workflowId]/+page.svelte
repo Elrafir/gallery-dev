@@ -356,7 +356,7 @@
 {/snippet}
 
 <svelte:head>
-  <title>{data.meta.title} - Immich</title>
+  <title>{data.meta.title} - Домашний фотоальбом</title>
 </svelte:head>
 
 <main class="pt-24 immich-scrollbar">

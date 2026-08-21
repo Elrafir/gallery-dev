@@ -14,26 +14,40 @@ class SystemConfigReverseGeocodingDto {
   /// Returns a new [SystemConfigReverseGeocodingDto] instance.
   SystemConfigReverseGeocodingDto({
     required this.enabled,
+    this.geocoderUrl = 'http://192.168.100.78:8088',
+    this.substitutions = const [],
   });
 
   /// Enabled
   bool enabled;
 
+  /// Geocoder URL
+  String geocoderUrl;
+
+  /// Country substitution rules
+  List<CountrySubstitutionRuleDto> substitutions;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is SystemConfigReverseGeocodingDto &&
-    other.enabled == enabled;
+    other.enabled == enabled &&
+    other.geocoderUrl == geocoderUrl &&
+    _deepEquality.equals(other.substitutions, substitutions);
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (enabled.hashCode);
+    (enabled.hashCode) +
+    (geocoderUrl.hashCode) +
+    (substitutions.hashCode);
 
   @override
-  String toString() => 'SystemConfigReverseGeocodingDto[enabled=$enabled]';
+  String toString() => 'SystemConfigReverseGeocodingDto[enabled=$enabled, geocoderUrl=$geocoderUrl, substitutions=$substitutions]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
       json[r'enabled'] = this.enabled;
+      json[r'geocoderUrl'] = this.geocoderUrl;
+      json[r'substitutions'] = this.substitutions;
     return json;
   }
 
@@ -47,6 +61,8 @@ class SystemConfigReverseGeocodingDto {
 
       return SystemConfigReverseGeocodingDto(
         enabled: mapValueOfType<bool>(json, r'enabled')!,
+        geocoderUrl: mapValueOfType<String>(json, r'geocoderUrl') ?? 'http://192.168.100.78:8088',
+        substitutions: CountrySubstitutionRuleDto.listFromJson(json[r'substitutions']),
       );
     }
     return null;

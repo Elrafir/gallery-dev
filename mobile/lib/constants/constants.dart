@@ -46,8 +46,8 @@ const List<(String, String)> kWidgetNames = [
 const int kMinMonthsToEnableScrubberSnap = 12;
 
 const String kImmichAppStoreLink = "https://apps.apple.com/app/id6761776289";
-const String kImmichPlayStoreLink = "https://play.google.com/store/apps/details?id=de.opennoodle.gallery";
-const String kImmichLatestRelease = "https://github.com/immich-app/immich/releases/latest";
+const String kImmichPlayStoreLink = "https://github.com/open-noodle/gallery/releases/latest";
+const String kImmichLatestRelease = "https://github.com/open-noodle/gallery/releases/latest";
 
 const int kPhotoTabIndex = 0;
 const int kSearchTabIndex = 1;

@@ -17,6 +17,7 @@ class SharedSpacePersonResponseDto {
     required this.assetCount,
     this.birthDate,
     required this.createdAt,
+    this.description,
     required this.faceCount,
     required this.id,
     required this.isHidden,
@@ -40,6 +41,9 @@ class SharedSpacePersonResponseDto {
 
   /// Creation date
   String createdAt;
+
+  /// Extended notes about this person
+  String? description;
 
   /// Number of faces assigned to this person
   num faceCount;
@@ -83,6 +87,7 @@ class SharedSpacePersonResponseDto {
     other.assetCount == assetCount &&
     other.birthDate == birthDate &&
     other.createdAt == createdAt &&
+    other.description == description &&
     other.faceCount == faceCount &&
     other.id == id &&
     other.isHidden == isHidden &&
@@ -101,6 +106,7 @@ class SharedSpacePersonResponseDto {
     (assetCount.hashCode) +
     (birthDate == null ? 0 : birthDate!.hashCode) +
     (createdAt.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (faceCount.hashCode) +
     (id.hashCode) +
     (isHidden.hashCode) +
@@ -113,7 +119,7 @@ class SharedSpacePersonResponseDto {
     (updatedAt.hashCode);
 
   @override
-  String toString() => 'SharedSpacePersonResponseDto[alias=$alias, assetCount=$assetCount, birthDate=$birthDate, createdAt=$createdAt, faceCount=$faceCount, id=$id, isHidden=$isHidden, name=$name, representativeFaceId=$representativeFaceId, representativeFaceSource=$representativeFaceSource, spaceId=$spaceId, thumbnailPath=$thumbnailPath, type=$type, updatedAt=$updatedAt]';
+  String toString() => 'SharedSpacePersonResponseDto[alias=$alias, assetCount=$assetCount, birthDate=$birthDate, createdAt=$createdAt, description=$description, faceCount=$faceCount, id=$id, isHidden=$isHidden, name=$name, representativeFaceId=$representativeFaceId, representativeFaceSource=$representativeFaceSource, spaceId=$spaceId, thumbnailPath=$thumbnailPath, type=$type, updatedAt=$updatedAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -129,6 +135,11 @@ class SharedSpacePersonResponseDto {
     //  json[r'birthDate'] = null;
     }
       json[r'createdAt'] = this.createdAt;
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
+    }
       json[r'faceCount'] = this.faceCount;
       json[r'id'] = this.id;
       json[r'isHidden'] = this.isHidden;
@@ -163,6 +174,7 @@ class SharedSpacePersonResponseDto {
         assetCount: num.parse('${json[r'assetCount']}'),
         birthDate: mapDateTime(json, r'birthDate', r''),
         createdAt: mapValueOfType<String>(json, r'createdAt')!,
+        description: mapValueOfType<String>(json, r'description'),
         faceCount: num.parse('${json[r'faceCount']}'),
         id: mapValueOfType<String>(json, r'id')!,
         isHidden: mapValueOfType<bool>(json, r'isHidden')!,

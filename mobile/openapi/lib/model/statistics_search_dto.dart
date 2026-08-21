@@ -31,9 +31,11 @@ class StatisticsSearchDto {
     this.ocr,
     this.personIds = const [],
     this.rating,
+    this.savedLocationId,
     this.spaceId,
     this.spacePersonIds = const [],
     this.state,
+    this.street,
     this.tagIds = const [],
     this.takenAfter,
     this.takenBefore,
@@ -157,6 +159,15 @@ class StatisticsSearchDto {
   /// Maximum value: 5
   num? rating;
 
+  /// Filter by saved location proximity
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? savedLocationId;
+
   /// Shared space ID to filter by
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -171,6 +182,9 @@ class StatisticsSearchDto {
 
   /// Filter by state/province name
   String? state;
+
+  /// Filter by street name
+  String? street;
 
   /// Filter by tag IDs
   List<String>? tagIds;
@@ -274,9 +288,11 @@ class StatisticsSearchDto {
     other.ocr == ocr &&
     _deepEquality.equals(other.personIds, personIds) &&
     other.rating == rating &&
+    other.savedLocationId == savedLocationId &&
     other.spaceId == spaceId &&
     _deepEquality.equals(other.spacePersonIds, spacePersonIds) &&
     other.state == state &&
+    other.street == street &&
     _deepEquality.equals(other.tagIds, tagIds) &&
     other.takenAfter == takenAfter &&
     other.takenBefore == takenBefore &&
@@ -309,9 +325,11 @@ class StatisticsSearchDto {
     (ocr == null ? 0 : ocr!.hashCode) +
     (personIds.hashCode) +
     (rating == null ? 0 : rating!.hashCode) +
+    (savedLocationId == null ? 0 : savedLocationId!.hashCode) +
     (spaceId == null ? 0 : spaceId!.hashCode) +
     (spacePersonIds.hashCode) +
     (state == null ? 0 : state!.hashCode) +
+    (street == null ? 0 : street!.hashCode) +
     (tagIds == null ? 0 : tagIds!.hashCode) +
     (takenAfter == null ? 0 : takenAfter!.hashCode) +
     (takenBefore == null ? 0 : takenBefore!.hashCode) +
@@ -324,7 +342,7 @@ class StatisticsSearchDto {
     (withSharedSpaces == null ? 0 : withSharedSpaces!.hashCode);
 
   @override
-  String toString() => 'StatisticsSearchDto[albumIds=$albumIds, city=$city, country=$country, createdAfter=$createdAfter, createdBefore=$createdBefore, description=$description, isEncoded=$isEncoded, isFavorite=$isFavorite, isMotion=$isMotion, isNotInAlbum=$isNotInAlbum, isOffline=$isOffline, lensModel=$lensModel, libraryId=$libraryId, make=$make, model=$model, ocr=$ocr, personIds=$personIds, rating=$rating, spaceId=$spaceId, spacePersonIds=$spacePersonIds, state=$state, tagIds=$tagIds, takenAfter=$takenAfter, takenBefore=$takenBefore, trashedAfter=$trashedAfter, trashedBefore=$trashedBefore, type=$type, updatedAfter=$updatedAfter, updatedBefore=$updatedBefore, visibility=$visibility, withSharedSpaces=$withSharedSpaces]';
+  String toString() => 'StatisticsSearchDto[albumIds=$albumIds, city=$city, country=$country, createdAfter=$createdAfter, createdBefore=$createdBefore, description=$description, isEncoded=$isEncoded, isFavorite=$isFavorite, isMotion=$isMotion, isNotInAlbum=$isNotInAlbum, isOffline=$isOffline, lensModel=$lensModel, libraryId=$libraryId, make=$make, model=$model, ocr=$ocr, personIds=$personIds, rating=$rating, savedLocationId=$savedLocationId, spaceId=$spaceId, spacePersonIds=$spacePersonIds, state=$state, street=$street, tagIds=$tagIds, takenAfter=$takenAfter, takenBefore=$takenBefore, trashedAfter=$trashedAfter, trashedBefore=$trashedBefore, type=$type, updatedAfter=$updatedAfter, updatedBefore=$updatedBefore, visibility=$visibility, withSharedSpaces=$withSharedSpaces]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -414,6 +432,11 @@ class StatisticsSearchDto {
     } else {
     //  json[r'rating'] = null;
     }
+    if (this.savedLocationId != null) {
+      json[r'savedLocationId'] = this.savedLocationId;
+    } else {
+    //  json[r'savedLocationId'] = null;
+    }
     if (this.spaceId != null) {
       json[r'spaceId'] = this.spaceId;
     } else {
@@ -424,6 +447,11 @@ class StatisticsSearchDto {
       json[r'state'] = this.state;
     } else {
     //  json[r'state'] = null;
+    }
+    if (this.street != null) {
+      json[r'street'] = this.street;
+    } else {
+    //  json[r'street'] = null;
     }
     if (this.tagIds != null) {
       json[r'tagIds'] = this.tagIds;
@@ -523,11 +551,13 @@ class StatisticsSearchDto {
         rating: json[r'rating'] == null
             ? null
             : num.parse('${json[r'rating']}'),
+        savedLocationId: mapValueOfType<String>(json, r'savedLocationId'),
         spaceId: mapValueOfType<String>(json, r'spaceId'),
         spacePersonIds: json[r'spacePersonIds'] is Iterable
             ? (json[r'spacePersonIds'] as Iterable).cast<String>().toList(growable: false)
             : const [],
         state: mapValueOfType<String>(json, r'state'),
+        street: mapValueOfType<String>(json, r'street'),
         tagIds: json[r'tagIds'] is Iterable
             ? (json[r'tagIds'] as Iterable).cast<String>().toList(growable: false)
             : const [],

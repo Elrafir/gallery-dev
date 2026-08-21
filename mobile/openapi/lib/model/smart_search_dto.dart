@@ -35,10 +35,12 @@ class SmartSearchDto {
     this.query,
     this.queryAssetId,
     this.rating,
+    this.savedLocationId,
     this.size,
     this.spaceId,
     this.spacePersonIds = const [],
     this.state,
+    this.street,
     this.tagIds = const [],
     this.takenAfter,
     this.takenBefore,
@@ -201,6 +203,15 @@ class SmartSearchDto {
   /// Maximum value: 5
   num? rating;
 
+  /// Filter by saved location proximity
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? savedLocationId;
+
   /// Number of results to return
   ///
   /// Minimum value: 1
@@ -227,6 +238,9 @@ class SmartSearchDto {
 
   /// Filter by state/province name
   String? state;
+
+  /// Filter by street name
+  String? street;
 
   /// Filter by tag IDs
   List<String>? tagIds;
@@ -352,10 +366,12 @@ class SmartSearchDto {
     other.query == query &&
     other.queryAssetId == queryAssetId &&
     other.rating == rating &&
+    other.savedLocationId == savedLocationId &&
     other.size == size &&
     other.spaceId == spaceId &&
     _deepEquality.equals(other.spacePersonIds, spacePersonIds) &&
     other.state == state &&
+    other.street == street &&
     _deepEquality.equals(other.tagIds, tagIds) &&
     other.takenAfter == takenAfter &&
     other.takenBefore == takenBefore &&
@@ -394,10 +410,12 @@ class SmartSearchDto {
     (query == null ? 0 : query!.hashCode) +
     (queryAssetId == null ? 0 : queryAssetId!.hashCode) +
     (rating == null ? 0 : rating!.hashCode) +
+    (savedLocationId == null ? 0 : savedLocationId!.hashCode) +
     (size == null ? 0 : size!.hashCode) +
     (spaceId == null ? 0 : spaceId!.hashCode) +
     (spacePersonIds.hashCode) +
     (state == null ? 0 : state!.hashCode) +
+    (street == null ? 0 : street!.hashCode) +
     (tagIds == null ? 0 : tagIds!.hashCode) +
     (takenAfter == null ? 0 : takenAfter!.hashCode) +
     (takenBefore == null ? 0 : takenBefore!.hashCode) +
@@ -412,7 +430,7 @@ class SmartSearchDto {
     (withSharedSpaces == null ? 0 : withSharedSpaces!.hashCode);
 
   @override
-  String toString() => 'SmartSearchDto[albumIds=$albumIds, city=$city, country=$country, createdAfter=$createdAfter, createdBefore=$createdBefore, isEncoded=$isEncoded, isFavorite=$isFavorite, isMotion=$isMotion, isNotInAlbum=$isNotInAlbum, isOffline=$isOffline, language=$language, lensModel=$lensModel, libraryId=$libraryId, make=$make, model=$model, ocr=$ocr, order=$order, page=$page, personIds=$personIds, query=$query, queryAssetId=$queryAssetId, rating=$rating, size=$size, spaceId=$spaceId, spacePersonIds=$spacePersonIds, state=$state, tagIds=$tagIds, takenAfter=$takenAfter, takenBefore=$takenBefore, trashedAfter=$trashedAfter, trashedBefore=$trashedBefore, type=$type, updatedAfter=$updatedAfter, updatedBefore=$updatedBefore, visibility=$visibility, withDeleted=$withDeleted, withExif=$withExif, withSharedSpaces=$withSharedSpaces]';
+  String toString() => 'SmartSearchDto[albumIds=$albumIds, city=$city, country=$country, createdAfter=$createdAfter, createdBefore=$createdBefore, isEncoded=$isEncoded, isFavorite=$isFavorite, isMotion=$isMotion, isNotInAlbum=$isNotInAlbum, isOffline=$isOffline, language=$language, lensModel=$lensModel, libraryId=$libraryId, make=$make, model=$model, ocr=$ocr, order=$order, page=$page, personIds=$personIds, query=$query, queryAssetId=$queryAssetId, rating=$rating, savedLocationId=$savedLocationId, size=$size, spaceId=$spaceId, spacePersonIds=$spacePersonIds, state=$state, street=$street, tagIds=$tagIds, takenAfter=$takenAfter, takenBefore=$takenBefore, trashedAfter=$trashedAfter, trashedBefore=$trashedBefore, type=$type, updatedAfter=$updatedAfter, updatedBefore=$updatedBefore, visibility=$visibility, withDeleted=$withDeleted, withExif=$withExif, withSharedSpaces=$withSharedSpaces]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -522,6 +540,11 @@ class SmartSearchDto {
     } else {
     //  json[r'rating'] = null;
     }
+    if (this.savedLocationId != null) {
+      json[r'savedLocationId'] = this.savedLocationId;
+    } else {
+    //  json[r'savedLocationId'] = null;
+    }
     if (this.size != null) {
       json[r'size'] = this.size;
     } else {
@@ -537,6 +560,11 @@ class SmartSearchDto {
       json[r'state'] = this.state;
     } else {
     //  json[r'state'] = null;
+    }
+    if (this.street != null) {
+      json[r'street'] = this.street;
+    } else {
+    //  json[r'street'] = null;
     }
     if (this.tagIds != null) {
       json[r'tagIds'] = this.tagIds;
@@ -652,6 +680,7 @@ class SmartSearchDto {
         rating: json[r'rating'] == null
             ? null
             : num.parse('${json[r'rating']}'),
+        savedLocationId: mapValueOfType<String>(json, r'savedLocationId'),
         size: json[r'size'] == null
             ? null
             : num.parse('${json[r'size']}'),
@@ -660,6 +689,7 @@ class SmartSearchDto {
             ? (json[r'spacePersonIds'] as Iterable).cast<String>().toList(growable: false)
             : const [],
         state: mapValueOfType<String>(json, r'state'),
+        street: mapValueOfType<String>(json, r'street'),
         tagIds: json[r'tagIds'] is Iterable
             ? (json[r'tagIds'] as Iterable).cast<String>().toList(growable: false)
             : const [],

@@ -14,6 +14,7 @@ class SharedSpacePersonUpdateDto {
   /// Returns a new [SharedSpacePersonUpdateDto] instance.
   SharedSpacePersonUpdateDto({
     this.birthDate,
+    this.description,
     this.isHidden,
     this.name,
     this.representativeFaceId,
@@ -21,6 +22,9 @@ class SharedSpacePersonUpdateDto {
 
   /// Person date of birth
   DateTime? birthDate;
+
+  /// Extended notes about this person
+  String? description;
 
   /// Person visibility (hidden)
   ///
@@ -46,6 +50,7 @@ class SharedSpacePersonUpdateDto {
   @override
   bool operator ==(Object other) => identical(this, other) || other is SharedSpacePersonUpdateDto &&
     other.birthDate == birthDate &&
+    other.description == description &&
     other.isHidden == isHidden &&
     other.name == name &&
     other.representativeFaceId == representativeFaceId;
@@ -54,12 +59,13 @@ class SharedSpacePersonUpdateDto {
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (birthDate == null ? 0 : birthDate!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (isHidden == null ? 0 : isHidden!.hashCode) +
     (name == null ? 0 : name!.hashCode) +
     (representativeFaceId == null ? 0 : representativeFaceId!.hashCode);
 
   @override
-  String toString() => 'SharedSpacePersonUpdateDto[birthDate=$birthDate, isHidden=$isHidden, name=$name, representativeFaceId=$representativeFaceId]';
+  String toString() => 'SharedSpacePersonUpdateDto[birthDate=$birthDate, description=$description, isHidden=$isHidden, name=$name, representativeFaceId=$representativeFaceId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -67,6 +73,11 @@ class SharedSpacePersonUpdateDto {
       json[r'birthDate'] = _dateFormatter.format(this.birthDate!);
     } else {
     //  json[r'birthDate'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
     }
     if (this.isHidden != null) {
       json[r'isHidden'] = this.isHidden;
@@ -96,6 +107,7 @@ class SharedSpacePersonUpdateDto {
 
       return SharedSpacePersonUpdateDto(
         birthDate: mapDateTime(json, r'birthDate', r''),
+        description: mapValueOfType<String>(json, r'description'),
         isHidden: mapValueOfType<bool>(json, r'isHidden'),
         name: mapValueOfType<String>(json, r'name'),
         representativeFaceId: mapValueOfType<String>(json, r'representativeFaceId'),

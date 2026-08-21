@@ -1752,6 +1752,72 @@ class SharedSpacesApi {
     }
   }
 
+  /// Reset person fields to defaults
+  ///
+  /// Reset manually set fields (name, birthDate, description, thumbnail) to inherited/auto values.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [String] personId (required):
+  ///
+  /// * [SharedSpacePersonResetDto] sharedSpacePersonResetDto (required):
+  Future<Response> resetSpacePersonToDefaultsWithHttpInfo(String id, String personId, SharedSpacePersonResetDto sharedSpacePersonResetDto,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/shared-spaces/{id}/people/{personId}/reset-defaults'
+      .replaceAll('{id}', id)
+      .replaceAll('{personId}', personId);
+
+    // ignore: prefer_final_locals
+    Object? postBody = sharedSpacePersonResetDto;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Reset person fields to defaults
+  ///
+  /// Reset manually set fields (name, birthDate, description, thumbnail) to inherited/auto values.
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  ///
+  /// * [String] personId (required):
+  ///
+  /// * [SharedSpacePersonResetDto] sharedSpacePersonResetDto (required):
+  Future<SharedSpacePersonResponseDto?> resetSpacePersonToDefaults(String id, String personId, SharedSpacePersonResetDto sharedSpacePersonResetDto,) async {
+    final response = await resetSpacePersonToDefaultsWithHttpInfo(id, personId, sharedSpacePersonResetDto,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'SharedSpacePersonResponseDto',) as SharedSpacePersonResponseDto;
+    
+    }
+    return null;
+  }
+
   /// Set a person alias in a shared space
   ///
   /// Set a user-specific alias for a person in a shared space.

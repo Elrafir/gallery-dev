@@ -16,6 +16,8 @@ class SharedSpaceMemberResponseDto {
     this.avatarColor,
     this.contributionCount,
     required this.email,
+    this.inheritPeople,
+    this.inheritTags,
     required this.joinedAt,
     this.lastActiveAt,
     required this.name,
@@ -24,6 +26,8 @@ class SharedSpaceMemberResponseDto {
     this.recentAssetId,
     required this.role,
     required this.sharePersonMetadata,
+    this.showInMap,
+    this.showInMemories,
     required this.showInTimeline,
     required this.userId,
   });
@@ -48,6 +52,24 @@ class SharedSpaceMemberResponseDto {
 
   /// User email
   String email;
+
+  /// Inherit base people from system space
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? inheritPeople;
+
+  /// Inherit base tags from system space
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? inheritTags;
 
   /// Join date
   String joinedAt;
@@ -84,6 +106,24 @@ class SharedSpaceMemberResponseDto {
   /// Share person names and birth dates with this space
   bool sharePersonMetadata;
 
+  /// Show system space content on map
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? showInMap;
+
+  /// Show system space content in memories
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? showInMemories;
+
   /// Show space assets in timeline
   bool showInTimeline;
 
@@ -95,6 +135,8 @@ class SharedSpaceMemberResponseDto {
     other.avatarColor == avatarColor &&
     other.contributionCount == contributionCount &&
     other.email == email &&
+    other.inheritPeople == inheritPeople &&
+    other.inheritTags == inheritTags &&
     other.joinedAt == joinedAt &&
     other.lastActiveAt == lastActiveAt &&
     other.name == name &&
@@ -103,6 +145,8 @@ class SharedSpaceMemberResponseDto {
     other.recentAssetId == recentAssetId &&
     other.role == role &&
     other.sharePersonMetadata == sharePersonMetadata &&
+    other.showInMap == showInMap &&
+    other.showInMemories == showInMemories &&
     other.showInTimeline == showInTimeline &&
     other.userId == userId;
 
@@ -112,6 +156,8 @@ class SharedSpaceMemberResponseDto {
     (avatarColor == null ? 0 : avatarColor!.hashCode) +
     (contributionCount == null ? 0 : contributionCount!.hashCode) +
     (email.hashCode) +
+    (inheritPeople == null ? 0 : inheritPeople!.hashCode) +
+    (inheritTags == null ? 0 : inheritTags!.hashCode) +
     (joinedAt.hashCode) +
     (lastActiveAt == null ? 0 : lastActiveAt!.hashCode) +
     (name.hashCode) +
@@ -120,11 +166,13 @@ class SharedSpaceMemberResponseDto {
     (recentAssetId == null ? 0 : recentAssetId!.hashCode) +
     (role.hashCode) +
     (sharePersonMetadata.hashCode) +
+    (showInMap == null ? 0 : showInMap!.hashCode) +
+    (showInMemories == null ? 0 : showInMemories!.hashCode) +
     (showInTimeline.hashCode) +
     (userId.hashCode);
 
   @override
-  String toString() => 'SharedSpaceMemberResponseDto[avatarColor=$avatarColor, contributionCount=$contributionCount, email=$email, joinedAt=$joinedAt, lastActiveAt=$lastActiveAt, name=$name, profileChangedAt=$profileChangedAt, profileImagePath=$profileImagePath, recentAssetId=$recentAssetId, role=$role, sharePersonMetadata=$sharePersonMetadata, showInTimeline=$showInTimeline, userId=$userId]';
+  String toString() => 'SharedSpaceMemberResponseDto[avatarColor=$avatarColor, contributionCount=$contributionCount, email=$email, inheritPeople=$inheritPeople, inheritTags=$inheritTags, joinedAt=$joinedAt, lastActiveAt=$lastActiveAt, name=$name, profileChangedAt=$profileChangedAt, profileImagePath=$profileImagePath, recentAssetId=$recentAssetId, role=$role, sharePersonMetadata=$sharePersonMetadata, showInMap=$showInMap, showInMemories=$showInMemories, showInTimeline=$showInTimeline, userId=$userId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -139,6 +187,16 @@ class SharedSpaceMemberResponseDto {
     //  json[r'contributionCount'] = null;
     }
       json[r'email'] = this.email;
+    if (this.inheritPeople != null) {
+      json[r'inheritPeople'] = this.inheritPeople;
+    } else {
+    //  json[r'inheritPeople'] = null;
+    }
+    if (this.inheritTags != null) {
+      json[r'inheritTags'] = this.inheritTags;
+    } else {
+    //  json[r'inheritTags'] = null;
+    }
       json[r'joinedAt'] = this.joinedAt;
     if (this.lastActiveAt != null) {
       json[r'lastActiveAt'] = this.lastActiveAt;
@@ -163,6 +221,16 @@ class SharedSpaceMemberResponseDto {
     }
       json[r'role'] = this.role;
       json[r'sharePersonMetadata'] = this.sharePersonMetadata;
+    if (this.showInMap != null) {
+      json[r'showInMap'] = this.showInMap;
+    } else {
+    //  json[r'showInMap'] = null;
+    }
+    if (this.showInMemories != null) {
+      json[r'showInMemories'] = this.showInMemories;
+    } else {
+    //  json[r'showInMemories'] = null;
+    }
       json[r'showInTimeline'] = this.showInTimeline;
       json[r'userId'] = this.userId;
     return json;
@@ -182,6 +250,8 @@ class SharedSpaceMemberResponseDto {
             ? null
             : num.parse('${json[r'contributionCount']}'),
         email: mapValueOfType<String>(json, r'email')!,
+        inheritPeople: mapValueOfType<bool>(json, r'inheritPeople'),
+        inheritTags: mapValueOfType<bool>(json, r'inheritTags'),
         joinedAt: mapValueOfType<String>(json, r'joinedAt')!,
         lastActiveAt: mapValueOfType<String>(json, r'lastActiveAt'),
         name: mapValueOfType<String>(json, r'name')!,
@@ -190,6 +260,8 @@ class SharedSpaceMemberResponseDto {
         recentAssetId: mapValueOfType<String>(json, r'recentAssetId'),
         role: SharedSpaceRole.fromJson(json[r'role'])!,
         sharePersonMetadata: mapValueOfType<bool>(json, r'sharePersonMetadata')!,
+        showInMap: mapValueOfType<bool>(json, r'showInMap'),
+        showInMemories: mapValueOfType<bool>(json, r'showInMemories'),
         showInTimeline: mapValueOfType<bool>(json, r'showInTimeline')!,
         userId: mapValueOfType<String>(json, r'userId')!,
       );

@@ -15,6 +15,7 @@ class PlacesResponseDto {
   PlacesResponseDto({
     this.admin1name,
     this.admin2name,
+    this.country,
     required this.latitude,
     required this.longitude,
     required this.name,
@@ -38,6 +39,15 @@ class PlacesResponseDto {
   ///
   String? admin2name;
 
+  /// Country name
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? country;
+
   /// Latitude coordinate
   num latitude;
 
@@ -51,6 +61,7 @@ class PlacesResponseDto {
   bool operator ==(Object other) => identical(this, other) || other is PlacesResponseDto &&
     other.admin1name == admin1name &&
     other.admin2name == admin2name &&
+    other.country == country &&
     other.latitude == latitude &&
     other.longitude == longitude &&
     other.name == name;
@@ -60,12 +71,13 @@ class PlacesResponseDto {
     // ignore: unnecessary_parenthesis
     (admin1name == null ? 0 : admin1name!.hashCode) +
     (admin2name == null ? 0 : admin2name!.hashCode) +
+    (country == null ? 0 : country!.hashCode) +
     (latitude.hashCode) +
     (longitude.hashCode) +
     (name.hashCode);
 
   @override
-  String toString() => 'PlacesResponseDto[admin1name=$admin1name, admin2name=$admin2name, latitude=$latitude, longitude=$longitude, name=$name]';
+  String toString() => 'PlacesResponseDto[admin1name=$admin1name, admin2name=$admin2name, country=$country, latitude=$latitude, longitude=$longitude, name=$name]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -78,6 +90,11 @@ class PlacesResponseDto {
       json[r'admin2name'] = this.admin2name;
     } else {
     //  json[r'admin2name'] = null;
+    }
+    if (this.country != null) {
+      json[r'country'] = this.country;
+    } else {
+    //  json[r'country'] = null;
     }
       json[r'latitude'] = this.latitude;
       json[r'longitude'] = this.longitude;
@@ -96,6 +113,7 @@ class PlacesResponseDto {
       return PlacesResponseDto(
         admin1name: mapValueOfType<String>(json, r'admin1name'),
         admin2name: mapValueOfType<String>(json, r'admin2name'),
+        country: mapValueOfType<String>(json, r'country'),
         latitude: num.parse('${json[r'latitude']}'),
         longitude: num.parse('${json[r'longitude']}'),
         name: mapValueOfType<String>(json, r'name')!,

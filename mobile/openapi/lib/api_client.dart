@@ -260,6 +260,8 @@ class ApiClient {
           return AssetFaceUpdateItem.fromJson(value);
         case 'AssetFaceWithoutPersonResponseDto':
           return AssetFaceWithoutPersonResponseDto.fromJson(value);
+        case 'AssetHideBulkDto':
+          return AssetHideBulkDto.fromJson(value);
         case 'AssetIdErrorReason':
           return AssetIdErrorReasonTypeTransformer().decode(value);
         case 'AssetIdsDto':
@@ -338,12 +340,16 @@ class ApiClient {
           return ColorspaceTypeTransformer().decode(value);
         case 'ContributorCountResponseDto':
           return ContributorCountResponseDto.fromJson(value);
+        case 'CountrySubstitutionRuleDto':
+          return CountrySubstitutionRuleDto.fromJson(value);
         case 'CreateAlbumDto':
           return CreateAlbumDto.fromJson(value);
         case 'CreateLibraryDto':
           return CreateLibraryDto.fromJson(value);
         case 'CreateProfileImageResponseDto':
           return CreateProfileImageResponseDto.fromJson(value);
+        case 'CreateSavedLocationDto':
+          return CreateSavedLocationDto.fromJson(value);
         case 'CropParameters':
           return CropParameters.fromJson(value);
         case 'DatabaseBackupConfig':
@@ -396,6 +402,8 @@ class ApiClient {
           return FoldersResponse.fromJson(value);
         case 'FoldersUpdate':
           return FoldersUpdate.fromJson(value);
+        case 'HiddenAssetsResponseDto':
+          return HiddenAssetsResponseDto.fromJson(value);
         case 'ImageFormat':
           return ImageFormatTypeTransformer().decode(value);
         case 'JobCreateDto':
@@ -608,6 +616,8 @@ class ApiClient {
           return ReverseGeocodingStateResponseDto.fromJson(value);
         case 'RotateParameters':
           return RotateParameters.fromJson(value);
+        case 'SavedLocationResponseDto':
+          return SavedLocationResponseDto.fromJson(value);
         case 'ScopedPersonProfileRefDto':
           return ScopedPersonProfileRefDto.fromJson(value);
         case 'ScopedPrimaryProfile':
@@ -708,6 +718,8 @@ class ApiClient {
           return SharedSpacePersonAliasDto.fromJson(value);
         case 'SharedSpacePersonMergeDto':
           return SharedSpacePersonMergeDto.fromJson(value);
+        case 'SharedSpacePersonResetDto':
+          return SharedSpacePersonResetDto.fromJson(value);
         case 'SharedSpacePersonResponseDto':
           return SharedSpacePersonResponseDto.fromJson(value);
         case 'SharedSpacePersonUpdateDto':
@@ -958,6 +970,8 @@ class ApiClient {
           return UpdateAssetDto.fromJson(value);
         case 'UpdateLibraryDto':
           return UpdateLibraryDto.fromJson(value);
+        case 'UpdateSavedLocationDto':
+          return UpdateSavedLocationDto.fromJson(value);
         case 'UsageByUserDto':
           return UsageByUserDto.fromJson(value);
         case 'UserAdminCreateDto':

@@ -825,6 +825,174 @@ class AssetsApi {
     return null;
   }
 
+  /// Get hidden assets
+  ///
+  /// Retrieve a paginated list of assets hidden by the authenticated user.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [int] page:
+  ///   Номер страницы
+  ///
+  /// * [int] size:
+  ///   Количество элементов на странице
+  Future<Response> getHiddenAssetsWithHttpInfo({ int? page, int? size, }) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/assets/hidden';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    if (page != null) {
+      queryParams.addAll(_queryParams('', 'page', page));
+    }
+    if (size != null) {
+      queryParams.addAll(_queryParams('', 'size', size));
+    }
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Get hidden assets
+  ///
+  /// Retrieve a paginated list of assets hidden by the authenticated user.
+  ///
+  /// Parameters:
+  ///
+  /// * [int] page:
+  ///   Номер страницы
+  ///
+  /// * [int] size:
+  ///   Количество элементов на странице
+  Future<HiddenAssetsResponseDto?> getHiddenAssets({ int? page, int? size, }) async {
+    final response = await getHiddenAssetsWithHttpInfo( page: page, size: size, );
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'HiddenAssetsResponseDto',) as HiddenAssetsResponseDto;
+    
+    }
+    return null;
+  }
+
+  /// Hide an asset
+  ///
+  /// Hide a specific asset from the timeline of the authenticated user.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> hideAssetWithHttpInfo(String id,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/assets/{id}/hide'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Hide an asset
+  ///
+  /// Hide a specific asset from the timeline of the authenticated user.
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<void> hideAsset(String id,) async {
+    final response = await hideAssetWithHttpInfo(id,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
+  /// Bulk hide assets
+  ///
+  /// Hide multiple assets from the timeline of the authenticated user.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [AssetHideBulkDto] assetHideBulkDto (required):
+  Future<Response> hideAssetsWithHttpInfo(AssetHideBulkDto assetHideBulkDto,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/assets/hide';
+
+    // ignore: prefer_final_locals
+    Object? postBody = assetHideBulkDto;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Bulk hide assets
+  ///
+  /// Hide multiple assets from the timeline of the authenticated user.
+  ///
+  /// Parameters:
+  ///
+  /// * [AssetHideBulkDto] assetHideBulkDto (required):
+  Future<void> hideAssets(AssetHideBulkDto assetHideBulkDto,) async {
+    final response = await hideAssetsWithHttpInfo(assetHideBulkDto,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
   /// Play asset video
   ///
   /// Streams the video file for the specified asset. This endpoint also supports byte range requests.
@@ -989,6 +1157,103 @@ class AssetsApi {
   /// * [AssetJobsDto] assetJobsDto (required):
   Future<void> runAssetJobs(AssetJobsDto assetJobsDto,) async {
     final response = await runAssetJobsWithHttpInfo(assetJobsDto,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
+  /// Unhide an asset
+  ///
+  /// Remove the hide override for a specific asset.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> unhideAssetWithHttpInfo(String id,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/assets/{id}/hide'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'DELETE',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Unhide an asset
+  ///
+  /// Remove the hide override for a specific asset.
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<void> unhideAsset(String id,) async {
+    final response = await unhideAssetWithHttpInfo(id,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
+  /// Bulk unhide assets
+  ///
+  /// Remove the hide override for multiple assets.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [AssetHideBulkDto] assetHideBulkDto (required):
+  Future<Response> unhideAssetsWithHttpInfo(AssetHideBulkDto assetHideBulkDto,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/assets/hide';
+
+    // ignore: prefer_final_locals
+    Object? postBody = assetHideBulkDto;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'DELETE',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Bulk unhide assets
+  ///
+  /// Remove the hide override for multiple assets.
+  ///
+  /// Parameters:
+  ///
+  /// * [AssetHideBulkDto] assetHideBulkDto (required):
+  Future<void> unhideAssets(AssetHideBulkDto assetHideBulkDto,) async {
+    final response = await unhideAssetsWithHttpInfo(assetHideBulkDto,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

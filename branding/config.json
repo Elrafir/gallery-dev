@@ -1,9 +1,9 @@
 {
-  "name": "Noodle Gallery",
-  "name_short": "Gallery",
-  "name_slug": "noodle-gallery",
-  "name_snake": "noodle_gallery",
-  "description": "Self-hosted photo and video management solution",
+  "name": "Домашний фотоальбом",
+  "name_short": "Фотоальбом",
+  "name_slug": "photo-album",
+  "name_snake": "photo_album",
+  "description": "Домашний фотоальбом — управление и просмотр фото и видео",
 
   "repository": {
     "name": "open-noodle/gallery",

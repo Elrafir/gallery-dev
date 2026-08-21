@@ -15,6 +15,7 @@ class PersonWithFacesResponseDto {
   PersonWithFacesResponseDto({
     required this.birthDate,
     this.color,
+    this.description,
     this.faces = const [],
     this.filterId,
     required this.id,
@@ -41,6 +42,9 @@ class PersonWithFacesResponseDto {
   /// Consider adding a "default:" property in the specification file to hide this note.
   ///
   String? color;
+
+  /// Extended notes about this person
+  String? description;
 
   List<AssetFaceWithoutPersonResponseDto> faces;
 
@@ -122,6 +126,7 @@ class PersonWithFacesResponseDto {
   bool operator ==(Object other) => identical(this, other) || other is PersonWithFacesResponseDto &&
     other.birthDate == birthDate &&
     other.color == color &&
+    other.description == description &&
     _deepEquality.equals(other.faces, faces) &&
     other.filterId == filterId &&
     other.id == id &&
@@ -141,6 +146,7 @@ class PersonWithFacesResponseDto {
     // ignore: unnecessary_parenthesis
     (birthDate == null ? 0 : birthDate!.hashCode) +
     (color == null ? 0 : color!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (faces.hashCode) +
     (filterId == null ? 0 : filterId!.hashCode) +
     (id.hashCode) +
@@ -156,7 +162,7 @@ class PersonWithFacesResponseDto {
     (updatedAt == null ? 0 : updatedAt!.hashCode);
 
   @override
-  String toString() => 'PersonWithFacesResponseDto[birthDate=$birthDate, color=$color, faces=$faces, filterId=$filterId, id=$id, isFavorite=$isFavorite, isHidden=$isHidden, name=$name, numberOfAssets=$numberOfAssets, primaryProfile=$primaryProfile, spacePersonId=$spacePersonId, species=$species, thumbnailPath=$thumbnailPath, type=$type, updatedAt=$updatedAt]';
+  String toString() => 'PersonWithFacesResponseDto[birthDate=$birthDate, color=$color, description=$description, faces=$faces, filterId=$filterId, id=$id, isFavorite=$isFavorite, isHidden=$isHidden, name=$name, numberOfAssets=$numberOfAssets, primaryProfile=$primaryProfile, spacePersonId=$spacePersonId, species=$species, thumbnailPath=$thumbnailPath, type=$type, updatedAt=$updatedAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -169,6 +175,11 @@ class PersonWithFacesResponseDto {
       json[r'color'] = this.color;
     } else {
     //  json[r'color'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
     }
       json[r'faces'] = this.faces;
     if (this.filterId != null) {
@@ -225,6 +236,7 @@ class PersonWithFacesResponseDto {
       return PersonWithFacesResponseDto(
         birthDate: mapDateTime(json, r'birthDate', r''),
         color: mapValueOfType<String>(json, r'color'),
+        description: mapValueOfType<String>(json, r'description'),
         faces: AssetFaceWithoutPersonResponseDto.listFromJson(json[r'faces']),
         filterId: mapValueOfType<String>(json, r'filterId'),
         id: mapValueOfType<String>(json, r'id')!,

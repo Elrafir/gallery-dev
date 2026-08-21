@@ -135,6 +135,118 @@ class MapApi {
     return null;
   }
 
+  /// Get unique countries from geodata
+  ///
+  /// Retrieve list of all unique countries available in database metadata.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getUniqueCountriesWithHttpInfo() async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/map/countries';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Get unique countries from geodata
+  ///
+  /// Retrieve list of all unique countries available in database metadata.
+  Future<List<String>?> getUniqueCountries() async {
+    final response = await getUniqueCountriesWithHttpInfo();
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final responseBody = await _decodeBodyBytes(response);
+      return (await apiClient.deserializeAsync(responseBody, 'List<String>') as List)
+        .cast<String>()
+        .toList(growable: false);
+
+    }
+    return null;
+  }
+
+  /// Get unique states from geodata
+  ///
+  /// Retrieve list of all unique states/regions available in database metadata, optionally filtered by country.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] country (required):
+  Future<Response> getUniqueStatesWithHttpInfo(String country,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/map/states';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+      queryParams.addAll(_queryParams('', 'country', country));
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Get unique states from geodata
+  ///
+  /// Retrieve list of all unique states/regions available in database metadata, optionally filtered by country.
+  ///
+  /// Parameters:
+  ///
+  /// * [String] country (required):
+  Future<List<String>?> getUniqueStates(String country,) async {
+    final response = await getUniqueStatesWithHttpInfo(country,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final responseBody = await _decodeBodyBytes(response);
+      return (await apiClient.deserializeAsync(responseBody, 'List<String>') as List)
+        .cast<String>()
+        .toList(growable: false);
+
+    }
+    return null;
+  }
+
   /// Reverse geocode coordinates
   ///
   /// Retrieve location information (e.g., city, country) for given latitude and longitude coordinates.

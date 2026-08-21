@@ -15,10 +15,13 @@ class PersonUpdateDto {
   PersonUpdateDto({
     this.birthDate,
     this.color,
+    this.description,
     this.featureFaceAssetId,
     this.isFavorite,
     this.isHidden,
     this.name,
+    this.species,
+    this.type,
   });
 
   /// Person date of birth
@@ -26,6 +29,9 @@ class PersonUpdateDto {
 
   /// Person color (hex)
   String? color;
+
+  /// Extended notes about this person
+  String? description;
 
   /// Asset ID used for feature face thumbnail
   ///
@@ -63,27 +69,39 @@ class PersonUpdateDto {
   ///
   String? name;
 
+  /// Pet species (e.g. dog, cat); only used when type is pet
+  String? species;
+
+  /// Entity type (person or pet)
+  PersonUpdateDtoTypeEnum? type;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is PersonUpdateDto &&
     other.birthDate == birthDate &&
     other.color == color &&
+    other.description == description &&
     other.featureFaceAssetId == featureFaceAssetId &&
     other.isFavorite == isFavorite &&
     other.isHidden == isHidden &&
-    other.name == name;
+    other.name == name &&
+    other.species == species &&
+    other.type == type;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (birthDate == null ? 0 : birthDate!.hashCode) +
     (color == null ? 0 : color!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
     (featureFaceAssetId == null ? 0 : featureFaceAssetId!.hashCode) +
     (isFavorite == null ? 0 : isFavorite!.hashCode) +
     (isHidden == null ? 0 : isHidden!.hashCode) +
-    (name == null ? 0 : name!.hashCode);
+    (name == null ? 0 : name!.hashCode) +
+    (species == null ? 0 : species!.hashCode) +
+    (type == null ? 0 : type!.hashCode);
 
   @override
-  String toString() => 'PersonUpdateDto[birthDate=$birthDate, color=$color, featureFaceAssetId=$featureFaceAssetId, isFavorite=$isFavorite, isHidden=$isHidden, name=$name]';
+  String toString() => 'PersonUpdateDto[birthDate=$birthDate, color=$color, description=$description, featureFaceAssetId=$featureFaceAssetId, isFavorite=$isFavorite, isHidden=$isHidden, name=$name, species=$species, type=$type]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -96,6 +114,11 @@ class PersonUpdateDto {
       json[r'color'] = this.color;
     } else {
     //  json[r'color'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
     }
     if (this.featureFaceAssetId != null) {
       json[r'featureFaceAssetId'] = this.featureFaceAssetId;
@@ -117,6 +140,16 @@ class PersonUpdateDto {
     } else {
     //  json[r'name'] = null;
     }
+    if (this.species != null) {
+      json[r'species'] = this.species;
+    } else {
+    //  json[r'species'] = null;
+    }
+    if (this.type != null) {
+      json[r'type'] = this.type;
+    } else {
+    //  json[r'type'] = null;
+    }
     return json;
   }
 
@@ -131,10 +164,13 @@ class PersonUpdateDto {
       return PersonUpdateDto(
         birthDate: mapDateTime(json, r'birthDate', r''),
         color: mapValueOfType<String>(json, r'color'),
+        description: mapValueOfType<String>(json, r'description'),
         featureFaceAssetId: mapValueOfType<String>(json, r'featureFaceAssetId'),
         isFavorite: mapValueOfType<bool>(json, r'isFavorite'),
         isHidden: mapValueOfType<bool>(json, r'isHidden'),
         name: mapValueOfType<String>(json, r'name'),
+        species: mapValueOfType<String>(json, r'species'),
+        type: PersonUpdateDtoTypeEnum.fromJson(json[r'type']),
       );
     }
     return null;
@@ -184,4 +220,78 @@ class PersonUpdateDto {
   static const requiredKeys = <String>{
   };
 }
+
+/// Entity type (person or pet)
+class PersonUpdateDtoTypeEnum {
+  /// Instantiate a new enum with the provided [value].
+  const PersonUpdateDtoTypeEnum._(this.value);
+
+  /// The underlying value of this enum member.
+  final String value;
+
+  @override
+  String toString() => value;
+
+  String toJson() => value;
+
+  static const person = PersonUpdateDtoTypeEnum._(r'person');
+  static const pet = PersonUpdateDtoTypeEnum._(r'pet');
+
+  /// List of all possible values in this [enum][PersonUpdateDtoTypeEnum].
+  static const values = <PersonUpdateDtoTypeEnum>[
+    person,
+    pet,
+  ];
+
+  static PersonUpdateDtoTypeEnum? fromJson(dynamic value) => PersonUpdateDtoTypeEnumTypeTransformer().decode(value);
+
+  static List<PersonUpdateDtoTypeEnum> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <PersonUpdateDtoTypeEnum>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = PersonUpdateDtoTypeEnum.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
+}
+
+/// Transformation class that can [encode] an instance of [PersonUpdateDtoTypeEnum] to String,
+/// and [decode] dynamic data back to [PersonUpdateDtoTypeEnum].
+class PersonUpdateDtoTypeEnumTypeTransformer {
+  factory PersonUpdateDtoTypeEnumTypeTransformer() => _instance ??= const PersonUpdateDtoTypeEnumTypeTransformer._();
+
+  const PersonUpdateDtoTypeEnumTypeTransformer._();
+
+  String encode(PersonUpdateDtoTypeEnum data) => data.value;
+
+  /// Decodes a [dynamic value][data] to a PersonUpdateDtoTypeEnum.
+  ///
+  /// If [allowNull] is true and the [dynamic value][data] cannot be decoded successfully,
+  /// then null is returned. However, if [allowNull] is false and the [dynamic value][data]
+  /// cannot be decoded successfully, then an [UnimplementedError] is thrown.
+  ///
+  /// The [allowNull] is very handy when an API changes and a new enum value is added or removed,
+  /// and users are still using an old app with the old code.
+  PersonUpdateDtoTypeEnum? decode(dynamic data, {bool allowNull = true}) {
+    if (data != null) {
+      switch (data) {
+        case r'person': return PersonUpdateDtoTypeEnum.person;
+        case r'pet': return PersonUpdateDtoTypeEnum.pet;
+        default:
+          if (!allowNull) {
+            throw ArgumentError('Unknown enum value to decode: $data');
+          }
+      }
+    }
+    return null;
+  }
+
+  /// Singleton [PersonUpdateDtoTypeEnumTypeTransformer] instance.
+  static PersonUpdateDtoTypeEnumTypeTransformer? _instance;
+}
+
 

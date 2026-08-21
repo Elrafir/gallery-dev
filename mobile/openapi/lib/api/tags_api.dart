@@ -128,6 +128,55 @@ class TagsApi {
     return null;
   }
 
+  /// Delete tag override
+  ///
+  /// Remove a personal tag override.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> deleteOverrideWithHttpInfo(String id,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/tags/{id}/override'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'DELETE',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Delete tag override
+  ///
+  /// Remove a personal tag override.
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<void> deleteOverride(String id,) async {
+    final response = await deleteOverrideWithHttpInfo(id,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+  }
+
   /// Delete a tag
   ///
   /// Delete a specific tag by its ID.
@@ -226,6 +275,46 @@ class TagsApi {
 
     }
     return null;
+  }
+
+  /// Get my tag overrides
+  ///
+  /// Retrieve all tag overrides for the authenticated user.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getOverridesWithHttpInfo() async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/tags/overrides';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Get my tag overrides
+  ///
+  /// Retrieve all tag overrides for the authenticated user.
+  Future<void> getOverrides() async {
+    final response = await getOverridesWithHttpInfo();
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
   }
 
   /// Retrieve a tag
@@ -472,6 +561,55 @@ class TagsApi {
     
     }
     return null;
+  }
+
+  /// Upsert tag override
+  ///
+  /// Create or update a personal tag override (hide, alias, color).
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<Response> upsertOverrideWithHttpInfo(String id,) async {
+    // ignore: prefer_const_declarations
+    final apiPath = r'/tags/{id}/override'
+      .replaceAll('{id}', id);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      apiPath,
+      'PUT',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Upsert tag override
+  ///
+  /// Create or update a personal tag override (hide, alias, color).
+  ///
+  /// Parameters:
+  ///
+  /// * [String] id (required):
+  Future<void> upsertOverride(String id,) async {
+    final response = await upsertOverrideWithHttpInfo(id,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
   }
 
   /// Upsert tags

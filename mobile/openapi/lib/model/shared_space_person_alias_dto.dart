@@ -13,27 +13,76 @@ part of openapi.api;
 class SharedSpacePersonAliasDto {
   /// Returns a new [SharedSpacePersonAliasDto] instance.
   SharedSpacePersonAliasDto({
-    required this.alias,
+    this.alias,
+    this.birthDate,
+    this.description,
+    this.isHidden,
   });
 
   /// Alias name for this person
-  String alias;
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? alias;
+
+  /// User-specific birth date
+  DateTime? birthDate;
+
+  /// User-specific notes about this person
+  String? description;
+
+  /// Hide this person for current user
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? isHidden;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is SharedSpacePersonAliasDto &&
-    other.alias == alias;
+    other.alias == alias &&
+    other.birthDate == birthDate &&
+    other.description == description &&
+    other.isHidden == isHidden;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (alias.hashCode);
+    (alias == null ? 0 : alias!.hashCode) +
+    (birthDate == null ? 0 : birthDate!.hashCode) +
+    (description == null ? 0 : description!.hashCode) +
+    (isHidden == null ? 0 : isHidden!.hashCode);
 
   @override
-  String toString() => 'SharedSpacePersonAliasDto[alias=$alias]';
+  String toString() => 'SharedSpacePersonAliasDto[alias=$alias, birthDate=$birthDate, description=$description, isHidden=$isHidden]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.alias != null) {
       json[r'alias'] = this.alias;
+    } else {
+    //  json[r'alias'] = null;
+    }
+    if (this.birthDate != null) {
+      json[r'birthDate'] = _dateFormatter.format(this.birthDate!);
+    } else {
+    //  json[r'birthDate'] = null;
+    }
+    if (this.description != null) {
+      json[r'description'] = this.description;
+    } else {
+    //  json[r'description'] = null;
+    }
+    if (this.isHidden != null) {
+      json[r'isHidden'] = this.isHidden;
+    } else {
+    //  json[r'isHidden'] = null;
+    }
     return json;
   }
 
@@ -46,7 +95,10 @@ class SharedSpacePersonAliasDto {
       final json = value.cast<String, dynamic>();
 
       return SharedSpacePersonAliasDto(
-        alias: mapValueOfType<String>(json, r'alias')!,
+        alias: mapValueOfType<String>(json, r'alias'),
+        birthDate: mapDateTime(json, r'birthDate', r''),
+        description: mapValueOfType<String>(json, r'description'),
+        isHidden: mapValueOfType<bool>(json, r'isHidden'),
       );
     }
     return null;
@@ -94,7 +146,6 @@ class SharedSpacePersonAliasDto {
 
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
-    'alias',
   };
 }
 

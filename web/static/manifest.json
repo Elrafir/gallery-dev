@@ -1,6 +1,6 @@
 {
   "background_color": "#ffffff",
-  "description": "Self-hosted photo and video backup solution directly from your mobile phone.",
+  "description": "Домашний фотоальбом — управление и просмотр фото и видео.",
   "dir": "auto",
   "display": "standalone",
   "icons": [
@@ -23,9 +23,9 @@
       "type": "image/png"
     }
   ],
-  "lang": "en",
-  "name": "Immich",
-  "short_name": "Immich",
+  "lang": "ru",
+  "name": "Домашний фотоальбом",
+  "short_name": "Фотоальбом",
   "shortcuts": [
     {
       "name": "Photos",

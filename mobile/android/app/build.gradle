@@ -49,11 +49,16 @@ android {
       def keyAliasVal = System.getenv("ALIAS")
       def keyPasswordVal = System.getenv("ANDROID_KEY_PASSWORD")
       def storePasswordVal = System.getenv("ANDROID_STORE_PASSWORD")
+      def customStore = file("../key.jks").exists() ? file("../key.jks") : (keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null)
 
-      keyAlias keyAliasVal ?: keystoreProperties['keyAlias']
-      keyPassword keyPasswordVal ?: keystoreProperties['keyPassword']
-      storeFile file("../key.jks").exists() ? file("../key.jks") : file(keystoreProperties['storeFile'] ?: '../key.jks')
-      storePassword storePasswordVal ?: keystoreProperties['storePassword']
+      if (customStore != null && customStore.exists()) {
+        keyAlias keyAliasVal ?: keystoreProperties['keyAlias']
+        keyPassword keyPasswordVal ?: keystoreProperties['keyPassword']
+        storeFile customStore
+        storePassword storePasswordVal ?: keystoreProperties['storePassword']
+      } else {
+        initWith signingConfigs.debug
+      }
     }
   }
 

@@ -19,6 +19,7 @@ class FilterSuggestionsResponseDto {
     this.mediaTypes = const [],
     this.people = const [],
     this.ratings = const [],
+    this.states = const [],
     this.tags = const [],
   });
 
@@ -40,6 +41,9 @@ class FilterSuggestionsResponseDto {
   /// Available ratings
   List<num> ratings;
 
+  /// Available states/regions
+  List<String> states;
+
   /// Available tags
   List<FilterSuggestionsTagDto> tags;
 
@@ -51,6 +55,7 @@ class FilterSuggestionsResponseDto {
     _deepEquality.equals(other.mediaTypes, mediaTypes) &&
     _deepEquality.equals(other.people, people) &&
     _deepEquality.equals(other.ratings, ratings) &&
+    _deepEquality.equals(other.states, states) &&
     _deepEquality.equals(other.tags, tags);
 
   @override
@@ -62,10 +67,11 @@ class FilterSuggestionsResponseDto {
     (mediaTypes.hashCode) +
     (people.hashCode) +
     (ratings.hashCode) +
+    (states.hashCode) +
     (tags.hashCode);
 
   @override
-  String toString() => 'FilterSuggestionsResponseDto[cameraMakes=$cameraMakes, countries=$countries, hasUnnamedPeople=$hasUnnamedPeople, mediaTypes=$mediaTypes, people=$people, ratings=$ratings, tags=$tags]';
+  String toString() => 'FilterSuggestionsResponseDto[cameraMakes=$cameraMakes, countries=$countries, hasUnnamedPeople=$hasUnnamedPeople, mediaTypes=$mediaTypes, people=$people, ratings=$ratings, states=$states, tags=$tags]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -75,6 +81,7 @@ class FilterSuggestionsResponseDto {
       json[r'mediaTypes'] = this.mediaTypes;
       json[r'people'] = this.people;
       json[r'ratings'] = this.ratings;
+      json[r'states'] = this.states;
       json[r'tags'] = this.tags;
     return json;
   }
@@ -101,6 +108,9 @@ class FilterSuggestionsResponseDto {
         people: FilterSuggestionsPersonDto.listFromJson(json[r'people']),
         ratings: json[r'ratings'] is Iterable
             ? (json[r'ratings'] as Iterable).cast<num>().toList(growable: false)
+            : const [],
+        states: json[r'states'] is Iterable
+            ? (json[r'states'] as Iterable).cast<String>().toList(growable: false)
             : const [],
         tags: FilterSuggestionsTagDto.listFromJson(json[r'tags']),
       );
@@ -156,6 +166,7 @@ class FilterSuggestionsResponseDto {
     'mediaTypes',
     'people',
     'ratings',
+    'states',
     'tags',
   };
 }
