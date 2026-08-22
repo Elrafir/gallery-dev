@@ -65,7 +65,7 @@
       }
 
       #stencil {
-        --stencil-width: 150px;
+        --stencil-width: 140px;
         display: flex;
         width: var(--stencil-width);
         margin-left: auto;
@@ -76,9 +76,7 @@
         justify-content: center;
         overflow: hidden;
         visibility: hidden;
-        animation:
-          0s linear 0.3s forwards delayedVisibility,
-          loadspin 8s linear infinite;
+        animation: 0s linear 0.3s forwards delayedVisibility;
       }
     </style>
     <link rel="stylesheet" href="/custom.css" />
@@ -90,7 +88,7 @@
 
   <body class="bg-light text-dark">
     <div id="stencil">
-      <img src="/gallery-loader.svg" alt="Loading" style="width: 80px; height: 80px" />
+      <img src="/gallery-loader.svg" alt="Loading" style="width: 140px; height: auto" />
     </div>
     <div>%sveltekit.body%</div>
   </body>

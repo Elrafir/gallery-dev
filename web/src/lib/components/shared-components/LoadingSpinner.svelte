@@ -19,10 +19,10 @@
   const src = $derived(themeManager.value === Theme.Light ? '/gallery-loader.svg' : '/gallery-loader-dark.svg');
 </script>
 
-<div>
+<div class="inline-flex items-center justify-center">
   <img
     role="status"
-    class={[sizeClasses[size], className].filter(Boolean).join(' ')}
+    class={[sizeClasses[size], 'object-contain w-auto', className].filter(Boolean).join(' ')}
     {src}
     alt="Loading"
     data-testid="loading-spinner"
