@@ -979,13 +979,40 @@ class SyncStreamRepository extends DriftDatabaseRepository {
     }
   }
 
+  /// Returns the subset of [personIds] that actually exist in the local
+  /// [PersonEntity] table. Used by the face-sync methods to avoid
+  /// SqliteException(787) when the server sends faces whose [personId]
+  /// belongs to a partner/shared-space user that was never synced locally.
+  Future<Set<String>> _resolveKnownPersonIds(Set<String> personIds) async {
+    if (personIds.isEmpty) return const {};
+    final rows = await (_db.personEntity.selectOnly()
+          ..addColumns([_db.personEntity.id])
+          ..where(_db.personEntity.id.isIn(personIds)))
+        .map((r) => r.read(_db.personEntity.id)!)
+        .get();
+    return rows.toSet();
+  }
+
   Future<void> updateAssetFacesV1(Iterable<SyncAssetFaceV1> data) async {
     try {
+      final faces = data.toList();
+
+      // Nullify personIds that don't exist locally to avoid FK violations
+      // (SqliteException 787) caused by faces from partner/shared-space assets
+      // whose person belongs to another user and is not synced to this device.
+      final incomingPersonIds = faces.map((f) => f.personId).whereType<String>().toSet();
+      final knownPersonIds = await _resolveKnownPersonIds(incomingPersonIds);
+
       await _db.batch((batch) {
-        for (final assetFace in data) {
+        for (final assetFace in faces) {
+          final resolvedPersonId =
+              (assetFace.personId != null && knownPersonIds.contains(assetFace.personId))
+                  ? assetFace.personId
+                  : null;
+
           final companion = AssetFaceEntityCompanion(
             assetId: Value(assetFace.assetId),
-            personId: Value(assetFace.personId),
+            personId: Value(resolvedPersonId),
             imageWidth: Value(assetFace.imageWidth),
             imageHeight: Value(assetFace.imageHeight),
             boundingBoxX1: Value(assetFace.boundingBoxX1),
@@ -1010,11 +1037,24 @@ class SyncStreamRepository extends DriftDatabaseRepository {
 
   Future<void> updateAssetFacesV2(Iterable<SyncAssetFaceV2> data) async {
     try {
+      final faces = data.toList();
+
+      // Nullify personIds that don't exist locally to avoid FK violations
+      // (SqliteException 787) caused by faces from partner/shared-space assets
+      // whose person belongs to another user and is not synced to this device.
+      final incomingPersonIds = faces.map((f) => f.personId).whereType<String>().toSet();
+      final knownPersonIds = await _resolveKnownPersonIds(incomingPersonIds);
+
       await _db.batch((batch) {
-        for (final assetFace in data) {
+        for (final assetFace in faces) {
+          final resolvedPersonId =
+              (assetFace.personId != null && knownPersonIds.contains(assetFace.personId))
+                  ? assetFace.personId
+                  : null;
+
           final companion = AssetFaceEntityCompanion(
             assetId: Value(assetFace.assetId),
-            personId: Value(assetFace.personId),
+            personId: Value(resolvedPersonId),
             imageWidth: Value(assetFace.imageWidth),
             imageHeight: Value(assetFace.imageHeight),
             boundingBoxX1: Value(assetFace.boundingBoxX1),
