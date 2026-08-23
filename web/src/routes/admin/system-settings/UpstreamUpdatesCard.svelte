@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { api } from '$lib/api';
 
   interface UpstreamReleaseItem {
     id: string;
@@ -26,13 +25,17 @@
   let activeTab: 'immich' | 'noodle' = $state('immich');
   let data: UpstreamUpdatesResponse | null = $state(null);
   let error: string | null = $state(null);
+  let currentList = $derived(activeTab === 'immich' ? data?.immich : data?.noodleGallery);
 
   async function fetchUpdates(force = false) {
     loading = true;
     error = null;
     try {
-      const res = await api.get('/server/upstream-updates');
-      data = res.data;
+      const res = await fetch('/api/server/upstream-updates' + (force ? '?force=true' : ''));
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+      data = await res.json();
     } catch (e: any) {
       error = e?.message || 'Не удалось получить данные об обновлениях';
     } finally {
@@ -98,9 +101,8 @@
 
     <!-- Content list -->
     <div class="mt-4 space-y-3">
-      {@const list = activeTab === 'immich' ? data.immich : data.noodleGallery}
-      {#if list && list.length > 0}
-        {#each list as release}
+      {#if currentList && currentList.length > 0}
+        {#each currentList as release}
           <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
