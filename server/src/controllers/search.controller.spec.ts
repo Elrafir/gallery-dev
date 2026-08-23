@@ -388,6 +388,7 @@ describe(SearchController.name, () => {
         ctx.authenticate.mockResolvedValue({});
         service.getFilterSuggestions.mockResolvedValue({
           countries: [],
+      states: [],
           cameraMakes: [],
           tags: [],
           people: [],
@@ -403,6 +404,7 @@ describe(SearchController.name, () => {
         expect(status).toBe(200);
         expect(body).toEqual({
           countries: [],
+      states: [],
           cameraMakes: [],
           tags: [],
           people: [],
@@ -455,6 +457,7 @@ describe(SearchController.name, () => {
         ctx.authenticate.mockResolvedValue({});
         service.getFilterSuggestions.mockResolvedValue({
           countries: [],
+      states: [],
           cameraMakes: [],
           tags: [],
           people: [],

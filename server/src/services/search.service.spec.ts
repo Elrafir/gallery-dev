@@ -1643,6 +1643,7 @@ describe(SearchService.name, () => {
   describe('getFilterSuggestions', () => {
     const emptyResult = {
       countries: [],
+      states: [],
       cameraMakes: [],
       tags: [],
       people: [],
@@ -1657,6 +1658,7 @@ describe(SearchService.name, () => {
       mocks.sharedSpace.getSpaceIdsForTimeline.mockResolvedValue([]);
       mocks.search.getFilterSuggestions.mockResolvedValue({
         countries: ['Germany', 'France'],
+        states: [],
         cameraMakes: ['Canon'],
         tags: [{ id: 't1', value: 'Vacation' }],
         people: [{ id: 'p1', name: 'Alice' }],
@@ -1743,6 +1745,7 @@ describe(SearchService.name, () => {
       mocks.sharedSpace.getSpaceIdsForTimeline.mockResolvedValue([{ spaceId }]);
       mocks.search.getFilterSuggestions.mockResolvedValue({
         countries: ['Germany'],
+        states: [],
         cameraMakes: ['Canon'],
         tags: [{ id: 'tag-1', value: 'Vacation' }],
         people: [{ id: 'person-1', name: 'Alice' }],
