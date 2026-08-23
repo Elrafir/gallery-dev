@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:immich_mobile/domain/models/store.model.dart';
 import 'package:immich_mobile/domain/models/sync_event.model.dart';
+import 'package:immich_mobile/utils/debug_print.dart';
 import 'package:immich_mobile/entities/store.entity.dart';
 import 'package:immich_mobile/extensions/platform_extensions.dart';
 import 'package:immich_mobile/infrastructure/repositories/local_asset.repository.dart';
@@ -80,16 +81,22 @@ class SyncStreamService {
       await Store.put(StoreKey.syncMigrationStatus, jsonEncode(migrations));
     }
 
-    // Start the sync stream and handle events
-    bool shouldReset = false;
-    await _syncApiRepository.streamChanges(
-      _handleEvents,
-      serverVersion: serverSemVer,
-      onReset: () => shouldReset = true,
-    );
-    if (shouldReset) {
-      _logger.info("Resetting sync state as requested by server");
-      await _syncApiRepository.streamChanges(_handleEvents, serverVersion: serverSemVer);
+    try {
+      // Start the sync stream and handle events
+      bool shouldReset = false;
+      await _syncApiRepository.streamChanges(
+        _handleEvents,
+        serverVersion: serverSemVer,
+        onReset: () => shouldReset = true,
+      );
+      if (shouldReset) {
+        _logger.info("Resetting sync state as requested by server");
+        await _syncApiRepository.streamChanges(_handleEvents, serverVersion: serverSemVer);
+      }
+    } catch (e, stackTrace) {
+      _logger.severe("Sync error occurred during streamChanges: $e", e, stackTrace);
+      dPrint(() => "Sync error occurred during streamChanges: $e\n$stackTrace");
+      return false;
     }
 
     previousLength = migrations.length;

@@ -248,8 +248,13 @@ class SyncStreamRepository extends DriftDatabaseRepository {
 
   Future<void> updateAssetsExifV1(Iterable<SyncAssetExifV1> data, {String debugLabel = 'user'}) async {
     try {
+      final incomingExifs = data.toList();
+      final incomingAssetIds = incomingExifs.map((e) => e.assetId).toSet();
+      final knownAssetIds = await _resolveKnownAssetIds(incomingAssetIds);
+      final exifs = incomingExifs.where((e) => knownAssetIds.contains(e.assetId)).toList();
+
       await _db.batch((batch) {
-        for (final exif in data) {
+        for (final exif in exifs) {
           final companion = RemoteExifEntityCompanion(
             city: Value(exif.city),
             state: Value(exif.state),
@@ -325,8 +330,13 @@ class SyncStreamRepository extends DriftDatabaseRepository {
 
   Future<void> updateAssetsMetadataV1(Iterable<SyncAssetMetadataV1> data) async {
     try {
+      final incomingMeta = data.toList();
+      final incomingAssetIds = incomingMeta.map((m) => m.assetId).toSet();
+      final knownAssetIds = await _resolveKnownAssetIds(incomingAssetIds);
+      final metas = incomingMeta.where((m) => knownAssetIds.contains(m.assetId)).toList();
+
       await _db.batch((batch) {
-        for (final metadata in data) {
+        for (final metadata in metas) {
           if (metadata.key == kMobileMetadataKey) {
             final map = metadata.value as Map<String, Object?>;
             final companion = RemoteAssetCloudIdEntityCompanion(
@@ -354,8 +364,13 @@ class SyncStreamRepository extends DriftDatabaseRepository {
 
   Future<void> updateAssetEditsV1(Iterable<SyncAssetEditV1> data, {String debugLabel = 'user'}) async {
     try {
+      final incomingEdits = data.toList();
+      final incomingAssetIds = incomingEdits.map((e) => e.assetId).toSet();
+      final knownAssetIds = await _resolveKnownAssetIds(incomingAssetIds);
+      final edits = incomingEdits.where((e) => knownAssetIds.contains(e.assetId)).toList();
+
       await _db.batch((batch) {
-        for (final edit in data) {
+        for (final edit in edits) {
           final companion = AssetEditEntityCompanion(
             id: Value(edit.id),
             assetId: Value(edit.assetId),
@@ -993,9 +1008,26 @@ class SyncStreamRepository extends DriftDatabaseRepository {
     return rows.toSet();
   }
 
+  /// Returns the subset of [assetIds] that actually exist in the local
+  /// [RemoteAssetEntity] table. Used by child entity sync methods (exifs, edits, faces, metadata)
+  /// to avoid SqliteException(787) when the server sends entities whose parent asset
+  /// does not exist or has not been synced locally yet.
+  Future<Set<String>> _resolveKnownAssetIds(Set<String> assetIds) async {
+    if (assetIds.isEmpty) return const {};
+    final rows = await (_db.remoteAssetEntity.selectOnly()
+          ..addColumns([_db.remoteAssetEntity.id])
+          ..where(_db.remoteAssetEntity.id.isIn(assetIds)))
+        .map((r) => r.read(_db.remoteAssetEntity.id)!)
+        .get();
+    return rows.toSet();
+  }
+
   Future<void> updateAssetFacesV1(Iterable<SyncAssetFaceV1> data) async {
     try {
-      final faces = data.toList();
+      final incomingFaces = data.toList();
+      final incomingAssetIds = incomingFaces.map((f) => f.assetId).toSet();
+      final knownAssetIds = await _resolveKnownAssetIds(incomingAssetIds);
+      final faces = incomingFaces.where((f) => knownAssetIds.contains(f.assetId)).toList();
 
       // Nullify personIds that don't exist locally to avoid FK violations
       // (SqliteException 787) caused by faces from partner/shared-space assets
@@ -1037,7 +1069,10 @@ class SyncStreamRepository extends DriftDatabaseRepository {
 
   Future<void> updateAssetFacesV2(Iterable<SyncAssetFaceV2> data) async {
     try {
-      final faces = data.toList();
+      final incomingFaces = data.toList();
+      final incomingAssetIds = incomingFaces.map((f) => f.assetId).toSet();
+      final knownAssetIds = await _resolveKnownAssetIds(incomingAssetIds);
+      final faces = incomingFaces.where((f) => knownAssetIds.contains(f.assetId)).toList();
 
       // Nullify personIds that don't exist locally to avoid FK violations
       // (SqliteException 787) caused by faces from partner/shared-space assets
