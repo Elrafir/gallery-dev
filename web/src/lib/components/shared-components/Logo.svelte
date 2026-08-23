@@ -25,18 +25,19 @@
   };
 
   const src = $derived.by(() => {
+    const v = '?v=2.7.5-album.1';
     switch (variant) {
       case 'stacked': {
-        return themeManager.value === Theme.Light ? '/gallery-logo-stacked.svg' : '/gallery-logo-stacked-dark.svg';
+        return (themeManager.value === Theme.Light ? '/gallery-logo-stacked.svg' : '/gallery-logo-stacked-dark.svg') + v;
       }
       case 'inline': {
-        return themeManager.value === Theme.Light ? '/gallery-logo-inline-light.svg' : '/gallery-logo-inline-dark.svg';
+        return (themeManager.value === Theme.Light ? '/gallery-logo-inline-light.svg' : '/gallery-logo-inline-dark.svg') + v;
       }
       default: {
         if (transparent) {
-          return themeManager.value === Theme.Light ? '/gallery-loader.svg' : '/gallery-loader-dark.svg';
+          return (themeManager.value === Theme.Light ? '/gallery-loader.svg' : '/gallery-loader-dark.svg') + v;
         }
-        return themeManager.value === Theme.Light ? '/gallery-logo-mark.svg' : '/gallery-logo-mark-dark.svg';
+        return (themeManager.value === Theme.Light ? '/gallery-logo-mark.svg' : '/gallery-logo-mark-dark.svg') + v;
       }
     }
   });
