@@ -15,11 +15,12 @@ import {
   ServerVersionHistoryResponseDto,
   ServerVersionResponseDto,
 } from 'src/dtos/server.dto';
-import { VersionCheckStateResponseDto } from 'src/dtos/system-metadata.dto';
+import { UpstreamUpdatesResponseDto } from 'src/dtos/upstream-update.dto';
 import { ApiTag, Permission } from 'src/enum';
 import { Authenticated } from 'src/middleware/auth.guard';
 import { ServerService } from 'src/services/server.service';
 import { SystemMetadataService } from 'src/services/system-metadata.service';
+import { UpstreamUpdateService } from 'src/services/upstream-update.service';
 import { VersionService } from 'src/services/version.service';
 
 @ApiTags(ApiTag.Server)
@@ -29,6 +30,7 @@ export class ServerController {
     private service: ServerService,
     private systemMetadataService: SystemMetadataService,
     private versionService: VersionService,
+    private upstreamUpdateService: UpstreamUpdateService,
   ) {}
 
   @Get('about')
@@ -188,7 +190,18 @@ export class ServerController {
     description: 'Retrieve information about the last time the version check ran.',
     history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
   })
-  getVersionCheck(): Promise<VersionCheckStateResponseDto> {
+  getVersionCheck(): Promise<any> {
     return this.systemMetadataService.getVersionCheckState();
+  }
+
+  @Get('upstream-updates')
+  @Authenticated({ admin: true })
+  @Endpoint({
+    summary: 'Get upstream repository releases and updates',
+    description: 'Retrieve release logs and Russian summary from Immich and Noodle Gallery repositories.',
+    history: new HistoryBuilder().added('v2'),
+  })
+  getUpstreamUpdates(): Promise<UpstreamUpdatesResponseDto> {
+    return this.upstreamUpdateService.getUpstreamUpdates();
   }
 }

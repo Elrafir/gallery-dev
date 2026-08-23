@@ -243,7 +243,7 @@ describe('Spaces page search URL state', () => {
     sdkMock.getSpacePeople.mockResolvedValue([]);
     sdkMock.getFilterSuggestions.mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [],
       ratings: [],

@@ -231,7 +231,7 @@ describe('Photos page search URL state', () => {
     sessionStorage.clear();
     sdkMock.getFilterSuggestions.mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [],
       ratings: [],

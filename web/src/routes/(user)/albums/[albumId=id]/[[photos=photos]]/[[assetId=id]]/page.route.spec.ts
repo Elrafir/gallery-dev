@@ -63,7 +63,7 @@ function renderPage(album = albumFactory.build({ assetCount: 2 })) {
             ? 'First Album Tag'
             : 'Album Tag';
       return Promise.resolve({
-        countries: [],
+        countries: [], states: [],
         cameraMakes: [],
         tags: [
           { id: 'tag-view', value: tagName },
@@ -77,7 +77,7 @@ function renderPage(album = albumFactory.build({ assetCount: 2 })) {
     }
 
     return Promise.resolve({
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [
         { id: 'tag-picker', value: 'Picker Tag' },

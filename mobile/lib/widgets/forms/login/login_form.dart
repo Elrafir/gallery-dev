@@ -33,6 +33,9 @@ import 'package:immich_mobile/widgets/common/immich_toast.dart';
 import 'package:immich_ui/immich_ui.dart';
 import 'package:logging/logging.dart';
 import 'package:openapi/api.dart';
+import 'package:immich_mobile/services/server_profiles.service.dart';
+import 'package:immich_mobile/widgets/forms/login/server_profiles_sheet.dart';
+import 'package:immich_mobile/widgets/forms/login/server_scanner_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 const _demoServerUrl = 'https://demo.opennoodle.de';
@@ -125,6 +128,12 @@ class LoginForm extends HookConsumerWidget {
         oAuthButtonLabel.value = config.oauthButtonText.isNotEmpty ? config.oauthButtonText : 'OAuth';
 
         serverEndpoint.value = endpoint;
+        try {
+          ref.read(serverProfilesServiceProvider).saveProfile(
+            name: serverUrl.contains('192.168.') ? 'Домашний сервер (WiFi)' : serverUrl,
+            url: serverUrl,
+          );
+        } catch (_) {}
       } on ApiException catch (e) {
         ImmichToast.show(
           context: context,
@@ -421,44 +430,94 @@ class LoginForm extends HookConsumerWidget {
       );
     }
 
+    void onServerChosen(String selectedUrl) {
+      serverEndpointController.text = selectedUrl;
+      getServerAuthSettings();
+    }
+
     final serverSelectionOrLogin = serverEndpoint.value == null
         ? Padding(
             padding: const EdgeInsets.only(top: ImmichSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                ImmichForm(
-                  submitText: 'next'.t(context: context),
-                  submitIcon: Icons.arrow_forward_rounded,
-                  onSubmit: getServerAuthSettings,
-                  child: ImmichTextInput(
-                    controller: serverEndpointController,
-                    label: 'login_form_endpoint_url'.t(context: context),
-                    hintText: 'login_form_endpoint_hint'.t(context: context),
-                    validator: _validateUrl,
-                    keyboardAction: TextInputAction.next,
-                    keyboardType: TextInputType.url,
-                    autofillHints: const [AutofillHints.url],
-                    autoCorrect: false,
-                    onSubmit: (ctx, _) => ImmichForm.of(ctx).submit(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      ImmichForm(
+                        submitText: 'next'.t(context: context),
+                        submitIcon: Icons.arrow_forward_rounded,
+                        onSubmit: getServerAuthSettings,
+                        child: Column(
+                          children: [
+                            ImmichTextInput(
+                              controller: serverEndpointController,
+                              label: 'login_form_endpoint_url'.t(context: context),
+                              hintText: 'login_form_endpoint_hint'.t(context: context),
+                              validator: _validateUrl,
+                              keyboardAction: TextInputAction.next,
+                              keyboardType: TextInputType.url,
+                              autofillHints: const [AutofillHints.url],
+                              autoCorrect: false,
+                              onSubmit: (ctx, _) => ImmichForm.of(ctx).submit(),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                TextButton.icon(
+                                  icon: const Icon(Icons.radar, size: 18),
+                                  label: const Text('Найти в сети', style: TextStyle(fontSize: 12)),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) => ServerScannerDialog(
+                                        onServerSelected: onServerChosen,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                TextButton.icon(
+                                  icon: const Icon(Icons.bookmarks_outlined, size: 18),
+                                  label: const Text('Шаблоны', style: TextStyle(fontSize: 12)),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  onPressed: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                      ),
+                                      builder: (_) => ServerProfilesSheet(
+                                        currentEndpoint: serverEndpointController.text,
+                                        onProfileSelected: onServerChosen,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      ImmichTextButton(
+                        labelText: 'login_form_try_demo'.t(context: context),
+                        icon: Icons.travel_explore_rounded,
+                        variant: ImmichVariant.ghost,
+                        loading: isDemoLoginLoading.value,
+                        onPressed: demoLogin,
+                      ),
+                      ImmichTextButton(
+                        labelText: 'settings'.t(context: context),
+                        icon: Icons.settings,
+                        variant: ImmichVariant.ghost,
+                        onPressed: () => context.pushRoute(const SettingsRoute()),
+                      ),
+                    ],
                   ),
-                ),
-                ImmichTextButton(
-                  labelText: 'login_form_try_demo'.t(context: context),
-                  icon: Icons.travel_explore_rounded,
-                  variant: ImmichVariant.ghost,
-                  loading: isDemoLoginLoading.value,
-                  onPressed: demoLogin,
-                ),
-                ImmichTextButton(
-                  labelText: 'settings'.t(context: context),
-                  icon: Icons.settings,
-                  variant: ImmichVariant.ghost,
-                  onPressed: () => context.pushRoute(const SettingsRoute()),
-                ),
-              ],
-            ),
-          )
+                )
         : AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

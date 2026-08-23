@@ -21,7 +21,7 @@ describe('resolveTypedSearchFilters', () => {
     vi.resetAllMocks();
     vi.mocked(getFilterSuggestions).mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [],
       ratings: [],
@@ -35,7 +35,7 @@ describe('resolveTypedSearchFilters', () => {
     vi.mocked(searchPerson).mockResolvedValue([{ id: 'person-1', name: 'Anna' } as never]);
     vi.mocked(getFilterSuggestions).mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: ['Nikon'],
       tags: [{ id: 'tag-1', value: 'Travel' }],
       ratings: [4],
@@ -221,7 +221,7 @@ describe('resolveTypedSearchFilters', () => {
       .mockResolvedValueOnce([{ id: 'person-2', name: 'Bob' } as never]);
     vi.mocked(getFilterSuggestions).mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [
         { id: 'tag-1', value: 'Travel' },
@@ -256,7 +256,7 @@ describe('resolveTypedSearchFilters', () => {
   it('blocks when tag resolution is ambiguous', async () => {
     vi.mocked(getFilterSuggestions).mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [
         { id: 'tag-1', value: 'Travel' },
@@ -290,7 +290,7 @@ describe('resolveTypedSearchFilters', () => {
   it('uses space-scoped people from filter suggestions when resolving people inside a space', async () => {
     vi.mocked(getFilterSuggestions).mockResolvedValue({
       people: [{ id: 'space-person-1', name: 'Anna' }],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: [],
       tags: [],
       ratings: [],
@@ -311,7 +311,7 @@ describe('resolveTypedSearchFilters', () => {
   it('blocks when camera matches both make and model', async () => {
     vi.mocked(getFilterSuggestions).mockResolvedValue({
       people: [],
-      countries: [],
+      countries: [], states: [],
       cameraMakes: ['Nikon'],
       tags: [],
       ratings: [],

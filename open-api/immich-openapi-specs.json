@@ -13244,6 +13244,47 @@
         "x-immich-state": "Stable"
       }
     },
+    "/server/upstream-updates": {
+      "get": {
+        "description": "Retrieve release logs and Russian summary from Immich and Noodle Gallery repositories.",
+        "operationId": "getUpstreamUpdates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpstreamUpdatesResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get upstream repository releases and updates",
+        "tags": [
+          "Server"
+        ],
+        "x-immich-admin-only": true,
+        "x-immich-history": [
+          {
+            "version": "v2",
+            "state": "Added"
+          }
+        ]
+      }
+    },
     "/server/version": {
       "get": {
         "description": "Retrieve the current server version in semantic versioning (semver) format.",
@@ -13292,7 +13333,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VersionCheckStateResponseDto"
+                  "type": "object"
                 }
               }
             },
@@ -21169,7 +21210,7 @@
   "info": {
     "title": "Immich",
     "description": "Immich API",
-    "version": "2.7.5",
+    "version": "2.7.5-album.1",
     "contact": {}
   },
   "tags": [
@@ -34094,6 +34135,92 @@
             "type": "integer"
           }
         },
+        "type": "object"
+      },
+      "UpstreamReleaseItemDto": {
+        "properties": {
+          "body": {
+            "description": "Original release notes in English",
+            "type": "string"
+          },
+          "htmlUrl": {
+            "example": "https://github.com/immich-app/immich/releases/tag/v2.7.5",
+            "type": "string"
+          },
+          "id": {
+            "example": "v2.7.5",
+            "type": "string"
+          },
+          "isCurrent": {
+            "example": false,
+            "type": "boolean"
+          },
+          "name": {
+            "example": "Immich v2.7.5 Release",
+            "type": "string"
+          },
+          "publishedAt": {
+            "example": "2026-05-30T16:00:00Z",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "immich",
+              "noodle-gallery"
+            ],
+            "type": "string"
+          },
+          "summaryRu": {
+            "description": "Key highlights / summary in Russian",
+            "type": "string"
+          },
+          "tagName": {
+            "example": "v2.7.5",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "htmlUrl",
+          "id",
+          "isCurrent",
+          "name",
+          "publishedAt",
+          "source",
+          "summaryRu",
+          "tagName"
+        ],
+        "type": "object"
+      },
+      "UpstreamUpdatesResponseDto": {
+        "properties": {
+          "checkedAt": {
+            "example": "2026-08-23T12:00:00Z",
+            "type": "string"
+          },
+          "currentVersion": {
+            "example": "2.7.5-album.1",
+            "type": "string"
+          },
+          "immich": {
+            "items": {
+              "$ref": "#/components/schemas/UpstreamReleaseItemDto"
+            },
+            "type": "array"
+          },
+          "noodleGallery": {
+            "items": {
+              "$ref": "#/components/schemas/UpstreamReleaseItemDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "checkedAt",
+          "currentVersion",
+          "immich",
+          "noodleGallery"
+        ],
         "type": "object"
       },
       "UsageByUserDto": {

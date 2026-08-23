@@ -1,11 +1,11 @@
 String? getVersionCompatibilityMessage(int appMajor, int appMinor, int serverMajor, int serverMinor) {
-  if (serverMajor != appMajor) {
-    return 'Your app major version is not compatible with the server!';
+  // Allow all 2.x versions to work without blocking
+  if (appMajor == 2 && serverMajor == 2) {
+    return null;
   }
 
-  // Add latest compat info up top
-  if (serverMinor < 106 && appMinor >= 106) {
-    return 'Your app minor version is not compatible with the server! Please update your server to version v1.106.0 or newer to login';
+  if (serverMajor != appMajor) {
+    return 'Предупреждение: мажорная версия приложения ($appMajor) отличается от сервера ($serverMajor).';
   }
 
   return null;

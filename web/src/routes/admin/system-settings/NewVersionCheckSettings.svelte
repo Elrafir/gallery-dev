@@ -5,6 +5,7 @@
   import { systemConfigManager } from '$lib/managers/system-config-manager.svelte';
   import { t } from 'svelte-i18n';
   import { fade } from 'svelte/transition';
+  import UpstreamUpdatesCard from './UpstreamUpdatesCard.svelte';
 
   const disabled = $derived(featureFlagsManager.value.configFile);
   let configToEdit = $state(systemConfigManager.cloneValue());
@@ -23,5 +24,9 @@
         <SettingButtonsRow bind:configToEdit keys={['newVersionCheck']} {disabled} />
       </div>
     </form>
+
+    <div class="ms-4">
+      <UpstreamUpdatesCard />
+    </div>
   </div>
 </div>

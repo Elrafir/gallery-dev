@@ -4,6 +4,8 @@
   "name_slug": "photo-album",
   "name_snake": "photo_album",
   "description": "Домашний фотоальбом — управление и просмотр фото и видео",
+  "version": "2.7.5-album.1",
+  "build": "2026082301",
 
   "repository": {
     "name": "open-noodle/gallery",

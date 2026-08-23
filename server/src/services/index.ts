@@ -52,9 +52,11 @@ import { UserService } from 'src/services/user.service';
 import { VersionService } from 'src/services/version.service';
 import { ViewService } from 'src/services/view.service';
 import { SavedLocationService } from 'src/services/saved-location.service';
+import { UpstreamUpdateService } from 'src/services/upstream-update.service';
 import { WorkflowService } from 'src/services/workflow.service';
 
 export const services = [
+  UpstreamUpdateService,
   ApiKeyService,
   ActivityService,
   AlbumService,
